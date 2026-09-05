@@ -53,7 +53,7 @@ export function PublicHomePage() {
       <div className="public-section-heading"><div><span className="public-kicker">Accesos rápidos</span><h2 id="actions-title">¿Qué necesitás consultar?</h2></div><span className="public-demo-badge">Recorrido demo</span></div>
       <div className="public-action-grid">
         <Link className="public-action public-action-sum" to="/demo/propietario/servicios/sum"><CalendarDays size={23} /><span><strong>Reservar el SUM</strong><small>Disponibilidad y reglamento</small></span><ChevronRight size={18} /></Link>
-        <Link className="public-action" to="/demo/propietario/edificio/expensas"><FileText size={23} /><span><strong>Expensas</strong><small>Liquidación y detalle mensual</small></span><ChevronRight size={18} /></Link>
+        <Link className="public-action" to="/demo/propietario/edificio/cuentas"><FileText size={23} /><span><strong>Cuentas del edificio</strong><small>Movimientos y liquidaciones</small></span><ChevronRight size={18} /></Link>
         <Link className="public-action" to="/demo/propietario/mas/estado"><ShieldCheck size={23} /><span><strong>Estado del edificio</strong><small>Servicios y mantenimiento</small></span><ChevronRight size={18} /></Link>
         <Link className="public-action" to="/demo/propietario/edificio/documentos"><FileText size={23} /><span><strong>Documentos</strong><small>Actas, reglamento y archivos</small></span><ChevronRight size={18} /></Link>
         <Link className="public-action" to="/demo/propietario/servicios/reclamos"><ClipboardList size={23} /><span><strong>Hacer un reclamo</strong><small>Seguimiento de solicitudes</small></span><ChevronRight size={18} /></Link>
@@ -81,7 +81,7 @@ export function PublicHomePage() {
       <div className="public-building-grid">{gallery.map(item => <figure key={item.src}><img src={item.src} alt={item.alt} /><figcaption>{item.label}</figcaption></figure>)}</div>
     </section>
 
-    <section className="public-about" aria-labelledby="about-title"><div><span className="public-kicker">Un solo lugar</span><h2 id="about-title">Lo cotidiano, más claro.</h2></div><div className="public-about-copy"><p>El portal reúne comunicaciones, documentos, espacios comunes, expensas y el estado general del edificio para que cada vecino encuentre lo importante sin perderse.</p><Link to="/demo/propietario" className="public-text-link">Explorar la demostración <ArrowUpRight size={17} /></Link></div></section>
+    <section className="public-about" aria-labelledby="about-title"><div><span className="public-kicker">Un solo lugar</span><h2 id="about-title">Lo cotidiano, más claro.</h2></div><div className="public-about-copy"><p>El portal reúne comunicaciones, documentos, espacios comunes, cuentas y el estado general del edificio para que cada vecino encuentre lo importante sin perderse.</p><Link to="/demo/propietario" className="public-text-link">Explorar la demostración <ArrowUpRight size={17} /></Link></div></section>
   </PublicLayout>;
 }
 

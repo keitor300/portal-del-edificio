@@ -11,7 +11,7 @@ const groups: { title: string; items: MenuItem[] }[] = [
     { to: '/demo/propietario/servicios/chat', title: 'Hablar con administración', description: 'Enviar una consulta de tu unidad', Icon: MessageCircle },
   ] },
   { title: 'Mi edificio', items: [
-    { to: '/demo/propietario/edificio/expensas', title: 'Expensas', description: 'Liquidación y vencimientos', Icon: FileText },
+    { to: '/demo/propietario/edificio/cuentas', title: 'Cuentas del edificio', description: 'Movimientos, liquidaciones y presupuestos', Icon: FileText },
     { to: '/demo/propietario/edificio/documentos', title: 'Documentos', description: 'Actas, reglamento y archivos', Icon: FileText },
     { to: '/demo/propietario/mas/estado', title: 'Estado del edificio', description: 'Servicios y mantenimiento', Icon: Wrench },
     { to: '/demo/propietario/edificio/obras', title: 'Obras y avances', description: 'Seguimiento de trabajos', Icon: Wrench },
