@@ -3,13 +3,13 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 
 const bundle = await build({ entryPoints: [new URL('./model.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1')], bundle: true, write: false, format: 'esm', platform: 'node' });
-const { slotUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt, sumTimeline } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
+const { slotUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt, SUM_SLOTS } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 const settings = { rules: 'Reglamento demo', blockedDates: [], openingBalance: 0, seedDate: '2026-09-05' };
 const now = new Date('2026-09-05T09:00:00');
 const reservation = { id: 'booking', title: 'SUM', description: '', date: '2026-09-06', time: '10:00', endTime: '15:00', unit: '3A', status: 'Confirmada' };
 
 test('both roles see an occupied turn regardless of unit; another turn stays free', () => {
-  assert.equal(slotUnavailable('2026-09-06', '10:00', [reservation], settings, now), 'Turno reservado.');
+  assert.equal(slotUnavailable('2026-09-06', '10:00', [reservation], settings, now), 'Horario reservado.');
   assert.equal(slotUnavailable('2026-09-06', '17:00', [reservation], settings, now), '');
 });
 test('cancellation releases the slot, including migrated canceled status', () => {
@@ -22,14 +22,14 @@ test('block applies to both slots and unblocking restores them', () => {
   }
 });
 test('past days, already started turns, invalid dates and unknown turns are refused', () => {
-  assert.equal(slotUnavailable('2026-09-04', '17:00', [], settings, now), 'Este turno ya pasó.');
-  assert.equal(slotUnavailable('2026-09-05', '10:00', [], settings, new Date('2026-09-05T10:00:00')), 'Este turno ya pasó.');
+  assert.equal(slotUnavailable('2026-09-04', '17:00', [], settings, now), 'Este horario ya pasó.');
+  assert.equal(slotUnavailable('2026-09-05', '10:00', [], settings, new Date('2026-09-05T10:00:00')), 'Este horario ya pasó.');
   assert.equal(slotUnavailable('2026-09-05', '17:00', [], settings, new Date('2026-09-05T10:00:00')), '');
   assert.equal(validDate('2026-02-30'), false);
   assert.equal(validDate('not-a-date'), false);
   assert.equal(validDate('2028-02-29'), true);
   assert.equal(slotUnavailable('', '10:00', [], settings, now), 'Elegí una fecha válida.');
-  assert.equal(slotUnavailable('2026-09-06', '12:00', [], settings, now), 'Elegí un turno.');
+  assert.equal(slotUnavailable('2026-09-06', '16:00', [], settings, now), 'Elegí un horario.');
 });
 test('rules must be present and explicitly accepted and a unit is required', () => {
   assert.equal(bookingError('2099-09-06', '10:00', '7B', false, [], settings), 'Aceptá el reglamento para continuar.');
@@ -38,24 +38,16 @@ test('rules must be present and explicitly accepted and a unit is required', () 
   assert.equal(bookingError('2099-09-06', '10:00', '7B', true, [], settings), '');
 });
 test('partial overlaps collide and absent legacy end times are conservative', () => {
-  assert.equal(slotUnavailable('2026-09-06', '10:00', [{ ...reservation, time: '14:00', endTime: '18:00' }], settings, now), 'Turno reservado.');
-  assert.equal(slotUnavailable('2026-09-06', '17:00', [{ ...reservation, time: '14:00', endTime: '18:00' }], settings, now), 'Turno reservado.');
-  assert.equal(slotUnavailable('2026-09-06', '17:00', [{ ...reservation, time: '16:00', endTime: undefined }], settings, now), 'Turno reservado.');
+  assert.equal(slotUnavailable('2026-09-06', '14:00', [{ ...reservation, time: '14:00', endTime: '18:00' }], settings, now), 'Horario reservado.');
+  assert.equal(slotUnavailable('2026-09-06', '17:00', [{ ...reservation, time: '14:00', endTime: '18:00' }], settings, now), 'Horario reservado.');
+  assert.equal(slotUnavailable('2026-09-06', '17:00', [{ ...reservation, time: '16:00', endTime: undefined }], settings, now), 'Horario reservado.');
 });
-test('hourly timeline exposes every hour, breaks, and reservations by unit', () => {
-  const entries = sumTimeline('2026-09-06', [reservation], settings, now);
-  assert.equal(entries.length, 12);
-  assert.equal(entries.find(item => item.time === '10:00')?.state, 'reserved');
-  assert.equal(entries.find(item => item.time === '10:00')?.unit, '3A');
-  assert.equal(entries.find(item => item.time === '15:00')?.state, 'break');
-  assert.equal(entries.find(item => item.time === '17:00')?.state, 'available');
-  assert.equal(sumTimeline('2026-09-06', [], { ...settings, blockedDates: ['2026-09-06'] }, now).every(item => item.kind === 'break' || item.state === 'blocked'), true);
-});
-test('hourly timeline marks elapsed hours without mixing them with reservations', () => {
-  const entries = sumTimeline('2026-09-05', [], settings, new Date('2026-09-05T18:30:00'));
-  assert.equal(entries.find(item => item.time === '10:00')?.state, 'past');
-  assert.equal(entries.find(item => item.time === '17:00')?.state, 'past');
-  assert.equal(entries.find(item => item.time === '20:00')?.state, 'available');
+test('hourly options expose each reservable hour and leave the rest break unavailable', () => {
+  assert.equal(SUM_SLOTS.length, 10);
+  assert.equal(SUM_SLOTS[0].label, '10:00 a 11:00');
+  assert.equal(SUM_SLOTS.at(-1).label, '21:00 a 22:00');
+  assert.equal(SUM_SLOTS.some(item => item.time === '15:00'), false);
+  assert.equal(SUM_SLOTS.some(item => item.time === '16:00'), false);
 });
 test('reservation validation rejects malformed dates, times and reversed ranges without hiding valid slots', () => {
   assert.equal(isValidReservation({ ...reservation, date: '2026-02-30' }), false);

@@ -5,34 +5,19 @@ export const OWNER_UNIT = '7B';
 export const ISSUE_CATEGORIES = ['Agua', 'Ascensor', 'Gas', 'Electricidad', 'Limpieza', 'Otro'];
 export const ISSUE_STATUSES = ['Recibido', 'En curso', 'Resuelto'];
 export const SUM_SLOTS = [
-  { time: '10:00', endTime: '15:00', label: '10:00 a 15:00' },
-  { time: '17:00', endTime: '22:00', label: '17:00 a 22:00' },
+  { time: '10:00', endTime: '11:00', label: '10:00 a 11:00' },
+  { time: '11:00', endTime: '12:00', label: '11:00 a 12:00' },
+  { time: '12:00', endTime: '13:00', label: '12:00 a 13:00' },
+  { time: '13:00', endTime: '14:00', label: '13:00 a 14:00' },
+  { time: '14:00', endTime: '15:00', label: '14:00 a 15:00' },
+  { time: '17:00', endTime: '18:00', label: '17:00 a 18:00' },
+  { time: '18:00', endTime: '19:00', label: '18:00 a 19:00' },
+  { time: '19:00', endTime: '20:00', label: '19:00 a 20:00' },
+  { time: '20:00', endTime: '21:00', label: '20:00 a 21:00' },
+  { time: '21:00', endTime: '22:00', label: '21:00 a 22:00' },
 ] as const;
 
 export type SumSlot = typeof SUM_SLOTS[number];
-
-export const SUM_TIMELINE = [
-  { time: '10:00', endTime: '11:00', kind: 'bookable' },
-  { time: '11:00', endTime: '12:00', kind: 'bookable' },
-  { time: '12:00', endTime: '13:00', kind: 'bookable' },
-  { time: '13:00', endTime: '14:00', kind: 'bookable' },
-  { time: '14:00', endTime: '15:00', kind: 'bookable' },
-  { time: '15:00', endTime: '16:00', kind: 'break' },
-  { time: '16:00', endTime: '17:00', kind: 'break' },
-  { time: '17:00', endTime: '18:00', kind: 'bookable' },
-  { time: '18:00', endTime: '19:00', kind: 'bookable' },
-  { time: '19:00', endTime: '20:00', kind: 'bookable' },
-  { time: '20:00', endTime: '21:00', kind: 'bookable' },
-  { time: '21:00', endTime: '22:00', kind: 'bookable' },
-] as const;
-
-export type SumTimelineItem = typeof SUM_TIMELINE[number];
-export type SumTimelineState = 'available' | 'reserved' | 'break' | 'blocked' | 'past' | 'invalid';
-
-export type SumTimelineEntry = SumTimelineItem & {
-  state: SumTimelineState;
-  unit?: string;
-};
 
 export function timeToMinutes(value: string | undefined) {
   if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
@@ -78,28 +63,15 @@ export function reservationsOverlap(first: Entity, second: Entity) {
   return !!firstRange && !!secondRange && firstRange.start < secondRange.end && secondRange.start < firstRange.end;
 }
 
-export function sumTimeline(date: string, reservations: Entity[], settings: Settings, now = new Date()): SumTimelineEntry[] {
-  return SUM_TIMELINE.map(item => {
-    if (!validDate(date)) return { ...item, state: 'invalid' };
-    if (item.kind === 'break') return { ...item, state: 'break' };
-    if (settings.blockedDates.includes(date)) return { ...item, state: 'blocked' };
-    if (new Date(`${date}T${item.time}:00`).getTime() <= now.getTime()) return { ...item, state: 'past' };
-
-    const candidate = { id: 'timeline', title: '', description: '', date, time: item.time, endTime: item.endTime };
-    const reservation = reservations.find(entry => activeReservation(entry) && reservationsOverlap(candidate, entry));
-    return reservation ? { ...item, state: 'reserved', unit: reservation.unit } : { ...item, state: 'available' };
-  });
-}
-
 export function slotUnavailable(date: string, time: string, reservations: Entity[], settings: Settings, now = new Date()) {
   const slot = SUM_SLOTS.find(item => item.time === time);
   if (!validDate(date)) return 'Elegí una fecha válida.';
-  if (!slot) return 'Elegí un turno.';
-  if (new Date(`${date}T${time}:00`).getTime() <= now.getTime()) return 'Este turno ya pasó.';
+  if (!slot) return 'Elegí un horario.';
+  if (new Date(`${date}T${time}:00`).getTime() <= now.getTime()) return 'Este horario ya pasó.';
   if (settings.blockedDates.includes(date)) return 'Fecha bloqueada por administración.';
   const candidate = { id: 'candidate', title: '', description: '', date, time: slot.time, endTime: slot.endTime };
   if (reservations.some(item => activeReservation(item) && reservationsOverlap(candidate, item))) {
-    return 'Turno reservado.';
+    return 'Horario reservado.';
   }
   return '';
 }

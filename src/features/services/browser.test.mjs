@@ -58,14 +58,15 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await page.reload();
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
   await expect(page.getByRole('radio').first()).toBeDisabled();
-  await expect(page.getByText('Reservado · Unidad 7B', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('radio')).toHaveCount(10);
+  await expect(page.getByText('15:00 a 17:00', { exact: false }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Disponibilidad de todas las unidades' })).toBeVisible();
   await expect(page.getByText(/Unidad 3A/).first()).toBeVisible();
-  await expect(page.getByText('Pausa entre turnos', { exact: true }).first()).toBeVisible();
   await goto('/admin/servicios?tab=sum');
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
   await expect(page.getByRole('radio').first()).toBeDisabled();
   await page.getByLabel('Unidad', { exact: true }).fill('2C');
-  await page.getByRole('radio').nth(1).check();
+  await page.getByRole('radio', { name: '17:00 a 18:00' }).check();
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Revisar reserva' }).click();
   await page.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();

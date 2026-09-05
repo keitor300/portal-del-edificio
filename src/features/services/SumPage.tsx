@@ -4,46 +4,40 @@ import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, id, today } from '../../lib/utils';
-import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, reservationEndsAt, sameUnit, slotUnavailable, sumTimeline, SUM_SLOTS, validDate } from './model';
+import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, reservationEndsAt, sameUnit, slotUnavailable, SUM_SLOTS, validDate } from './model';
 import './services.css';
 
-export function SumAvailability({ date }: { date: string }) {
+export function SumTimePicker({ date, time, onTimeChange, admin = false }: { date: string; time: string; onTimeChange: (value: string) => void; admin?: boolean }) {
   const { data } = usePortal();
-  const timeline = sumTimeline(date, data.reservations, data.settings);
-  const labels = {
-    available: 'Disponible',
-    reserved: 'Reservado',
-    break: 'Pausa entre turnos',
-    blocked: 'Día bloqueado',
-    past: 'Ya pasó',
-    invalid: 'Fecha inválida',
-  } as const;
-  const details = {
-    available: 'La franja completa se puede reservar',
-    reserved: 'Reservado por otra unidad',
-    break: 'No reservable',
-    blocked: 'No se puede reservar este día',
-    past: 'Elegí un horario futuro',
-    invalid: 'Elegí una fecha válida',
-  } as const;
+  return <fieldset className="sum-time-picker">
+    <legend>Elegí un horario</legend>
+    <p className="muted">Cada opción dura una hora. Se puede reservar de 10:00 a 15:00 y de 17:00 a 22:00.</p>
+    <div className="sum-time-grid" role="radiogroup" aria-label="Horarios disponibles del SUM">
+      {SUM_SLOTS.map(item => {
+        const unavailable = slotUnavailable(date, item.time, data.reservations, data.settings);
+        return <label key={item.time} className="sum-time-option" data-disabled={!!unavailable} data-selected={time === item.time && !unavailable}>
+          <input type="radio" name={admin ? 'admin-sum-time' : 'owner-sum-time'} value={item.time} aria-label={item.label} checked={time === item.time} disabled={!!unavailable} onChange={() => onTimeChange(item.time)} />
+          <span><strong>{item.time}</strong><small>hasta {item.endTime}</small></span>
+          <em>{unavailable || 'Disponible'}</em>
+        </label>;
+      })}
+    </div>
+    <p className="sum-time-break"><strong>15:00 a 17:00</strong> · Pausa del SUM, no reservable.</p>
+  </fieldset>;
+}
 
-  return <section className="sum-availability" aria-labelledby="sum-availability-title">
-    <div className="section-heading sum-availability-heading">
-      <div><h3 id="sum-availability-title">Horarios del día</h3><p className="muted">Consultá cada hora. La reserva se realiza por una franja completa.</p></div>
-      <span className="sum-availability-date">{validDate(date) ? formatDate(date, { day: 'numeric', month: 'short' }) : 'Elegí una fecha'}</span>
+export function CommunityAvailability({ date }: { date: string }) {
+  const { data } = usePortal();
+  const reservations = data.reservations.filter(item => isValidReservation(item) && activeReservation(item) && item.date === date).sort((a, b) => `${a.time}${a.unit}`.localeCompare(`${b.time}${b.unit}`));
+  return <section className="sum-community-availability" aria-labelledby="sum-community-title">
+    <div className="section-heading sum-community-heading">
+      <div><h3 id="sum-community-title">Disponibilidad de todas las unidades</h3><p className="muted">Las reservas de otros propietarios son visibles para evitar confusiones.</p></div>
+      <span className="sum-community-date">{validDate(date) ? formatDate(date, { day: 'numeric', month: 'short' }) : 'Elegí una fecha'}</span>
     </div>
-    <div className="sum-timeline" role="list" aria-label="Disponibilidad horaria del SUM">
-      {timeline.map(item => <div className={`sum-hour sum-hour-${item.state}`} role="listitem" key={item.time}>
-        <time dateTime={`${date}T${item.time}`}>{item.time}</time>
-        <div className="sum-hour-copy"><strong>{item.time} a {item.endTime}</strong><span>{item.state === 'reserved' && item.unit ? `Reservado · Unidad ${item.unit}` : details[item.state]}</span></div>
-        <span className="sum-hour-status">{labels[item.state]}</span>
-      </div>)}
-    </div>
-    <div className="sum-availability-legend" aria-label="Referencias de disponibilidad">
-      <span><i className="sum-legend-dot sum-legend-available" aria-hidden="true" />Disponible</span>
-      <span><i className="sum-legend-dot sum-legend-reserved" aria-hidden="true" />Reservado</span>
-      <span><i className="sum-legend-dot sum-legend-break" aria-hidden="true" />Pausa</span>
-    </div>
+    {reservations.length ? <div className="sum-community-list">{reservations.map(item => <div className="sum-community-row" key={item.id}>
+      <div><strong>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime}</strong><span>Unidad {item.unit || 'sin indicar'}</span></div>
+      <span className="status status-green">Reservado</span>
+    </div>)}</div> : <p className="empty">No hay reservas visibles para esta fecha. Los horarios habilitados aparecen arriba.</p>}
   </section>;
 }
 
@@ -87,16 +81,8 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
     <form onSubmit={review} className="services-booking-form">
       {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input aria-label="Unidad" required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
       <Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setTime(''); setError(''); }} /></Field>
-      <SumAvailability date={date} />
-      <fieldset className="services-slots"><legend>Turnos disponibles</legend><div className="services-slot-options">
-        {SUM_SLOTS.map(item => {
-          const unavailable = slotUnavailable(date, item.time, data.reservations, data.settings);
-          return <label key={item.time} className="services-slot" data-disabled={!!unavailable} data-selected={time === item.time && !unavailable}>
-            <input type="radio" name={admin ? 'admin-sum-slot' : 'owner-sum-slot'} value={item.time} checked={time === item.time} disabled={!!unavailable} onChange={() => { setTime(item.time); setError(''); }} />
-            <span><strong>{item.label}</strong><small>{unavailable || 'Disponible'}</small></span>
-          </label>;
-        })}
-      </div></fieldset>
+      <SumTimePicker date={date} time={time} admin={admin} onTimeChange={value => { setTime(value); setError(''); }} />
+      <CommunityAvailability date={date} />
       <div><h3>Reglamento del SUM</h3><div className="services-rules" role="region" aria-label="Reglamento del SUM" tabIndex={0}>{data.settings.rules || 'El reglamento todavía no está cargado.'}</div></div>
       <label className="services-check"><input type="checkbox" checked={accepted} onChange={event => setAcceptedRules(event.target.checked ? data.settings.rules : null)} />{admin ? 'Confirmo la aceptación del reglamento por esta unidad.' : 'Leí y acepto el reglamento del SUM.'}</label>
       {error && <p role="alert" className="error">{error}</p>}
@@ -140,7 +126,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
 export function SumPage() {
   const [fullPhoto, setFullPhoto] = useState(false);
   return <div className="services-page">
-    <PageHeader title="Reservar el SUM" description="Elegí una fecha, consultá los horarios y reservá una franja completa para tu unidad 7B." back="/servicios" />
+    <PageHeader title="Reservar el SUM" description="Elegí una fecha y un horario disponible para tu unidad 7B." back="/servicios" />
     <div className="services-sum-layout"><div><img className="services-photo" src="/images/sum.jpg" alt="Salón de usos múltiples del edificio, con mesas, sillas y ventanales" width={1200} height={675} fetchPriority="high" /><div className="services-photo-caption"><p className="muted">Salón de usos múltiples</p><button className="button secondary small" onClick={() => setFullPhoto(true)}><Expand size={18} aria-hidden="true" />Foto completa</button></div></div><BookingForm /></div>
     <ReservationList />
     {fullPhoto && <Modal title="Salón de usos múltiples" wide onClose={() => setFullPhoto(false)}><img className="services-photo-full" src="/images/sum.jpg" alt="Fotografía completa del salón de usos múltiples del edificio" width={1200} height={675} /></Modal>}
@@ -175,7 +161,7 @@ export function AdminSum() {
     <section className="section"><div className="section-heading"><h2>Fechas bloqueadas</h2></div>
       <form onSubmit={block} className="services-filters"><Field label="Fecha a bloquear"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setError(''); }} /></Field><button className="button secondary" type="submit"><Plus size={18} aria-hidden="true" />Bloquear día</button></form>
       {error && <p role="alert" className="error">{error}</p>}
-      <div className="list">{[...data.settings.blockedDates].sort().map(blocked => <div className="list-row" key={blocked}><div className="row-main"><strong>{formatDate(blocked, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p className="muted">Todos los turnos bloqueados</p></div><button className="button secondary" aria-label={`Desbloquear ${formatDate(blocked)}`} onClick={() => { setSettings({ blockedDates: data.settings.blockedDates.filter(item => item !== blocked) }); notify('Fecha desbloqueada en la demo.'); }}><Unlock size={18} aria-hidden="true" />Desbloquear</button></div>)}</div>
+      <div className="list">{[...data.settings.blockedDates].sort().map(blocked => <div className="list-row" key={blocked}><div className="row-main"><strong>{formatDate(blocked, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p className="muted">Todos los horarios bloqueados</p></div><button className="button secondary" aria-label={`Desbloquear ${formatDate(blocked)}`} onClick={() => { setSettings({ blockedDates: data.settings.blockedDates.filter(item => item !== blocked) }); notify('Fecha desbloqueada en la demo.'); }}><Unlock size={18} aria-hidden="true" />Desbloquear</button></div>)}</div>
       {!data.settings.blockedDates.length && <p className="empty">No hay fechas bloqueadas.</p>}
     </section>
     {editingRules && <Modal title="Editar reglamento del SUM" wide onClose={() => setEditingRules(false)}><form onSubmit={saveRules}><Field label="Reglamento"><textarea aria-label="Reglamento" rows={10} maxLength={10000} required value={rules} onChange={event => setRules(event.target.value)} /></Field><div className="form-actions"><button type="button" className="button secondary" onClick={() => setEditingRules(false)}>Volver</button><button className="button" type="submit" disabled={!rules.trim()}><Save size={18} aria-hidden="true" />Guardar reglamento</button></div></form></Modal>}
