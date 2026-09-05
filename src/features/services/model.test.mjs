@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 
 const bundle = await build({ entryPoints: [new URL('./model.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1')], bundle: true, write: false, format: 'esm', platform: 'node' });
-const { slotUnavailable, rangeUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt, reservationEndDate, reservationTouchesDate, sumOperatingWindow, validBookingRange } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
+const { slotUnavailable, rangeUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt, reservationEndDate, reservationTouchesDate, sumOperatingWindow, sumTimeOptions, validBookingRange } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 const settings = { rules: 'Reglamento demo', blockedDates: [], openingBalance: 0, seedDate: '2026-09-05' };
 const now = new Date('2026-09-05T09:00:00');
 const reservation = { id: 'booking', title: 'SUM', description: '', date: '2026-09-06', time: '10:00', endTime: '15:00', unit: '3A', status: 'Confirmada' };
@@ -59,6 +59,13 @@ test('booking ranges use half-hour increments instead of arbitrary minutes', () 
   assert.ok(validBookingRange('2026-09-06', '18:30', '19:00'));
   assert.equal(validBookingRange('2026-09-06', '18:22', '19:00'), null);
   assert.equal(validBookingRange('2026-09-06', '18:00', '19:22'), null);
+});
+test('time selection is exposed as options, including the next-day closing hours', () => {
+  assert.equal(sumTimeOptions('2026-09-06')[0].value, '08:30');
+  assert.equal(sumTimeOptions('2026-09-06').at(-1).value, '23:30');
+  assert.equal(sumTimeOptions('2026-09-06', true).at(-1).value, '01:00');
+  assert.equal(sumTimeOptions('2026-09-11', true).at(-1).value, '03:00');
+  assert.equal(sumTimeOptions('2026-09-11', true).at(-1).label, '03:00 (día siguiente)');
 });
 test('overnight reservations remain visible and block the following calendar date', () => {
   const overnight = { ...reservation, date: '2026-09-11', time: '23:30', endTime: '02:00', endDate: '2026-09-12' };

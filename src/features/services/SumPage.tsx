@@ -4,22 +4,23 @@ import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, id, today } from '../../lib/utils';
-import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, rangeUnavailable, reservationEndsAt, reservationTouchesDate, sameUnit, sumOperatingWindow, SUM_SLOTS, validBookingRange, validDate } from './model';
+import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, rangeUnavailable, reservationEndsAt, reservationTouchesDate, sameUnit, sumOperatingWindow, sumTimeOptions, SUM_SLOTS, validBookingRange, validDate } from './model';
 import './services.css';
 
 export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndChange }: { date: string; startTime: string; endTime: string; onStartChange: (value: string) => void; onEndChange: (value: string) => void }) {
   const { data } = usePortal();
   const window = sumOperatingWindow(date);
   const feedback = startTime && endTime ? rangeUnavailable(date, startTime, endTime, data.reservations, data.settings) : '';
+  const endOptions = sumTimeOptions(date, true).filter(option => !startTime || !!validBookingRange(date, startTime, option.value));
   return <fieldset className="sum-range-picker">
     <legend>Elegí el horario</legend>
     <p className="muted">Todos los días podés elegir desde las 08:30, en bloques de 30 minutos.</p>
     <div className="sum-range-fields">
-      <Field label="Desde"><input type="time" step="1800" min={window?.openTime ?? '08:30'} max="23:30" value={startTime} required onChange={event => onStartChange(event.target.value)} /></Field>
+      <Field label="Desde"><select value={startTime} required onChange={event => onStartChange(event.target.value)}><option value="">Elegí una hora</option>{sumTimeOptions(date).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
       <span className="sum-range-separator" aria-hidden="true">a</span>
-      <Field label="Hasta"><input type="time" step="1800" min="00:00" max="23:30" value={endTime} required onChange={event => onEndChange(event.target.value)} /></Field>
+      <Field label="Hasta"><select value={endTime} required onChange={event => onEndChange(event.target.value)}><option value="">Elegí una hora</option>{endOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
     </div>
-    <p className="sum-range-help">{window?.closeTime === '03:00' ? 'Viernes y sábado: hasta las 03:00 del día siguiente.' : 'Domingo a jueves: hasta la 01:00 del día siguiente.'} Siempre en punto o media hora.</p>
+    <p className="sum-range-help">{window?.closeTime === '03:00' ? 'Viernes y sábado: opciones hasta las 03:00 del día siguiente.' : 'Domingo a jueves: opciones hasta la 01:00 del día siguiente.'} Las horas se eligen de la lista, en punto o media hora.</p>
     {startTime && endTime && <p className={`sum-range-feedback ${feedback ? 'is-error' : 'is-ok'}`} role="status">{feedback || 'Este horario está disponible.'}</p>}
   </fieldset>;
 }
@@ -80,7 +81,7 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
     <form onSubmit={review} className="services-booking-form">
       {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input aria-label="Unidad" required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
       <Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setStartTime(''); setEndTime(''); setError(''); }} /></Field>
-      <SumRangePicker date={date} startTime={startTime} endTime={endTime} onStartChange={value => { setStartTime(value); setError(''); }} onEndChange={value => { setEndTime(value); setError(''); }} />
+      <SumRangePicker date={date} startTime={startTime} endTime={endTime} onStartChange={value => { setStartTime(value); setEndTime(''); setError(''); }} onEndChange={value => { setEndTime(value); setError(''); }} />
       <CommunityAvailability date={date} />
       <div><h3>Reglamento del SUM</h3><div className="services-rules" role="region" aria-label="Reglamento del SUM" tabIndex={0}>{data.settings.rules || 'El reglamento todavía no está cargado.'}</div></div>
       <label className="services-check"><input type="checkbox" checked={accepted} onChange={event => setAcceptedRules(event.target.checked ? data.settings.rules : null)} />{admin ? 'Confirmo la aceptación del reglamento por esta unidad.' : 'Leí y acepto el reglamento del SUM.'}</label>

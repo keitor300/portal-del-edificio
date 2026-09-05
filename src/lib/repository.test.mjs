@@ -24,6 +24,6 @@ test('normalization repairs partial storage without allowing invalid dates or du
 
 test('normalization migrates the previous fixed-slot SUM rule to free-range wording', () => {
   const data = normalizeDemoData({ settings: { rules: 'Capacidad máxima: 24 personas. Horarios disponibles: de 10 a 15 h y de 17 a 22 h. Cada reserva dura una hora. No se reserva de 15 a 17 h.' } });
-  assert.match(data.settings.rules, /bloques de 30 minutos/);
+  assert.match(data.settings.rules, /opciones en punto o media hora/);
   assert.match(data.settings.rules, /03:00/);
 });

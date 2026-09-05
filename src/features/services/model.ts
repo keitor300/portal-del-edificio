@@ -46,6 +46,25 @@ export function sumOperatingWindow(date: string) {
   return { openTime: '08:30', closeTime: weekday === 5 || weekday === 6 ? '03:00' : '01:00', closeDate: nextDate(date), overnight };
 }
 
+export function sumTimeOptions(date: string, includeNextDay = false) {
+  const window = sumOperatingWindow(date);
+  if (!window) return [];
+  const options = [] as { value: string; label: string }[];
+  for (let minute = timeToMinutes(window.openTime)!; minute <= 23 * 60 + 30; minute += 30) {
+    const hours = String(Math.floor(minute / 60)).padStart(2, '0');
+    const minutes = String(minute % 60).padStart(2, '0');
+    options.push({ value: `${hours}:${minutes}`, label: `${hours}:${minutes}` });
+  }
+  if (includeNextDay) {
+    for (let minute = 0; minute <= timeToMinutes(window.closeTime)!; minute += 30) {
+      const hours = String(Math.floor(minute / 60)).padStart(2, '0');
+      const minutes = String(minute % 60).padStart(2, '0');
+      options.push({ value: `${hours}:${minutes}`, label: `${hours}:${minutes} (día siguiente)` });
+    }
+  }
+  return options;
+}
+
 export function reservationEndDate(date: string, startTime: string, endTime: string) {
   const start = timeToMinutes(startTime);
   const end = timeToMinutes(endTime);
