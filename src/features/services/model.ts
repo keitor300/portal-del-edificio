@@ -42,8 +42,8 @@ function nextDate(date: string) {
 export function sumOperatingWindow(date: string) {
   if (!validDate(date)) return null;
   const weekday = new Date(`${date}T12:00:00`).getDay();
-  const overnight = weekday === 5 || weekday === 6;
-  return { openTime: '10:00', closeTime: overnight ? '03:00' : '22:00', closeDate: overnight ? nextDate(date) : date, overnight };
+  const overnight = true;
+  return { openTime: '08:30', closeTime: weekday === 5 || weekday === 6 ? '03:00' : '01:00', closeDate: nextDate(date), overnight };
 }
 
 export function reservationEndDate(date: string, startTime: string, endTime: string) {

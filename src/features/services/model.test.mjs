@@ -41,6 +41,12 @@ test('free ranges collide precisely and legacy reservations remain conservative'
   assert.equal(slotUnavailable('2026-09-06', '17:00', [{ ...reservation, time: '17:00', endTime: undefined }], settings, now), 'Ese horario se superpone con otra reserva.');
 });
 test('friday and saturday allow ranges through 03:00 the next day', () => {
+  assert.equal(sumOperatingWindow('2026-09-06')?.openTime, '08:30');
+  assert.equal(sumOperatingWindow('2026-09-06')?.closeTime, '01:00');
+  assert.equal(sumOperatingWindow('2026-09-06')?.closeDate, '2026-09-07');
+  assert.ok(validBookingRange('2026-09-06', '08:30', '09:00'));
+  assert.ok(validBookingRange('2026-09-06', '23:30', '00:30'));
+  assert.equal(validBookingRange('2026-09-06', '23:30', '01:30'), null);
   assert.equal(sumOperatingWindow('2026-09-11')?.closeDate, '2026-09-12');
   assert.equal(sumOperatingWindow('2026-09-11')?.closeTime, '03:00');
   assert.equal(reservationEndDate('2026-09-11', '23:30', '02:00'), '2026-09-12');
