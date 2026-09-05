@@ -1,5 +1,9 @@
 # Deploy QA
 
-Pending production URL. Local validation is complete before deployment.
+Production deployment verified on 2026-09-05.
 
-Checks to repeat against the public URL: home, direct internal route refresh, role switch, owner bottom navigation, admin notice creation, SUM booking, local persistence, and asset loading at 390px and desktop.
+URL: https://portal-del-edificio.vercel.app
+Deployment: https://portal-del-edificio-mrqddzt17-ksixs-projects.vercel.app
+Status: READY. Vercel project: `portal-del-edificio` in team `ksixs-projects`.
+
+Checks completed against the public URL with Playwright/Edge fallback because native CUA browser initialization was unavailable: home, direct internal route refresh, role switch, owner bottom navigation, admin notice creation, local persistence, SUM route, and image loading at 390px and 1440px. HTTP status was 200 for each checked direct route. Production images were additionally awaited until complete before asserting natural dimensions.
