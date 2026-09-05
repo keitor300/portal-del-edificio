@@ -1,6 +1,6 @@
-# Portal del Edificio
+# Edificio 13 y 34
 
-V1 demo funcional de un portal digital para un consorcio de 52 unidades.
+V1 demo funcional de la web institucional y portal operativo de un consorcio de 52 unidades.
 
 ## Desarrollo
 
@@ -20,13 +20,13 @@ npm test
 npm run build
 ```
 
-## Demo
+## Estructura pública y demo
 
-La app tiene dos vistas accesibles desde el selector superior: Propietario y Administración. Las modificaciones de avisos, reuniones, finanzas, encuestas, reclamos y reservas se guardan en `localStorage` y se reflejan en ambas vistas dentro del mismo navegador. Administración incluye “Restablecer datos demo”.
+La portada pública vive en `/` y presenta novedades, edificio, contacto y fotografías reales. La experiencia operativa demo vive en `/demo/propietario` y `/demo/administracion`; no requiere login. Las modificaciones de avisos, reuniones, finanzas, encuestas, reclamos y reservas se guardan en `localStorage` y se reflejan en ambas vistas dentro del mismo navegador. Administración incluye “Restablecer datos demo”.
 
 La importación de XLSX, XLS y CSV se procesa completamente en el navegador; el archivo no se sube a ningún servidor.
 
-Esta versión no incluye autenticación real, roles seguros, padrón de propietarios, backend, pagos, notificaciones reales, votación legal ni contactos oficiales de emergencia. Todos los datos son ficticios.
+Esta versión no incluye autenticación real, roles seguros, padrón de propietarios, backend, pagos, notificaciones reales, votación legal ni contactos oficiales de emergencia. La portada marca las novedades y recorridos operativos como demo. Todos los datos son ficticios.
 
 ## Deploy
 
