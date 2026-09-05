@@ -1,0 +1,1 @@
+export { serviceSeed } from './model';
