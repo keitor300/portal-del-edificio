@@ -1,4 +1,4 @@
 # Status
 
-Creative Gate CLOSED. Media Gate CLOSED. Public homepage and demo split implemented.
-GitHub keitor300 and Vercel CLI authentication verified. Production deployed and smoke-tested at https://portal-del-edificio.vercel.app. Commit c2e9f29.
+Creative Gate CLOSED. Media Gate CLOSED. Public homepage and both demos implemented.
+GitHub keitor300 and Vercel CLI authentication verified. Administration simplification, four-section navigation, grouped menu and bidirectional demo switch deployed and smoke-tested at https://portal-del-edificio.vercel.app. Commit 32b8e17.
