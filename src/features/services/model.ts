@@ -106,6 +106,13 @@ export function reservationsOverlap(first: Entity, second: Entity) {
   return !!firstRange && !!secondRange && firstRange.start < secondRange.end && secondRange.start < firstRange.end;
 }
 
+export function reservationTouchesDate(reservation: Entity, date: string) {
+  const range = reservationRange(reservation, true);
+  if (!range || !validDate(date)) return false;
+  const dayStart = calendarMinutes(date);
+  return range.start < dayStart + 24 * 60 && range.end > dayStart;
+}
+
 export function rangeUnavailable(date: string, startTime: string, endTime: string, reservations: Entity[], settings: Settings, now = new Date()) {
   if (!validDate(date)) return 'Elegí una fecha válida.';
   const range = validBookingRange(date, startTime, endTime);

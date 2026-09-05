@@ -4,7 +4,7 @@ import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, id, today } from '../../lib/utils';
-import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, rangeUnavailable, reservationEndsAt, sameUnit, sumOperatingWindow, SUM_SLOTS, validBookingRange, validDate } from './model';
+import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, rangeUnavailable, reservationEndsAt, reservationTouchesDate, sameUnit, sumOperatingWindow, SUM_SLOTS, validBookingRange, validDate } from './model';
 import './services.css';
 
 export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndChange }: { date: string; startTime: string; endTime: string; onStartChange: (value: string) => void; onEndChange: (value: string) => void }) {
@@ -26,7 +26,7 @@ export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndC
 
 export function CommunityAvailability({ date }: { date: string }) {
   const { data } = usePortal();
-  const reservations = data.reservations.filter(item => isValidReservation(item) && activeReservation(item) && item.date === date).sort((a, b) => `${a.time}${a.unit}`.localeCompare(`${b.time}${b.unit}`));
+  const reservations = data.reservations.filter(item => isValidReservation(item) && activeReservation(item) && reservationTouchesDate(item, date)).sort((a, b) => `${a.date}${a.time}${a.unit}`.localeCompare(`${b.date}${b.time}${b.unit}`));
   return <section className="sum-community-availability" aria-labelledby="sum-community-title">
     <div className="section-heading sum-community-heading">
       <div><h3 id="sum-community-title">Disponibilidad de todas las unidades</h3><p className="muted">Las reservas de otros propietarios son visibles para evitar confusiones.</p></div>
@@ -143,7 +143,7 @@ export function AdminSum() {
     event.preventDefault();
     if (!validDate(date) || date < today()) { setError('Elegí hoy o una fecha futura.'); return; }
     if (data.settings.blockedDates.includes(date)) { setError('La fecha ya está bloqueada.'); return; }
-    if (data.reservations.some(item => isValidReservation(item) && item.date === date && activeReservation(item))) { setError('La fecha tiene reservas. Cancelalas antes de bloquear el día.'); return; }
+    if (data.reservations.some(item => isValidReservation(item) && activeReservation(item) && reservationTouchesDate(item, date))) { setError('La fecha tiene reservas. Cancelalas antes de bloquear el día.'); return; }
     setSettings({ blockedDates: [...data.settings.blockedDates, date].sort() });
     setError(''); notify('Fecha bloqueada en la demo.');
   }

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 
 const bundle = await build({ entryPoints: [new URL('./model.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1')], bundle: true, write: false, format: 'esm', platform: 'node' });
-const { slotUnavailable, rangeUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt, reservationEndDate, sumOperatingWindow, validBookingRange } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
+const { slotUnavailable, rangeUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt, reservationEndDate, reservationTouchesDate, sumOperatingWindow, validBookingRange } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 const settings = { rules: 'Reglamento demo', blockedDates: [], openingBalance: 0, seedDate: '2026-09-05' };
 const now = new Date('2026-09-05T09:00:00');
 const reservation = { id: 'booking', title: 'SUM', description: '', date: '2026-09-06', time: '10:00', endTime: '15:00', unit: '3A', status: 'Confirmada' };
@@ -47,6 +47,12 @@ test('friday and saturday allow ranges through 03:00 the next day', () => {
   assert.ok(validBookingRange('2026-09-11', '23:30', '02:15'));
   assert.equal(validBookingRange('2026-09-11', '23:30', '04:00'), null);
   assert.equal(validBookingRange('2026-09-06', '21:00', '02:00'), null);
+});
+test('overnight reservations remain visible and block the following calendar date', () => {
+  const overnight = { ...reservation, date: '2026-09-11', time: '23:30', endTime: '02:15', endDate: '2026-09-12' };
+  assert.equal(reservationTouchesDate(overnight, '2026-09-11'), true);
+  assert.equal(reservationTouchesDate(overnight, '2026-09-12'), true);
+  assert.equal(reservationTouchesDate(overnight, '2026-09-13'), false);
 });
 test('reservation validation rejects malformed dates, times and reversed ranges without hiding valid slots', () => {
   assert.equal(isValidReservation({ ...reservation, date: '2026-02-30' }), false);
