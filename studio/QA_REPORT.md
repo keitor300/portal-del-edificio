@@ -24,8 +24,10 @@ The demo uses local browser persistence by design. A fresh browser starts with s
 - Visual direction: quiet white/neutral surfaces, forest green action accent, real supplied building photography, large controls, open lists and five owner areas.
 - Public homepage critic gate: the duplicated featured-news/list pattern was removed; the homepage now exposes six functional access points, a SUM hero CTA, a dedicated SUM module, building status/work progress, and all supplied building photographs. Verified at 390px and 1440px with no console errors, broken images, or horizontal overflow.
 - Public interaction check: all six homepage action links resolve, the SUM CTA opens the real booking form, and a confirmed booking persists in local browser storage.
-- Owner simplification critic gate: the owner navigation now has exactly four items (Inicio, Novedades, Mi edificio and Menú); the owner header no longer exposes the administration role switch; the owner home exposes three primary actions and the full feature set remains available in four themed menu groups.
-- Owner responsive sweep: `/demo/propietario` and `/demo/propietario/mas` were checked at 390px and 1440px; administration was checked at 390px; all had zero horizontal overflow, broken images, or console errors.
+- Owner simplification critic gate: the owner navigation now has exactly four items (Inicio, Novedades, Mi edificio and Menú); the owner home exposes three primary actions and the full feature set remains available in four themed menu groups.
+- Administration simplification critic gate: the administration navigation now has exactly four items (Inicio, Comunicaciones, Finanzas and Menú); the home preserves five current actions as a readable prioritized list, while the secondary tools are grouped under Operación, Comunidad and Información.
+- Demo switcher check: both headers expose compact Propietario and Administración controls; navigation was verified in both directions from `/demo/propietario` and `/demo/administracion`.
+- Administration responsive sweep: `/demo/administracion` and `/demo/administracion/menu` were checked at 390px and `/demo/administracion` at 1440px; all had zero horizontal overflow, broken images, or console errors. The new-avisos action opened its real form and the menu links resolved to the existing admin modules.
 
 ## Known demo boundaries
 
