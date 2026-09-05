@@ -4,7 +4,7 @@ import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, id, today } from '../../lib/utils';
-import { activeReservation, bookingError, OWNER_UNIT, sameUnit, slotUnavailable, SUM_SLOTS, validDate } from './model';
+import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, reservationEndsAt, sameUnit, slotUnavailable, SUM_SLOTS, validDate } from './model';
 import './services.css';
 
 export function BookingForm({ admin = false }: { admin?: boolean }) {
@@ -45,7 +45,7 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
 
   return <>
     <form onSubmit={review} className="services-booking-form">
-      {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
+      {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input aria-label="Unidad" required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
       <Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setTime(''); setError(''); }} /></Field>
       <fieldset className="services-slots"><legend>Turnos disponibles</legend><div className="services-slot-options">
         {SUM_SLOTS.map(item => {
@@ -76,8 +76,9 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
   const [filter, setFilter] = useState('Próximas');
   const [unit, setUnit] = useState('');
   const now = new Date();
-  const reservations = data.reservations.filter(item => admin || sameUnit(item.unit)).filter(item => {
-    const ended = new Date(`${item.date}T${item.endTime || '23:59'}:00`) < now;
+  const reservations = data.reservations.filter(item => isValidReservation(item) && (admin || sameUnit(item.unit))).filter(item => {
+    const end = reservationEndsAt(item);
+    const ended = end !== null && end < now.getTime();
     return (filter === 'Todas' || (filter === 'Canceladas' ? !activeReservation(item) : activeReservation(item) && !ended)) &&
       (!unit.trim() || (item.unit ?? '').toLowerCase().includes(unit.trim().toLowerCase()));
   }).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
@@ -89,7 +90,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
     </div>
     <div className="list">{reservations.length ? reservations.map(item => <div className="list-row" key={item.id}>
       <div className="row-main"><strong>{formatDate(item.date, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime} · Unidad {item.unit}</p><span className={`status ${activeReservation(item) ? 'status-green' : ''}`}>{item.status || 'Confirmada'}</span></div>
-      {activeReservation(item) && new Date(`${item.date}T${item.endTime || '23:59'}:00`) > now && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
+      {activeReservation(item) && (reservationEndsAt(item) ?? 0) > now.getTime() && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
     </div>) : <p className="empty">No hay reservas para este filtro.</p>}</div>
     {cancel && <Confirm title="Cancelar reserva" description={`Se liberará el turno del ${formatDate(cancel.date)} de ${cancel.time} a ${cancel.endTime}, unidad ${cancel.unit}.`} onClose={() => setCancel(undefined)} onConfirm={() => { update('reservations', cancel.id, { status: 'Cancelada' }); notify('Reserva cancelada en la demo. El turno vuelve a estar disponible.'); }} />}
   </section>;
@@ -116,7 +117,7 @@ export function AdminSum() {
     event.preventDefault();
     if (!validDate(date) || date < today()) { setError('Elegí hoy o una fecha futura.'); return; }
     if (data.settings.blockedDates.includes(date)) { setError('La fecha ya está bloqueada.'); return; }
-    if (data.reservations.some(item => item.date === date && activeReservation(item))) { setError('La fecha tiene reservas. Cancelalas antes de bloquear el día.'); return; }
+    if (data.reservations.some(item => isValidReservation(item) && item.date === date && activeReservation(item))) { setError('La fecha tiene reservas. Cancelalas antes de bloquear el día.'); return; }
     setSettings({ blockedDates: [...data.settings.blockedDates, date].sort() });
     setError(''); notify('Fecha bloqueada en la demo.');
   }
@@ -136,6 +137,6 @@ export function AdminSum() {
       <div className="list">{[...data.settings.blockedDates].sort().map(blocked => <div className="list-row" key={blocked}><div className="row-main"><strong>{formatDate(blocked, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p className="muted">Todos los turnos bloqueados</p></div><button className="button secondary" aria-label={`Desbloquear ${formatDate(blocked)}`} onClick={() => { setSettings({ blockedDates: data.settings.blockedDates.filter(item => item !== blocked) }); notify('Fecha desbloqueada en la demo.'); }}><Unlock size={18} aria-hidden="true" />Desbloquear</button></div>)}</div>
       {!data.settings.blockedDates.length && <p className="empty">No hay fechas bloqueadas.</p>}
     </section>
-    {editingRules && <Modal title="Editar reglamento del SUM" wide onClose={() => setEditingRules(false)}><form onSubmit={saveRules}><Field label="Reglamento"><textarea rows={10} maxLength={10000} required value={rules} onChange={event => setRules(event.target.value)} /></Field><div className="form-actions"><button type="button" className="button secondary" onClick={() => setEditingRules(false)}>Volver</button><button className="button" type="submit" disabled={!rules.trim()}><Save size={18} aria-hidden="true" />Guardar reglamento</button></div></form></Modal>}
+    {editingRules && <Modal title="Editar reglamento del SUM" wide onClose={() => setEditingRules(false)}><form onSubmit={saveRules}><Field label="Reglamento"><textarea aria-label="Reglamento" rows={10} maxLength={10000} required value={rules} onChange={event => setRules(event.target.value)} /></Field><div className="form-actions"><button type="button" className="button secondary" onClick={() => setEditingRules(false)}>Volver</button><button className="button" type="submit" disabled={!rules.trim()}><Save size={18} aria-hidden="true" />Guardar reglamento</button></div></form></Modal>}
   </>;
 }

@@ -31,8 +31,8 @@ function IssueForm({ onClose, onCreated }: { onClose: () => void; onCreated: (id
 
   return <Modal title="Nuevo reclamo" onClose={onClose} wide><form onSubmit={submit} className="services-composer">
     <p className="muted">Unidad 7B · Registro local de demostración. Para una situación de riesgo, consultá <Link to="/servicios/urgencias" onClick={onClose}>Urgencias</Link>.</p>
-    <Field label="Categoría"><select required value={category} onChange={event => setCategory(event.target.value)}><option value="">Elegir categoría</option>{ISSUE_CATEGORIES.map(value => <option key={value}>{value}</option>)}</select></Field>
-    <Field label="¿Qué ocurrió?" hint="Indicá el lugar y una descripción breve."><textarea required rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} /></Field>
+    <Field label="Categoría"><select aria-label="Categoría" required value={category} onChange={event => setCategory(event.target.value)}><option value="">Elegir categoría</option>{ISSUE_CATEGORIES.map(value => <option key={value}>{value}</option>)}</select></Field>
+    <Field label="¿Qué ocurrió?" hint="Indicá el lugar y una descripción breve."><textarea aria-label="¿Qué ocurrió?" required rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} /></Field>
     <Field label="Foto (opcional)" hint="JPG, PNG o WebP. Hasta 1 MB."><input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={async event => {
       const file = event.target.files?.[0]; event.target.value = '';
       if (!file) return;

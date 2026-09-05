@@ -9,6 +9,15 @@ export const SUM_SLOTS = [
   { time: '17:00', endTime: '22:00', label: '17:00 a 22:00' },
 ] as const;
 
+export type SumSlot = typeof SUM_SLOTS[number];
+
+export function timeToMinutes(value: string | undefined) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+  const [hours, minutes] = value.split(':').map(Number);
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
 export function validDate(date: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
   const parsed = new Date(`${date}T12:00:00`);
@@ -16,8 +25,35 @@ export function validDate(date: string) {
     parsed.getMonth() + 1 === Number(date.slice(5, 7)) && parsed.getDate() === Number(date.slice(8, 10));
 }
 
-export const activeReservation = (reservation: Entity) => !['cancelada', 'cancelado', 'cancelled'].includes((reservation.status ?? '').toLowerCase());
+export const activeReservation = (reservation: Entity) => !['cancelada', 'cancelado', 'cancelled'].includes((reservation.status ?? '').trim().toLowerCase());
 export const sameUnit = (unit: string | undefined, expected = OWNER_UNIT) => (unit ?? '').replace(/^unidad\s*/i, '').replace(/\s/g, '').toUpperCase() === expected.toUpperCase();
+
+export function reservationRange(reservation: Entity, conservative = false) {
+  const start = timeToMinutes(reservation.time);
+  const fallbackEnd = SUM_SLOTS.find(slot => slot.time === reservation.time)?.endTime;
+  const end = timeToMinutes(reservation.endTime ?? fallbackEnd) ?? (conservative && !reservation.endTime ? 24 * 60 : null);
+  if (!validDate(reservation.date) || start === null || end === null || end <= start) return null;
+  return { start, end };
+}
+
+export function isValidReservation(reservation: Entity) {
+  return reservationRange(reservation) !== null;
+}
+
+export function reservationEndsAt(reservation: Entity) {
+  const range = reservationRange(reservation);
+  if (!range) return null;
+  const endTime = reservation.endTime ?? SUM_SLOTS.find(slot => slot.time === reservation.time)?.endTime;
+  if (!endTime) return null;
+  return new Date(`${reservation.date}T${endTime}:00`).getTime();
+}
+
+export function reservationsOverlap(first: Entity, second: Entity) {
+  if (first.date !== second.date) return false;
+  const firstRange = reservationRange(first);
+  const secondRange = reservationRange(second, true);
+  return !!firstRange && !!secondRange && firstRange.start < secondRange.end && secondRange.start < firstRange.end;
+}
 
 export function slotUnavailable(date: string, time: string, reservations: Entity[], settings: Settings, now = new Date()) {
   const slot = SUM_SLOTS.find(item => item.time === time);
@@ -25,8 +61,8 @@ export function slotUnavailable(date: string, time: string, reservations: Entity
   if (!slot) return 'Elegí un turno.';
   if (new Date(`${date}T${time}:00`).getTime() <= now.getTime()) return 'Este turno ya pasó.';
   if (settings.blockedDates.includes(date)) return 'Fecha bloqueada por administración.';
-  if (reservations.some(item => item.date === date && activeReservation(item) &&
-    (!item.time || (item.time < slot.endTime && (item.endTime ?? SUM_SLOTS.find(s => s.time === item.time)?.endTime ?? '23:59') > slot.time)))) {
+  const candidate = { id: 'candidate', title: '', description: '', date, time: slot.time, endTime: slot.endTime };
+  if (reservations.some(item => activeReservation(item) && reservationsOverlap(candidate, item))) {
     return 'Turno reservado.';
   }
   return '';

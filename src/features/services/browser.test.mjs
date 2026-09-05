@@ -5,23 +5,13 @@ import { createServer } from 'vite';
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-// Mount only the owned routes so service workflows remain testable while the app shell is being integrated.
+// Mount the app-owned service and notice routes through a real Vite source module.
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const routes = [
-  ['/servicios', 'ServicesPage'], ['/servicios/sum', 'SumPage'], ['/servicios/reclamos', 'IssuesPage'],
-  ['/servicios/chat', 'ChatPage'], ['/servicios/contactos', 'ContactsPage'], ['/servicios/urgencias', 'UrgenciesPage'],
-  ['/admin/servicios', 'AdminServicesPage'],
+  '/servicios', '/servicios/sum', '/servicios/reclamos', '/servicios/chat', '/servicios/contactos', '/servicios/urgencias', '/admin/servicios',
+  '/demo/propietario/novedades', '/demo/propietario/novedades/aviso-1', '/demo/administracion/comunicaciones', '/demo/administracion/comunicaciones/aviso-1',
 ];
-const html = `<!doctype html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Servicios QA</title>
-<style>body{font-family:Arial,sans-serif;color:#202923;margin:0}main{max-width:1100px;margin:auto;padding:20px}*{box-sizing:border-box}label.field{display:flex;flex-direction:column;gap:6px}input,select,textarea,button{font:inherit}dialog{max-width:calc(100% - 32px);width:700px;max-height:90vh;overflow:auto}.modal-heading,.form-actions,.section-heading{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}.list-row{display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid #ddd}.section{margin-top:32px}.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px}.gateway{display:flex;gap:16px;padding:20px}.gateway small{display:block}</style></head>
-<body><main id="root"></main><script type="module">
-import React from '/node_modules/.vite/deps/react.js';
-import {createRoot} from '/node_modules/.vite/deps/react-dom_client.js';
-import {BrowserRouter,Routes,Route} from '/node_modules/.vite/deps/react-router-dom.js';
-import {PortalProvider} from '/src/hooks/usePortal.tsx';
-import * as features from '/src/features/services/index.ts';
-createRoot(document.getElementById('root')).render(React.createElement(PortalProvider,null,React.createElement(BrowserRouter,null,React.createElement(Routes,null,${JSON.stringify(routes)}.map(([path,name])=>React.createElement(Route,{key:path,path,element:React.createElement(features[name])})))));
-</script></body></html>`;
+const html = '<!doctype html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><title>Portal QA</title></head><body><main id="root"></main><script type="module" src="/src/features/services/browser-harness.tsx"></script></body></html>';
 let server;
 let browser;
 let context;
@@ -30,7 +20,7 @@ let baseURL;
 const errors = [];
 
 before(async () => {
-  server = await createServer({ root, server: { host: '127.0.0.1', port: 5184, strictPort: false }, plugins: [{
+  server = await createServer({ root, appType: 'custom', server: { host: '127.0.0.1', port: 5184, strictPort: false }, plugins: [{
     name: 'services-test-harness', configureServer(vite) {
       vite.middlewares.use((request, response, next) => {
         if (!request.headers.accept?.includes('text/html')) return next();
@@ -96,6 +86,47 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await expect(page.getByRole('region', { name: 'Reglamento del SUM' })).toHaveText('Reglamento actualizado para la prueba.');
 });
 
+test('administration notices persist, keep their role context and update the owner view', async () => {
+  const title = 'Aviso QA de comunicaciones';
+  const editedTitle = 'Aviso QA actualizado';
+  await goto('/demo/administracion/comunicaciones');
+  await page.getByRole('button', { name: 'Nuevo aviso' }).click();
+  const createDialog = page.getByRole('dialog', { name: 'Nuevo aviso' });
+  await createDialog.getByLabel('Título').fill(title);
+  await createDialog.getByLabel('Mensaje').fill('Contenido de prueba para verificar la publicación.');
+  await createDialog.getByRole('button', { name: 'Publicar aviso' }).click();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+
+  const adminLink = page.getByRole('link', { name: new RegExp(title) }).first();
+  const adminHref = await adminLink.getAttribute('href');
+  assert.match(adminHref ?? '', /^\/demo\/administracion\/comunicaciones\//);
+  await adminLink.click();
+  await expect(page).toHaveURL(/\/demo\/administracion\/comunicaciones\/[^/]+$/);
+  await page.getByRole('button', { name: 'Marcar como leído' }).click();
+  await expect(page.getByRole('button', { name: 'Marcado como leído' })).toBeDisabled();
+
+  await goto('/demo/propietario/novedades');
+  const ownerLink = page.getByRole('link', { name: new RegExp(title) }).first();
+  const ownerHref = await ownerLink.getAttribute('href');
+  assert.match(ownerHref ?? '', /^\/demo\/propietario\/novedades\//);
+  await expect(ownerLink).toBeVisible();
+
+  await goto('/demo/administracion/comunicaciones');
+  const noticeRow = page.locator('.list > div').filter({ hasText: title });
+  await noticeRow.getByRole('button', { name: `Editar ${title}` }).click();
+  const editDialog = page.getByRole('dialog', { name: 'Editar aviso' });
+  await editDialog.getByLabel('Título').fill(editedTitle);
+  await editDialog.getByRole('button', { name: 'Publicar aviso' }).click();
+  await expect(page.getByText(editedTitle, { exact: true })).toBeVisible();
+
+  const editedRow = page.locator('.list > div').filter({ hasText: editedTitle });
+  await editedRow.getByRole('button', { name: 'Fijar' }).click();
+  await expect(editedRow.getByRole('button', { name: 'Desfijar' })).toBeVisible();
+  await editedRow.getByRole('button', { name: `Eliminar ${editedTitle}` }).click();
+  await page.getByRole('dialog', { name: 'Confirmar eliminación' }).getByRole('button', { name: 'Confirmar' }).click();
+  await expect(page.getByText(editedTitle, { exact: true })).toHaveCount(0);
+});
+
 test('issue photo and dedicated conversation persist; admin filters, replies, resolves and reopens', async () => {
   await goto('/servicios/reclamos');
   await page.getByRole('button', { name: 'Nuevo reclamo' }).click();
@@ -155,7 +186,7 @@ test('central conversation stays separate and attachments survive reload and rol
 test('every service route renders at mobile, tablet and desktop sizes without overflow or broken images', async () => {
   for (const width of [320, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const [path] of routes) {
+    for (const path of routes) {
       await goto(path);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path}: overflow at ${width}px`);
       assert.equal(await page.locator('img').evaluateAll(images => images.filter(image => !image.complete || image.naturalWidth === 0).length), 0, `${path}: broken image`);

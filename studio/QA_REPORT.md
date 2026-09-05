@@ -6,30 +6,29 @@ None found.
 
 ## P1 - IMPORTANT
 
-None found after correction. The first route sweep found a missing illustrative lost-item image; the seed now uses the accessible no-image state.
+None found in the audited demo flows.
 
-## P2 - POLISH
+## P2 - POLISH / BOUNDARIES
 
-The demo uses local browser persistence by design. A fresh browser starts with seed data; changes do not sync across devices.
+- La demo persiste en `localStorage` y sincroniza cambios entre pestañas del mismo navegador mediante el evento `storage`. No es todavía un sistema multiusuario: no hay autenticación, backend, base de datos ni control transaccional entre dispositivos.
+- Los números de visualización de avisos son datos simulados y compartidos dentro de la demo local.
 
 ## Evidence
 
 - Build: `npm run build` passed.
 - TypeScript: `npm run typecheck` passed.
 - Lint: `npm run lint` passed.
-- Unit/model tests: 11 passed for finance import and SUM booking rules.
-- Functional browser path: admin creates notice and owner sees it; owner creates a SUM booking that remains occupied after refresh; owner votes once; admin import route renders; no console errors.
-- Render sweep: 26 routes at 320, 390, 768 and 1280px (104 checks), zero horizontal overflow and zero broken images.
-- Visual screenshots: `studio/.qa/home.png` (390px) and `studio/.qa/admin-desktop.png` (1440px). Both inspected after rendering.
-- Visual direction: quiet white/neutral surfaces, forest green action accent, real supplied building photography, large controls, open lists and five owner areas.
-- Public homepage critic gate: the duplicated featured-news/list pattern was removed; the homepage now exposes six functional access points, a SUM hero CTA, a dedicated SUM module, building status/work progress, and all supplied building photographs. Verified at 390px and 1440px with no console errors, broken images, or horizontal overflow.
-- Public interaction check: all six homepage action links resolve, the SUM CTA opens the real booking form, and a confirmed booking persists in local browser storage.
-- Owner simplification critic gate: the owner navigation now has exactly four items (Inicio, Novedades, Mi edificio and Menú); the owner home exposes three primary actions and the full feature set remains available in four themed menu groups.
-- Administration simplification critic gate: the administration navigation now has exactly four items (Inicio, Comunicaciones, Finanzas and Menú); the home preserves five current actions as a readable prioritized list, while the secondary tools are grouped under Operación, Comunidad and Información.
-- Demo switcher check: both headers expose compact Propietario and Administración controls; navigation was verified in both directions from `/demo/propietario` and `/demo/administracion`.
-- Administration responsive sweep: `/demo/administracion` and `/demo/administracion/menu` were checked at 390px and `/demo/administracion` at 1440px; all had zero horizontal overflow, broken images, or console errors. The new-avisos action opened its real form and the menu links resolved to the existing admin modules.
+- Unified suite: `npm test` passed: 13 unit/model tests, 5 community tests and 6 browser workflow tests.
+- Browser workflows: SUM reservation across owner/admin, reload persistence, cross-role collisions, cancellation, blocked dates, regulation editing, notice CRUD/read/pin flow, issue photo/conversation lifecycle, central chat persistence and role switching.
+- Responsive sweep: services and notice routes at 320, 390, 768 and 1280px; zero horizontal overflow and zero broken images.
+- Accessibility smoke: Axe checks on service routes, modal focus return, reduced-motion behavior and no console errors in the browser harness.
+- Production smoke before release: public owner/admin routes, notice links, SUM page and image loading were reachable without console errors.
 
-## Known demo boundaries
+## Fixed findings
 
-- No real authentication, role security, backend, payment, official emergency contacts, push/email/WhatsApp, or legal voting.
-- Excel files are parsed locally and never uploaded.
+- The service browser harness used an inline Vite HTML proxy that failed before rendering. It now uses a real source entry module and React/Vite HTML transformation.
+- Persisted demo data now normalizes every collection, repairs partial schemas, validates dates and deduplicates blocked dates.
+- SUM availability now uses one validated date/time range model, trims cancelled statuses, rejects malformed reservations and prevents invalid records from appearing as upcoming reservations.
+- Administration notice links retain the administration context; owner links retain the owner context.
+- `/demo/administracion/servicios/sum` redirects to the canonical administrative SUM tab.
+- File inputs no longer create horizontal overflow at 320px.

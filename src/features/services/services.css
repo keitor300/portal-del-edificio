@@ -2,6 +2,7 @@
 .services-page :is(button, input:not([type="checkbox"]), select, .button, .icon-button) { min-height: 48px; }
 .services-page :is(button, .icon-button) { min-width: 48px; }
 .services-page :is(input, select, textarea) { max-width: 100%; }
+.services-page input[type="file"] { width: 100%; min-width: 0; }
 .services-page :is(input, select, textarea, button, a):focus-visible { outline: 3px solid #245c48; outline-offset: 3px; }
 .services-page :is(h2, h3, p, strong, small, button, a, label, time) { overflow-wrap: anywhere; }
 .services-page .field { min-width: 0; }
