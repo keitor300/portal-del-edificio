@@ -12,8 +12,7 @@ export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndC
   const window = sumOperatingWindow(date);
   const feedback = startTime && endTime ? rangeUnavailable(date, startTime, endTime, data.reservations, data.settings) : '';
   const endOptions = sumTimeOptions(date, true).filter(option => !startTime || !!validBookingRange(date, startTime, option.value));
-  return <fieldset className="sum-range-picker">
-    <legend>Elegí el horario</legend>
+  return <fieldset className="sum-range-picker" aria-label="Horario de la reserva">
     <div className="sum-range-fields">
       <Field label="Desde"><select value={startTime} required onChange={event => onStartChange(event.target.value)}><option value="">Elegí una hora</option>{sumTimeOptions(date).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
       <span className="sum-range-separator" aria-hidden="true">a</span>
