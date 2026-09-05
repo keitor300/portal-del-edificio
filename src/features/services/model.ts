@@ -5,16 +5,8 @@ export const OWNER_UNIT = '7B';
 export const ISSUE_CATEGORIES = ['Agua', 'Ascensor', 'Gas', 'Electricidad', 'Limpieza', 'Otro'];
 export const ISSUE_STATUSES = ['Recibido', 'En curso', 'Resuelto'];
 export const SUM_SLOTS = [
-  { time: '10:00', endTime: '11:00', label: '10:00 a 11:00' },
-  { time: '11:00', endTime: '12:00', label: '11:00 a 12:00' },
-  { time: '12:00', endTime: '13:00', label: '12:00 a 13:00' },
-  { time: '13:00', endTime: '14:00', label: '13:00 a 14:00' },
-  { time: '14:00', endTime: '15:00', label: '14:00 a 15:00' },
-  { time: '17:00', endTime: '18:00', label: '17:00 a 18:00' },
-  { time: '18:00', endTime: '19:00', label: '18:00 a 19:00' },
-  { time: '19:00', endTime: '20:00', label: '19:00 a 20:00' },
-  { time: '20:00', endTime: '21:00', label: '20:00 a 21:00' },
-  { time: '21:00', endTime: '22:00', label: '21:00 a 22:00' },
+  { time: '10:00', endTime: '15:00', label: '10:00 a 15:00' },
+  { time: '17:00', endTime: '22:00', label: '17:00 a 22:00' },
 ] as const;
 
 export type SumSlot = typeof SUM_SLOTS[number];
@@ -36,12 +28,63 @@ export function validDate(date: string) {
 export const activeReservation = (reservation: Entity) => !['cancelada', 'cancelado', 'cancelled'].includes((reservation.status ?? '').trim().toLowerCase());
 export const sameUnit = (unit: string | undefined, expected = OWNER_UNIT) => (unit ?? '').replace(/^unidad\s*/i, '').replace(/\s/g, '').toUpperCase() === expected.toUpperCase();
 
+function calendarMinutes(date: string) {
+  const [year, month, day] = date.split('-').map(Number);
+  return Date.UTC(year, month - 1, day) / 60000;
+}
+
+function nextDate(date: string) {
+  const next = new Date(`${date}T12:00:00`);
+  next.setDate(next.getDate() + 1);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+}
+
+export function sumOperatingWindow(date: string) {
+  if (!validDate(date)) return null;
+  const weekday = new Date(`${date}T12:00:00`).getDay();
+  const overnight = weekday === 5 || weekday === 6;
+  return { openTime: '10:00', closeTime: overnight ? '03:00' : '22:00', closeDate: overnight ? nextDate(date) : date, overnight };
+}
+
+export function reservationEndDate(date: string, startTime: string, endTime: string) {
+  const start = timeToMinutes(startTime);
+  const end = timeToMinutes(endTime);
+  if (start === null || end === null || end === start) return date;
+  return end < start ? nextDate(date) : date;
+}
+
+export function validBookingRange(date: string, startTime: string, endTime: string) {
+  const window = sumOperatingWindow(date);
+  const start = timeToMinutes(startTime);
+  const end = timeToMinutes(endTime);
+  if (!window || start === null || end === null || start < timeToMinutes(window.openTime)!) return null;
+  const endDate = reservationEndDate(date, startTime, endTime);
+  if (!window.overnight && endDate !== date) return null;
+  if (window.overnight && endDate !== date && end > timeToMinutes(window.closeTime)!) return null;
+  if (endDate === date && end <= start) return null;
+  const absoluteStart = calendarMinutes(date) + start;
+  const absoluteEnd = calendarMinutes(endDate) + end;
+  if (absoluteEnd <= absoluteStart) return null;
+  if (absoluteEnd > calendarMinutes(window.closeDate) + timeToMinutes(window.closeTime)!) return null;
+  return { start: absoluteStart, end: absoluteEnd, endDate };
+}
+
 export function reservationRange(reservation: Entity, conservative = false) {
   const start = timeToMinutes(reservation.time);
   const fallbackEnd = SUM_SLOTS.find(slot => slot.time === reservation.time)?.endTime;
-  const end = timeToMinutes(reservation.endTime ?? fallbackEnd) ?? (conservative && !reservation.endTime ? 24 * 60 : null);
-  if (!validDate(reservation.date) || start === null || end === null || end <= start) return null;
-  return { start, end };
+  const endTime = reservation.endTime ?? fallbackEnd;
+  if (!validDate(reservation.date) || start === null) return null;
+  const parsedEnd = timeToMinutes(endTime);
+  if (parsedEnd === null && !(conservative && !reservation.endTime)) return null;
+  const absoluteStart = calendarMinutes(reservation.date) + start;
+  if (parsedEnd === null) return { start: absoluteStart, end: absoluteStart + 24 * 60 };
+  const booking = validBookingRange(reservation.date, reservation.time!, endTime!);
+  if (!booking || (reservation.endDate && reservation.endDate !== booking.endDate)) return null;
+  const endDate = reservation.endDate ?? (parsedEnd <= start ? nextDate(reservation.date) : reservation.date);
+  if (!validDate(endDate)) return null;
+  const end = calendarMinutes(endDate) + parsedEnd;
+  if (end <= absoluteStart) return null;
+  return { start: absoluteStart, end };
 }
 
 export function isValidReservation(reservation: Entity) {
@@ -53,34 +96,37 @@ export function reservationEndsAt(reservation: Entity) {
   if (!range) return null;
   const endTime = reservation.endTime ?? SUM_SLOTS.find(slot => slot.time === reservation.time)?.endTime;
   if (!endTime) return null;
-  return new Date(`${reservation.date}T${endTime}:00`).getTime();
+  const endDate = reservation.endDate ?? reservation.date;
+  return new Date(`${endDate}T${endTime}:00`).getTime();
 }
 
 export function reservationsOverlap(first: Entity, second: Entity) {
-  if (first.date !== second.date) return false;
   const firstRange = reservationRange(first);
   const secondRange = reservationRange(second, true);
   return !!firstRange && !!secondRange && firstRange.start < secondRange.end && secondRange.start < firstRange.end;
 }
 
-export function slotUnavailable(date: string, time: string, reservations: Entity[], settings: Settings, now = new Date()) {
-  const slot = SUM_SLOTS.find(item => item.time === time);
+export function rangeUnavailable(date: string, startTime: string, endTime: string, reservations: Entity[], settings: Settings, now = new Date()) {
   if (!validDate(date)) return 'Elegí una fecha válida.';
-  if (!slot) return 'Elegí un horario.';
-  if (new Date(`${date}T${time}:00`).getTime() <= now.getTime()) return 'Este horario ya pasó.';
-  if (settings.blockedDates.includes(date)) return 'Fecha bloqueada por administración.';
-  const candidate = { id: 'candidate', title: '', description: '', date, time: slot.time, endTime: slot.endTime };
-  if (reservations.some(item => activeReservation(item) && reservationsOverlap(candidate, item))) {
-    return 'Horario reservado.';
-  }
+  const range = validBookingRange(date, startTime, endTime);
+  if (!range) return 'Elegí un horario válido dentro del horario habilitado.';
+  if (new Date(`${date}T${startTime}:00`).getTime() <= now.getTime()) return 'La hora de inicio ya pasó.';
+  if (settings.blockedDates.includes(date) || settings.blockedDates.includes(range.endDate)) return 'Fecha bloqueada por administración.';
+  const candidate = { id: 'candidate', title: '', description: '', date, time: startTime, endTime, endDate: range.endDate };
+  if (reservations.some(item => activeReservation(item) && reservationsOverlap(candidate, item))) return 'Ese horario se superpone con otra reserva.';
   return '';
 }
 
-export function bookingError(date: string, time: string, unit: string, accepted: boolean, reservations: Entity[], settings: Settings) {
+export function slotUnavailable(date: string, time: string, reservations: Entity[], settings: Settings, now = new Date()) {
+  const slot = SUM_SLOTS.find(item => item.time === time);
+  return slot ? rangeUnavailable(date, slot.time, slot.endTime, reservations, settings, now) : 'Elegí un horario.';
+}
+
+export function bookingError(date: string, startTime: string, endTime: string, unit: string, accepted: boolean, reservations: Entity[], settings: Settings) {
   if (!unit.trim()) return 'Indicá la unidad.';
   if (!accepted) return 'Aceptá el reglamento para continuar.';
   if (!settings.rules.trim()) return 'Administración debe cargar el reglamento antes de reservar.';
-  return slotUnavailable(date, time, reservations, settings);
+  return rangeUnavailable(date, startTime, endTime, reservations, settings);
 }
 
 export function serviceSeed(): Pick<DemoData, 'reservations' | 'issues' | 'contacts'> {

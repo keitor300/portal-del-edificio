@@ -43,8 +43,13 @@ function normalizeMessages(value: unknown, fallback: Message[]): Message[] {
 function normalizeSettings(value: unknown, fallback: Settings): Settings {
   const raw = isRecord(value) ? value : {};
   const blockedDates = Array.isArray(raw.blockedDates) ? raw.blockedDates.filter(validDate) as string[] : fallback.blockedDates;
+  const storedRules = typeof raw.rules === 'string' ? raw.rules : '';
+  const legacyRules = [
+    /Horarios: 10 a 15 h o 17 a 22 h/,
+    /Horarios disponibles: de 10 a 15 h y de 17 a 22 h\. Cada reserva dura una hora/,
+  ];
   return {
-    rules: typeof raw.rules === 'string' ? raw.rules : fallback.rules,
+    rules: storedRules && !legacyRules.some(rule => rule.test(storedRules)) ? storedRules : fallback.rules,
     blockedDates: [...new Set(blockedDates)].sort(),
     openingBalance: typeof raw.openingBalance === 'number' && Number.isFinite(raw.openingBalance) ? raw.openingBalance : fallback.openingBalance,
     seedDate: validDate(raw.seedDate) ? raw.seedDate as string : fallback.seedDate,

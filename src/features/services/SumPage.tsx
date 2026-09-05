@@ -4,25 +4,23 @@ import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, id, today } from '../../lib/utils';
-import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, reservationEndsAt, sameUnit, slotUnavailable, SUM_SLOTS, validDate } from './model';
+import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, rangeUnavailable, reservationEndsAt, sameUnit, sumOperatingWindow, SUM_SLOTS, validBookingRange, validDate } from './model';
 import './services.css';
 
-export function SumTimePicker({ date, time, onTimeChange, admin = false }: { date: string; time: string; onTimeChange: (value: string) => void; admin?: boolean }) {
+export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndChange }: { date: string; startTime: string; endTime: string; onStartChange: (value: string) => void; onEndChange: (value: string) => void }) {
   const { data } = usePortal();
-  return <fieldset className="sum-time-picker">
-    <legend>Elegí un horario</legend>
-    <p className="muted">Cada opción dura una hora. Se puede reservar de 10:00 a 15:00 y de 17:00 a 22:00.</p>
-    <div className="sum-time-grid" role="radiogroup" aria-label="Horarios disponibles del SUM">
-      {SUM_SLOTS.map(item => {
-        const unavailable = slotUnavailable(date, item.time, data.reservations, data.settings);
-        return <label key={item.time} className="sum-time-option" data-disabled={!!unavailable} data-selected={time === item.time && !unavailable}>
-          <input type="radio" name={admin ? 'admin-sum-time' : 'owner-sum-time'} value={item.time} aria-label={item.label} checked={time === item.time} disabled={!!unavailable} onChange={() => onTimeChange(item.time)} />
-          <span><strong>{item.time}</strong><small>hasta {item.endTime}</small></span>
-          <em>{unavailable || 'Disponible'}</em>
-        </label>;
-      })}
+  const window = sumOperatingWindow(date);
+  const feedback = startTime && endTime ? rangeUnavailable(date, startTime, endTime, data.reservations, data.settings) : '';
+  return <fieldset className="sum-range-picker">
+    <legend>Elegí el horario</legend>
+    <p className="muted">Elegí libremente desde qué hora hasta qué hora querés usar el SUM.</p>
+    <div className="sum-range-fields">
+      <Field label="Desde"><input type="time" step="60" min={window?.openTime ?? '10:00'} max={window?.overnight ? '23:59' : '21:59'} value={startTime} required onChange={event => onStartChange(event.target.value)} /></Field>
+      <span className="sum-range-separator" aria-hidden="true">a</span>
+      <Field label="Hasta"><input type="time" step="60" min="00:00" max={window?.overnight ? '23:59' : window?.closeTime ?? '22:00'} value={endTime} required onChange={event => onEndChange(event.target.value)} /></Field>
     </div>
-    <p className="sum-time-break"><strong>15:00 a 17:00</strong> · Pausa del SUM, no reservable.</p>
+    <p className="sum-range-help">{window?.overnight ? 'Viernes y sábado: si la hora final es menor, continúa hasta el día siguiente. Se permite hasta las 03:00.' : 'De domingo a jueves se puede reservar hasta las 22:00. No se habilita el cruce de medianoche.'}</p>
+    {startTime && endTime && <p className={`sum-range-feedback ${feedback ? 'is-error' : 'is-ok'}`} role="status">{feedback || 'Este horario está disponible.'}</p>}
   </fieldset>;
 }
 
@@ -35,7 +33,7 @@ export function CommunityAvailability({ date }: { date: string }) {
       <span className="sum-community-date">{validDate(date) ? formatDate(date, { day: 'numeric', month: 'short' }) : 'Elegí una fecha'}</span>
     </div>
     {reservations.length ? <div className="sum-community-list">{reservations.map(item => <div className="sum-community-row" key={item.id}>
-      <div><strong>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime}</strong><span>Unidad {item.unit || 'sin indicar'}</span></div>
+      <div><strong>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime}</strong><span>Unidad {item.unit || 'sin indicar'}{item.endDate && item.endDate !== item.date ? ` · continúa el ${formatDate(item.endDate, { day: 'numeric', month: 'short' })}` : ''}</span></div>
       <span className="status status-green">Reservado</span>
     </div>)}</div> : <p className="empty">No hay reservas visibles para esta fecha. Los horarios habilitados aparecen arriba.</p>}
   </section>;
@@ -44,17 +42,18 @@ export function CommunityAvailability({ date }: { date: string }) {
 export function BookingForm({ admin = false }: { admin?: boolean }) {
   const { data, save, notify } = usePortal();
   const [date, setDate] = useState(today());
-  const [time, setTime] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [unit, setUnit] = useState(admin ? '' : OWNER_UNIT);
   const [acceptedRules, setAcceptedRules] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [confirmation, setConfirmation] = useState(false);
   const saving = useRef(false);
   const accepted = acceptedRules !== null && acceptedRules === data.settings.rules;
-  const slot = SUM_SLOTS.find(item => item.time === time);
+  const selectedRange = validBookingRange(date, startTime, endTime);
 
   function validate() {
-    const reason = bookingError(date, time, unit, accepted, data.reservations, data.settings);
+    const reason = bookingError(date, startTime, endTime, unit, accepted, data.reservations, data.settings);
     setError(reason);
     return !reason;
   }
@@ -66,13 +65,13 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
 
   function reserve() {
     if (saving.current) return;
-    if (!validate() || !slot) { setConfirmation(false); return; }
+    if (!validate() || !selectedRange) { setConfirmation(false); return; }
     saving.current = true;
     save('reservations', {
       id: id(), title: 'Reserva del SUM', description: admin ? 'Reserva cargada por administración. Reglamento aceptado.' : 'Reserva de propietario. Reglamento aceptado.',
-      date, time: slot.time, endTime: slot.endTime, unit: unit.trim().replace(/^unidad\s*/i, '').toUpperCase(), status: 'Confirmada', place: 'SUM',
+      date, time: startTime, endTime, endDate: selectedRange.endDate === date ? undefined : selectedRange.endDate, unit: unit.trim().replace(/^unidad\s*/i, '').toUpperCase(), status: 'Confirmada', place: 'SUM',
     });
-    setConfirmation(false); setTime(''); setAcceptedRules(null);
+    setConfirmation(false); setStartTime(''); setEndTime(''); setAcceptedRules(null);
     notify('Reserva guardada en la demo.');
     queueMicrotask(() => { saving.current = false; });
   }
@@ -80,8 +79,8 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
   return <>
     <form onSubmit={review} className="services-booking-form">
       {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input aria-label="Unidad" required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
-      <Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setTime(''); setError(''); }} /></Field>
-      <SumTimePicker date={date} time={time} admin={admin} onTimeChange={value => { setTime(value); setError(''); }} />
+      <Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setStartTime(''); setEndTime(''); setError(''); }} /></Field>
+      <SumRangePicker date={date} startTime={startTime} endTime={endTime} onStartChange={value => { setStartTime(value); setError(''); }} onEndChange={value => { setEndTime(value); setError(''); }} />
       <CommunityAvailability date={date} />
       <div><h3>Reglamento del SUM</h3><div className="services-rules" role="region" aria-label="Reglamento del SUM" tabIndex={0}>{data.settings.rules || 'El reglamento todavía no está cargado.'}</div></div>
       <label className="services-check"><input type="checkbox" checked={accepted} onChange={event => setAcceptedRules(event.target.checked ? data.settings.rules : null)} />{admin ? 'Confirmo la aceptación del reglamento por esta unidad.' : 'Leí y acepto el reglamento del SUM.'}</label>
@@ -90,7 +89,7 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
     </form>
     {confirmation && <Modal title="Confirmar reserva del SUM" onClose={() => setConfirmation(false)}>
       <p><strong>Unidad {unit.trim().replace(/^unidad\s*/i, '').toUpperCase()}</strong></p>
-      <p>{formatDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br />{slot?.label}</p>
+      <p>{formatDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br />{startTime} a {endTime}{selectedRange?.endDate !== date && ` · continúa el ${formatDate(selectedRange?.endDate ?? date, { weekday: 'long', day: 'numeric', month: 'long' })}`}</p>
       <p>Reglamento aceptado. La reserva se guardará en esta demo.</p>
       <div className="form-actions"><button className="button secondary" onClick={() => setConfirmation(false)}>Volver</button><button className="button" onClick={reserve}><Check size={18} aria-hidden="true" />Confirmar reserva</button></div>
     </Modal>}

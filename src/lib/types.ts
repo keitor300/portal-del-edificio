@@ -4,7 +4,7 @@ export interface Entity {
   id: string; title: string; description: string; date: string;
   category?: string; status?: string; pinned?: boolean; urgent?: boolean; read?: boolean; views?: number;
   attachment?: Attachment; image?: string; amount?: number; type?: string; provider?: string; period?: string; dueDate?: string;
-  time?: string; endTime?: string; place?: string; agenda?: string; summary?: string; unit?: string;
+  time?: string; endTime?: string; endDate?: string; place?: string; agenda?: string; summary?: string; unit?: string;
   options?: string[]; votes?: number[]; voted?: number; closed?: boolean; formal?: boolean;
   interested?: boolean; interests?: number; messages?: Message[]; progress?: number; startDate?: string;
   contact?: string; phone?: string; email?: string; milestones?: string[];
