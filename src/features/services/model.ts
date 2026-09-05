@@ -11,6 +11,29 @@ export const SUM_SLOTS = [
 
 export type SumSlot = typeof SUM_SLOTS[number];
 
+export const SUM_TIMELINE = [
+  { time: '10:00', endTime: '11:00', kind: 'bookable' },
+  { time: '11:00', endTime: '12:00', kind: 'bookable' },
+  { time: '12:00', endTime: '13:00', kind: 'bookable' },
+  { time: '13:00', endTime: '14:00', kind: 'bookable' },
+  { time: '14:00', endTime: '15:00', kind: 'bookable' },
+  { time: '15:00', endTime: '16:00', kind: 'break' },
+  { time: '16:00', endTime: '17:00', kind: 'break' },
+  { time: '17:00', endTime: '18:00', kind: 'bookable' },
+  { time: '18:00', endTime: '19:00', kind: 'bookable' },
+  { time: '19:00', endTime: '20:00', kind: 'bookable' },
+  { time: '20:00', endTime: '21:00', kind: 'bookable' },
+  { time: '21:00', endTime: '22:00', kind: 'bookable' },
+] as const;
+
+export type SumTimelineItem = typeof SUM_TIMELINE[number];
+export type SumTimelineState = 'available' | 'reserved' | 'break' | 'blocked' | 'past' | 'invalid';
+
+export type SumTimelineEntry = SumTimelineItem & {
+  state: SumTimelineState;
+  unit?: string;
+};
+
 export function timeToMinutes(value: string | undefined) {
   if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
   const [hours, minutes] = value.split(':').map(Number);
@@ -53,6 +76,19 @@ export function reservationsOverlap(first: Entity, second: Entity) {
   const firstRange = reservationRange(first);
   const secondRange = reservationRange(second, true);
   return !!firstRange && !!secondRange && firstRange.start < secondRange.end && secondRange.start < firstRange.end;
+}
+
+export function sumTimeline(date: string, reservations: Entity[], settings: Settings, now = new Date()): SumTimelineEntry[] {
+  return SUM_TIMELINE.map(item => {
+    if (!validDate(date)) return { ...item, state: 'invalid' };
+    if (item.kind === 'break') return { ...item, state: 'break' };
+    if (settings.blockedDates.includes(date)) return { ...item, state: 'blocked' };
+    if (new Date(`${date}T${item.time}:00`).getTime() <= now.getTime()) return { ...item, state: 'past' };
+
+    const candidate = { id: 'timeline', title: '', description: '', date, time: item.time, endTime: item.endTime };
+    const reservation = reservations.find(entry => activeReservation(entry) && reservationsOverlap(candidate, entry));
+    return reservation ? { ...item, state: 'reserved', unit: reservation.unit } : { ...item, state: 'available' };
+  });
 }
 
 export function slotUnavailable(date: string, time: string, reservations: Entity[], settings: Settings, now = new Date()) {

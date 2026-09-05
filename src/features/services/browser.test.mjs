@@ -58,6 +58,9 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await page.reload();
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
   await expect(page.getByRole('radio').first()).toBeDisabled();
+  await expect(page.getByText('Reservado · Unidad 7B', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/Unidad 3A/).first()).toBeVisible();
+  await expect(page.getByText('Pausa entre turnos', { exact: true }).first()).toBeVisible();
   await goto('/admin/servicios?tab=sum');
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
   await expect(page.getByRole('radio').first()).toBeDisabled();

@@ -19,6 +19,31 @@
 .services-booking-form { display: grid; gap: 18px; }
 .services-slots { border: 0; padding: 0; margin: 0; min-width: 0; }
 .services-slots legend { font-weight: 600; margin-bottom: 8px; }
+.sum-availability { display: grid; gap: 12px; padding: 16px; border: 1px solid #dce1dc; background: #fbfcfa; }
+.sum-availability-heading { align-items: flex-start; margin: 0; }
+.sum-availability-heading h3 { margin: 0 0 4px; }
+.sum-availability-heading p { margin: 0; }
+.sum-availability-date { flex: 0 0 auto; color: #245c48; font-weight: 700; text-transform: capitalize; }
+.sum-timeline { display: grid; gap: 6px; }
+.sum-hour { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 48px; padding: 8px 10px; border-left: 4px solid #aab4ad; background: #fff; }
+.sum-hour time { font-weight: 700; color: #34433a; }
+.sum-hour-copy { display: grid; gap: 2px; min-width: 0; }
+.sum-hour-copy strong { font-size: 14px; }
+.sum-hour-copy span { color: #58635c; font-size: 13px; }
+.sum-hour-status { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.sum-hour-available { border-left-color: #2e7d5b; }
+.sum-hour-available .sum-hour-status { color: #245c48; }
+.sum-hour-reserved { border-left-color: #a66a0a; background: #fff8e9; }
+.sum-hour-reserved .sum-hour-status { color: #8a5608; }
+.sum-hour-break, .sum-hour-blocked, .sum-hour-past, .sum-hour-invalid { background: #f1f3f0; color: #58635c; }
+.sum-hour-break { border-left-color: #aab4ad; }
+.sum-hour-status { color: #58635c; }
+.sum-availability-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; color: #58635c; font-size: 13px; }
+.sum-availability-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sum-legend-dot { width: 9px; height: 9px; border-radius: 50%; background: #aab4ad; }
+.sum-legend-available { background: #2e7d5b; }
+.sum-legend-reserved { background: #a66a0a; }
+.sum-legend-break { background: #aab4ad; }
 .services-slot-options { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .services-slot { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid #aab4ad; border-radius: 4px; min-height: 76px; cursor: pointer; }
 .services-slot[data-selected="true"] { border: 2px solid #245c48; background: #f1f7f3; padding: 11px; }
@@ -58,6 +83,8 @@
 @media (max-width: 380px) {
   .services-slot-options { grid-template-columns: minmax(0, 1fr); }
   .services-photo-caption { align-items: flex-start; flex-direction: column; }
+  .sum-hour { grid-template-columns: 48px minmax(0, 1fr); }
+  .sum-hour-status { grid-column: 2; }
 }
 @media (prefers-reduced-motion: reduce) {
   .services-page *, .services-page *::before, .services-page *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

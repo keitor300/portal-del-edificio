@@ -4,8 +4,48 @@ import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, id, today } from '../../lib/utils';
-import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, reservationEndsAt, sameUnit, slotUnavailable, SUM_SLOTS, validDate } from './model';
+import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, reservationEndsAt, sameUnit, slotUnavailable, sumTimeline, SUM_SLOTS, validDate } from './model';
 import './services.css';
+
+export function SumAvailability({ date }: { date: string }) {
+  const { data } = usePortal();
+  const timeline = sumTimeline(date, data.reservations, data.settings);
+  const labels = {
+    available: 'Disponible',
+    reserved: 'Reservado',
+    break: 'Pausa entre turnos',
+    blocked: 'Día bloqueado',
+    past: 'Ya pasó',
+    invalid: 'Fecha inválida',
+  } as const;
+  const details = {
+    available: 'La franja completa se puede reservar',
+    reserved: 'Reservado por otra unidad',
+    break: 'No reservable',
+    blocked: 'No se puede reservar este día',
+    past: 'Elegí un horario futuro',
+    invalid: 'Elegí una fecha válida',
+  } as const;
+
+  return <section className="sum-availability" aria-labelledby="sum-availability-title">
+    <div className="section-heading sum-availability-heading">
+      <div><h3 id="sum-availability-title">Horarios del día</h3><p className="muted">Consultá cada hora. La reserva se realiza por una franja completa.</p></div>
+      <span className="sum-availability-date">{validDate(date) ? formatDate(date, { day: 'numeric', month: 'short' }) : 'Elegí una fecha'}</span>
+    </div>
+    <div className="sum-timeline" role="list" aria-label="Disponibilidad horaria del SUM">
+      {timeline.map(item => <div className={`sum-hour sum-hour-${item.state}`} role="listitem" key={item.time}>
+        <time dateTime={`${date}T${item.time}`}>{item.time}</time>
+        <div className="sum-hour-copy"><strong>{item.time} a {item.endTime}</strong><span>{item.state === 'reserved' && item.unit ? `Reservado · Unidad ${item.unit}` : details[item.state]}</span></div>
+        <span className="sum-hour-status">{labels[item.state]}</span>
+      </div>)}
+    </div>
+    <div className="sum-availability-legend" aria-label="Referencias de disponibilidad">
+      <span><i className="sum-legend-dot sum-legend-available" aria-hidden="true" />Disponible</span>
+      <span><i className="sum-legend-dot sum-legend-reserved" aria-hidden="true" />Reservado</span>
+      <span><i className="sum-legend-dot sum-legend-break" aria-hidden="true" />Pausa</span>
+    </div>
+  </section>;
+}
 
 export function BookingForm({ admin = false }: { admin?: boolean }) {
   const { data, save, notify } = usePortal();
@@ -47,6 +87,7 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
     <form onSubmit={review} className="services-booking-form">
       {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input aria-label="Unidad" required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
       <Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setTime(''); setError(''); }} /></Field>
+      <SumAvailability date={date} />
       <fieldset className="services-slots"><legend>Turnos disponibles</legend><div className="services-slot-options">
         {SUM_SLOTS.map(item => {
           const unavailable = slotUnavailable(date, item.time, data.reservations, data.settings);
@@ -76,21 +117,21 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
   const [filter, setFilter] = useState('Próximas');
   const [unit, setUnit] = useState('');
   const now = new Date();
-  const reservations = data.reservations.filter(item => isValidReservation(item) && (admin || sameUnit(item.unit))).filter(item => {
+  const reservations = data.reservations.filter(item => isValidReservation(item)).filter(item => {
     const end = reservationEndsAt(item);
     const ended = end !== null && end < now.getTime();
     return (filter === 'Todas' || (filter === 'Canceladas' ? !activeReservation(item) : activeReservation(item) && !ended)) &&
       (!unit.trim() || (item.unit ?? '').toLowerCase().includes(unit.trim().toLowerCase()));
   }).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
   return <section className="section">
-    <div className="section-heading"><h2>{admin ? 'Reservas del edificio' : 'Mis reservas'}</h2></div>
+    <div className="section-heading"><div><h2>{admin ? 'Reservas del edificio' : 'Reservas del SUM'}</h2>{!admin && <p className="muted">Podés ver las reservas de todas las unidades. Solo podés cancelar las de tu unidad.</p>}</div></div>
     <div className="services-filters">
       <Field label="Mostrar reservas"><select value={filter} onChange={event => setFilter(event.target.value)}>{['Próximas', 'Todas', 'Canceladas'].map(value => <option key={value}>{value}</option>)}</select></Field>
       {admin && <Field label="Filtrar por unidad"><input value={unit} onChange={event => setUnit(event.target.value)} placeholder="Ej. 7B" /></Field>}
     </div>
     <div className="list">{reservations.length ? reservations.map(item => <div className="list-row" key={item.id}>
       <div className="row-main"><strong>{formatDate(item.date, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime} · Unidad {item.unit}</p><span className={`status ${activeReservation(item) ? 'status-green' : ''}`}>{item.status || 'Confirmada'}</span></div>
-      {activeReservation(item) && (reservationEndsAt(item) ?? 0) > now.getTime() && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
+      {activeReservation(item) && (admin || sameUnit(item.unit)) && (reservationEndsAt(item) ?? 0) > now.getTime() && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
     </div>) : <p className="empty">No hay reservas para este filtro.</p>}</div>
     {cancel && <Confirm title="Cancelar reserva" description={`Se liberará el turno del ${formatDate(cancel.date)} de ${cancel.time} a ${cancel.endTime}, unidad ${cancel.unit}.`} onClose={() => setCancel(undefined)} onConfirm={() => { update('reservations', cancel.id, { status: 'Cancelada' }); notify('Reserva cancelada en la demo. El turno vuelve a estar disponible.'); }} />}
   </section>;
@@ -99,7 +140,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
 export function SumPage() {
   const [fullPhoto, setFullPhoto] = useState(false);
   return <div className="services-page">
-    <PageHeader title="Reservar el SUM" description="Elegí una fecha y un turno para tu unidad 7B." back="/servicios" />
+    <PageHeader title="Reservar el SUM" description="Elegí una fecha, consultá los horarios y reservá una franja completa para tu unidad 7B." back="/servicios" />
     <div className="services-sum-layout"><div><img className="services-photo" src="/images/sum.jpg" alt="Salón de usos múltiples del edificio, con mesas, sillas y ventanales" width={1200} height={675} fetchPriority="high" /><div className="services-photo-caption"><p className="muted">Salón de usos múltiples</p><button className="button secondary small" onClick={() => setFullPhoto(true)}><Expand size={18} aria-hidden="true" />Foto completa</button></div></div><BookingForm /></div>
     <ReservationList />
     {fullPhoto && <Modal title="Salón de usos múltiples" wide onClose={() => setFullPhoto(false)}><img className="services-photo-full" src="/images/sum.jpg" alt="Fotografía completa del salón de usos múltiples del edificio" width={1200} height={675} /></Modal>}

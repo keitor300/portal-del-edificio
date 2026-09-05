@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 
 const bundle = await build({ entryPoints: [new URL('./model.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1')], bundle: true, write: false, format: 'esm', platform: 'node' });
-const { slotUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
+const { slotUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt, sumTimeline } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 const settings = { rules: 'Reglamento demo', blockedDates: [], openingBalance: 0, seedDate: '2026-09-05' };
 const now = new Date('2026-09-05T09:00:00');
 const reservation = { id: 'booking', title: 'SUM', description: '', date: '2026-09-06', time: '10:00', endTime: '15:00', unit: '3A', status: 'Confirmada' };
@@ -41,6 +41,21 @@ test('partial overlaps collide and absent legacy end times are conservative', ()
   assert.equal(slotUnavailable('2026-09-06', '10:00', [{ ...reservation, time: '14:00', endTime: '18:00' }], settings, now), 'Turno reservado.');
   assert.equal(slotUnavailable('2026-09-06', '17:00', [{ ...reservation, time: '14:00', endTime: '18:00' }], settings, now), 'Turno reservado.');
   assert.equal(slotUnavailable('2026-09-06', '17:00', [{ ...reservation, time: '16:00', endTime: undefined }], settings, now), 'Turno reservado.');
+});
+test('hourly timeline exposes every hour, breaks, and reservations by unit', () => {
+  const entries = sumTimeline('2026-09-06', [reservation], settings, now);
+  assert.equal(entries.length, 12);
+  assert.equal(entries.find(item => item.time === '10:00')?.state, 'reserved');
+  assert.equal(entries.find(item => item.time === '10:00')?.unit, '3A');
+  assert.equal(entries.find(item => item.time === '15:00')?.state, 'break');
+  assert.equal(entries.find(item => item.time === '17:00')?.state, 'available');
+  assert.equal(sumTimeline('2026-09-06', [], { ...settings, blockedDates: ['2026-09-06'] }, now).every(item => item.kind === 'break' || item.state === 'blocked'), true);
+});
+test('hourly timeline marks elapsed hours without mixing them with reservations', () => {
+  const entries = sumTimeline('2026-09-05', [], settings, new Date('2026-09-05T18:30:00'));
+  assert.equal(entries.find(item => item.time === '10:00')?.state, 'past');
+  assert.equal(entries.find(item => item.time === '17:00')?.state, 'past');
+  assert.equal(entries.find(item => item.time === '20:00')?.state, 'available');
 });
 test('reservation validation rejects malformed dates, times and reversed ranges without hiding valid slots', () => {
   assert.equal(isValidReservation({ ...reservation, date: '2026-02-30' }), false);
