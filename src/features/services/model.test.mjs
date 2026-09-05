@@ -43,13 +43,19 @@ test('free ranges collide precisely and legacy reservations remain conservative'
 test('friday and saturday allow ranges through 03:00 the next day', () => {
   assert.equal(sumOperatingWindow('2026-09-11')?.closeDate, '2026-09-12');
   assert.equal(sumOperatingWindow('2026-09-11')?.closeTime, '03:00');
-  assert.equal(reservationEndDate('2026-09-11', '23:30', '02:15'), '2026-09-12');
-  assert.ok(validBookingRange('2026-09-11', '23:30', '02:15'));
+  assert.equal(reservationEndDate('2026-09-11', '23:30', '02:00'), '2026-09-12');
+  assert.ok(validBookingRange('2026-09-11', '23:30', '02:00'));
   assert.equal(validBookingRange('2026-09-11', '23:30', '04:00'), null);
   assert.equal(validBookingRange('2026-09-06', '21:00', '02:00'), null);
 });
+test('booking ranges use half-hour increments instead of arbitrary minutes', () => {
+  assert.ok(validBookingRange('2026-09-06', '18:00', '19:00'));
+  assert.ok(validBookingRange('2026-09-06', '18:30', '19:00'));
+  assert.equal(validBookingRange('2026-09-06', '18:22', '19:00'), null);
+  assert.equal(validBookingRange('2026-09-06', '18:00', '19:22'), null);
+});
 test('overnight reservations remain visible and block the following calendar date', () => {
-  const overnight = { ...reservation, date: '2026-09-11', time: '23:30', endTime: '02:15', endDate: '2026-09-12' };
+  const overnight = { ...reservation, date: '2026-09-11', time: '23:30', endTime: '02:00', endDate: '2026-09-12' };
   assert.equal(reservationTouchesDate(overnight, '2026-09-11'), true);
   assert.equal(reservationTouchesDate(overnight, '2026-09-12'), true);
   assert.equal(reservationTouchesDate(overnight, '2026-09-13'), false);

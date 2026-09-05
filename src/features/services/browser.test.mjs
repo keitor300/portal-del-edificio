@@ -49,7 +49,7 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await goto('/servicios/sum');
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
   await page.getByLabel('Desde').fill('18:30');
-  await page.getByLabel('Hasta').fill('20:45');
+  await page.getByLabel('Hasta').fill('20:30');
   await page.getByRole('button', { name: 'Revisar reserva' }).click();
   await expect(page.getByRole('alert')).toContainText('Aceptá el reglamento');
   await page.getByRole('checkbox').check();
@@ -57,7 +57,7 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await page.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
   await page.reload();
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
-  await expect(page.getByText('18:30 a 20:45', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('18:30 a 20:30', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Disponibilidad de todas las unidades' })).toBeVisible();
   await expect(page.getByText(/Unidad 3A/).first()).toBeVisible();
   await goto('/admin/servicios?tab=sum');

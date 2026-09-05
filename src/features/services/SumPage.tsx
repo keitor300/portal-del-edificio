@@ -13,13 +13,13 @@ export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndC
   const feedback = startTime && endTime ? rangeUnavailable(date, startTime, endTime, data.reservations, data.settings) : '';
   return <fieldset className="sum-range-picker">
     <legend>Elegí el horario</legend>
-    <p className="muted">Elegí libremente desde qué hora hasta qué hora querés usar el SUM.</p>
+    <p className="muted">Elegí desde qué hora hasta qué hora querés usar el SUM, en bloques de 30 minutos.</p>
     <div className="sum-range-fields">
-      <Field label="Desde"><input type="time" step="60" min={window?.openTime ?? '10:00'} max={window?.overnight ? '23:59' : '21:59'} value={startTime} required onChange={event => onStartChange(event.target.value)} /></Field>
+      <Field label="Desde"><input type="time" step="1800" min={window?.openTime ?? '10:00'} max={window?.overnight ? '23:30' : '21:30'} value={startTime} required onChange={event => onStartChange(event.target.value)} /></Field>
       <span className="sum-range-separator" aria-hidden="true">a</span>
-      <Field label="Hasta"><input type="time" step="60" min="00:00" max={window?.overnight ? '23:59' : window?.closeTime ?? '22:00'} value={endTime} required onChange={event => onEndChange(event.target.value)} /></Field>
+      <Field label="Hasta"><input type="time" step="1800" min="00:00" max={window?.overnight ? '23:30' : window?.closeTime ?? '22:00'} value={endTime} required onChange={event => onEndChange(event.target.value)} /></Field>
     </div>
-    <p className="sum-range-help">{window?.overnight ? 'Viernes y sábado: si la hora final es menor, continúa hasta el día siguiente. Se permite hasta las 03:00.' : 'De domingo a jueves se puede reservar hasta las 22:00. No se habilita el cruce de medianoche.'}</p>
+    <p className="sum-range-help">{window?.overnight ? 'Viernes y sábado: elegí en punto o media hora. Si la hora final es menor, continúa hasta el día siguiente y se permite hasta las 03:00.' : 'Elegí siempre en punto o media hora. De domingo a jueves se puede reservar hasta las 22:00.'}</p>
     {startTime && endTime && <p className={`sum-range-feedback ${feedback ? 'is-error' : 'is-ok'}`} role="status">{feedback || 'Este horario está disponible.'}</p>}
   </fieldset>;
 }

@@ -57,7 +57,7 @@ export function validBookingRange(date: string, startTime: string, endTime: stri
   const window = sumOperatingWindow(date);
   const start = timeToMinutes(startTime);
   const end = timeToMinutes(endTime);
-  if (!window || start === null || end === null || start < timeToMinutes(window.openTime)!) return null;
+  if (!window || start === null || end === null || start % 30 !== 0 || end % 30 !== 0 || start < timeToMinutes(window.openTime)!) return null;
   const endDate = reservationEndDate(date, startTime, endTime);
   if (!window.overnight && endDate !== date) return null;
   if (window.overnight && endDate !== date && end > timeToMinutes(window.closeTime)!) return null;
