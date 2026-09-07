@@ -1,4 +1,4 @@
-import { ArrowUpRight, Building2, CalendarDays, ChevronRight, ClipboardList, FileText, Home, Mail, MessageCircle, ShieldCheck, Wrench } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarDays, ChevronRight, ClipboardList, FileText, Home, LockKeyhole, Mail, MessageCircle, ShieldCheck, Wrench } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { usePortal } from '../../hooks/usePortal';
@@ -99,7 +99,7 @@ export function PublicContactPage() {
 }
 
 export function DemoEntryPage() {
-  return <PublicLayout><section className="public-inner-page demo-entry"><span className="public-kicker">Recorrido interactivo</span><h1>Explorar la demo</h1><p className="public-lead">Elegí una vista para recorrer el portal con datos de ejemplo. No requiere usuario ni contraseña.</p><div className="demo-entry-links"><Link to="/demo/propietario"><Home size={21} /><span><strong>Vista propietario</strong><small>Novedades, edificio, servicios y comunidad</small></span><ArrowUpRight size={19} /></Link><Link to="/demo/administracion"><Wrench size={21} /><span><strong>Vista administración</strong><small>Comunicaciones, finanzas, servicios y contenido</small></span><ArrowUpRight size={19} /></Link></div></section></PublicLayout>;
+  return <PublicLayout><section className="public-inner-page demo-entry"><span className="public-kicker">Recorrido interactivo</span><h1>Explorar la demo</h1><p className="public-lead">Elegí una vista para recorrer el portal con datos de ejemplo. No requiere usuario ni contraseña.</p><div className="demo-entry-links"><Link to="/demo/propietario"><Home size={21} /><span><strong>Vista propietario</strong><small>Novedades, edificio, servicios y comunidad</small></span><ArrowUpRight size={19} /></Link><Link to="/demo/administracion"><Wrench size={21} /><span><strong>Vista administración demo</strong><small>Recorrido abierto con datos de ejemplo</small></span><ArrowUpRight size={19} /></Link><Link to="/admin"><LockKeyhole size={21} /><span><strong>Acceso administración</strong><small>Panel protegido para la demostración</small></span><ArrowUpRight size={19} /></Link></div></section></PublicLayout>;
 }
 
 function PublicFooter() {

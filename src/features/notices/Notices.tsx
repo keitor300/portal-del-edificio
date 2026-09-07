@@ -59,11 +59,13 @@ export function NoticesPage({ admin = false }: { admin?: boolean }) {
 
 export function NoticeDetail({ context = 'public' }: { context?: NoticeContext }) {
   const { id: noticeId } = useParams();
+  const location = useLocation();
   const { data, update, notify } = usePortal();
-  const detailBase = context === 'admin' ? '/demo/administracion/comunicaciones' : context === 'owner' ? '/demo/propietario/novedades' : '/novedades';
+  const adminBase = location.pathname.startsWith('/admin') ? '/admin' : '/demo/administracion';
+  const detailBase = context === 'admin' ? `${adminBase}/comunicaciones` : context === 'owner' ? '/demo/propietario/novedades' : '/novedades';
   const notice = data.notices.find(item => item.id === noticeId);
   if (!notice) return <><PageHeader title="Aviso no disponible" back={detailBase} /><Empty>El aviso se eliminó. Podés consultar el resto de las novedades.</Empty></>;
-  const relatedPath = context === 'admin' ? '/demo/administracion/contenido' : context === 'owner' ? '/demo/propietario/edificio/obras' : '/edificio/obras';
-  const meetingPath = context === 'admin' ? '/demo/administracion/comunidad' : context === 'owner' ? '/demo/propietario/edificio/reuniones' : '/edificio/reuniones';
+  const relatedPath = context === 'admin' ? `${adminBase}/contenido` : context === 'owner' ? '/demo/propietario/edificio/obras' : '/edificio/obras';
+  const meetingPath = context === 'admin' ? `${adminBase}/comunidad` : context === 'owner' ? '/demo/propietario/edificio/reuniones' : '/edificio/reuniones';
   return <article className="reading-page"><PageHeader title={notice.title} back={detailBase} /><div className="row-meta"><Status tone={notice.urgent ? 'amber' : 'green'}>{notice.category}</Status><span>{formatDate(notice.date)}</span>{notice.pinned && <span>Fijado</span>}</div><p className="detail-copy">{notice.description}</p>{notice.attachment && <DocumentActions attachment={notice.attachment} label="Ver adjunto" />}{notice.category === 'Mantenimiento' && <Link className="text-link" to={relatedPath}>Ver obras y avances<ArrowUpRight size={18} /></Link>}{notice.category === 'Reunión' && <Link className="button secondary" to={meetingPath}>Ver reuniones</Link>}<div className="notice-read"><button className={`button ${notice.read ? 'secondary' : ''}`} disabled={notice.read} onClick={() => { update('notices', notice.id, { read: true, views: Math.min(52, (notice.views ?? 0) + 1) }); notify('Aviso marcado como leído.'); }}><Check size={18} />{notice.read ? 'Marcado como leído' : 'Marcar como leído'}</button><p className="muted">{notice.views ?? 0} de 52 unidades lo visualizaron · Demo</p></div></article>;
 }

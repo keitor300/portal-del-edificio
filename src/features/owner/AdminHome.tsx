@@ -1,14 +1,13 @@
 import { ArrowUpRight, CalendarDays, FileText, MessageCircle, Users, Wrench } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Empty, Section, Status } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import { formatDate, money, today } from '../../lib/utils';
 import { NoticeRow } from '../notices/Notices';
 
-const adminBase = '/demo/administracion';
-
 export function AdminHomePage() {
   const { data } = usePortal();
+  const adminBase = useLocation().pathname.startsWith('/admin') ? '/admin' : '/demo/administracion';
   const open = data.issues.filter(item => item.status !== 'Resuelto');
   const balance = data.settings.openingBalance + data.movements.reduce((total, movement) => total + (movement.type === 'Ingreso' ? 1 : -1) * (movement.amount ?? 0), 0);
   const meeting = [...data.meetings].filter(item => item.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
