@@ -57,8 +57,8 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await page.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
   await page.reload();
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
-  await expect(page.getByText('18:30 a 20:30', { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Disponibilidad de todas las unidades' })).toBeVisible();
+  await expect(page.getByText(/18:30 a 20:30/).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Reservas del SUM' })).toBeVisible();
   await expect(page.getByText(/Unidad 3A/).first()).toBeVisible();
   await goto('/admin/servicios?tab=sum');
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');

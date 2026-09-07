@@ -23,21 +23,6 @@ export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndC
   </fieldset>;
 }
 
-export function CommunityAvailability({ date }: { date: string }) {
-  const { data } = usePortal();
-  const reservations = data.reservations.filter(item => isValidReservation(item) && activeReservation(item) && reservationTouchesDate(item, date)).sort((a, b) => `${a.date}${a.time}${a.unit}`.localeCompare(`${b.date}${b.time}${b.unit}`));
-  return <section className="sum-community-availability" aria-labelledby="sum-community-title">
-    <div className="section-heading sum-community-heading">
-      <div><h3 id="sum-community-title">Disponibilidad de todas las unidades</h3><p className="muted">Las reservas de otros propietarios son visibles para evitar confusiones.</p></div>
-      <span className="sum-community-date">{validDate(date) ? formatDate(date, { day: 'numeric', month: 'short' }) : 'Elegí una fecha'}</span>
-    </div>
-    {reservations.length ? <div className="sum-community-list">{reservations.map(item => <div className="sum-community-row" key={item.id}>
-      <div><strong>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime}</strong><span>Unidad {item.unit || 'sin indicar'}{item.endDate && item.endDate !== item.date ? ` · continúa el ${formatDate(item.endDate, { day: 'numeric', month: 'short' })}` : ''}</span></div>
-      <span className="status status-green">Reservado</span>
-    </div>)}</div> : <p className="empty">No hay reservas visibles para esta fecha. Los horarios habilitados aparecen arriba.</p>}
-  </section>;
-}
-
 export function BookingForm({ admin = false }: { admin?: boolean }) {
   const { data, save, notify } = usePortal();
   const [date, setDate] = useState(today());
@@ -80,7 +65,6 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
       {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input aria-label="Unidad" required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
       <Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setStartTime(''); setEndTime(''); setError(''); }} /></Field>
       <SumRangePicker date={date} startTime={startTime} endTime={endTime} onStartChange={value => { setStartTime(value); setEndTime(''); setError(''); }} onEndChange={value => { setEndTime(value); setError(''); }} />
-      <CommunityAvailability date={date} />
       <div><h3>Reglamento del SUM</h3><div className="services-rules" role="region" aria-label="Reglamento del SUM" tabIndex={0}>{data.settings.rules || 'El reglamento todavía no está cargado.'}</div></div>
       <label className="services-check"><input type="checkbox" checked={accepted} onChange={event => setAcceptedRules(event.target.checked ? data.settings.rules : null)} />{admin ? 'Confirmo la aceptación del reglamento por esta unidad.' : 'Leí y acepto el reglamento del SUM.'}</label>
       {error && <p role="alert" className="error">{error}</p>}
