@@ -44,9 +44,9 @@ export function AdminMenuPage() {
     <>
       <PageHeader title="Menú de administración" description="Accedé a cada tarea cuando la necesites, sin llenar la pantalla de opciones." />
       <div className="admin-menu-groups">
-        {groups.map(group => (
-          <section className="admin-menu-group" key={group.title}>
-            <h2>{group.title}</h2>
+        {groups.map((group, index) => (
+          <details className="admin-menu-group" key={group.title} open={index === 0}>
+            <summary><span><span className="owner-menu-summary-kicker">Sección</span><strong>{group.title}</strong></span><span className="owner-menu-count">{group.items.length} opciones<ArrowUpRight size={18} /></span></summary>
             <div className="admin-menu-list">
               {group.items.map(({ label, description, path, Icon }) => (
                 <Link className="admin-menu-row" to={`${base}${path}`} key={label}>
@@ -56,7 +56,7 @@ export function AdminMenuPage() {
                 </Link>
               ))}
             </div>
-          </section>
+          </details>
         ))}
       </div>
       <p className="admin-menu-demo-note"><ClipboardList size={17} />Esta es una vista demo: los cambios se guardan únicamente en este navegador.</p>

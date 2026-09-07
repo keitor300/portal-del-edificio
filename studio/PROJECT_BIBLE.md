@@ -1,16 +1,16 @@
 # Portal del Edificio
 
-MODE: NEW. V1 demo for a 52-unit building, owner Unidad 7B. Full attached brief is scope.
+MODE: REDESIGN. V1 demo for a 52-unit building, owner Unidad 7B. Full attached brief is scope.
 Objective: accessible, client-ready everyday portal. Audience includes adults over 70 on iPhone.
 Stack: React, Vite, TypeScript, Tailwind, React Router, local state. No real authentication, private data, payments, messaging, backend or Cloudflare setup.
 
 ## Creative Gate - CLOSED
-Concept: The shared noticeboard of the building. Art director specialist review accepted.
-Direction: white, neutral #f7f8f6, forest #245c48, charcoal #202923, secondary #58635c. Amber reserved for urgent actions. Dividers and unframed lists, no marketing hero, no ornamental graphs.
-Typography: local Inter; owner body 17px/1.6, admin 16px, headings 28-32px, section 21px. Minimum 48px primary targets, 44px controls; visible focus; zero letter spacing.
-Hierarchy: simple identity + demo role selector; greeting; urgent notice; four shortcuts; current activity; actual building photography.
-Journey: five owner areas with fixed mobile bottom navigation; four gateways in Mi edificio and Servicios. Admin six groups, sidebar desktop, accessible drawer mobile.
-Scenes: owner home; notice detail; financial/document lists; SUM date/time/rules/confirm; issue and administration conversations; admin editable lists/forms.
+Concept: The shared noticeboard of the building, upgraded into a calm private-club concierge for everyday community life. The redesign keeps the portal practical while making the building and its shared spaces visible at first glance.
+Direction: warm ivory canvas, deep forest #123b2d, olive surfaces, restrained brass #ad8348, and ink text. Use real building photography as the visual anchor. Keep urgency amber only for warnings. Prefer grouped progressive disclosure over a wall of choices.
+Typography: local Inter for reading and controls, Georgia fallback for display headings. Owner body 17px/1.6, admin 16px, headings 34-56px inside visual hero bands, section 22-25px. Minimum 48px primary targets, 44px controls; visible focus; zero letter spacing.
+Hierarchy: identity + compact role selector; image-led greeting; one urgent notice; three owner priority actions; activity and news; secondary functions collapsed by topic. Administration follows the same hierarchy with three priorities and a collapsed More actions group.
+Journey: owner mobile navigation is Inicio / Mi edificio / Servicios / Más; Novedades remains reachable from the home feed. Admin desktop keeps four stable destinations and mobile uses the existing drawer. Details panels expose the complete feature set without front-loading it.
+Scenes: owner home with facade hero; owner grouped menu; admin home with city-view hero; admin grouped menu; existing operational pages unchanged.
 Imagery: supplied facade on home, lobby/building information, SUM booking, city/terrace gallery. Original full image accessible. Do not label building photos as evidence of work progress.
 Motion: short feedback transitions only, reduced-motion supported.
 Assets: four supplied JPEGs, Lucide icons, simple PWA icon and real downloadable demo PDFs.

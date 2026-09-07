@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Link, NavLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Building2, FileText, Home, LayoutDashboard, LogOut, Menu, MessageCircle, MoreHorizontal, Newspaper, Sparkles, X } from 'lucide-react';
+import { Building2, FileText, Home, LayoutDashboard, LogOut, Menu, MessageCircle, MoreHorizontal, Sparkles, X } from 'lucide-react';
 import { PortalProvider, usePortal } from './hooks/usePortal';
 import { AdminGate, logoutAdmin } from './features/auth/AdminLogin';
 import { AdminHomePage } from './features/owner/AdminHome';
@@ -15,7 +15,7 @@ import { MeetingsPage, PollsPage, CalendarPage, AdminCommunityPage } from './fea
 import { DemoEntryPage, PublicBuildingPage, PublicContactPage, PublicHomePage, PublicLayout, PublicNewsPage } from './features/public/Public';
 import './styles/global.css';
 
-const ownerNav = [{ to: '/demo/propietario', label: 'Inicio', Icon: Home, end: true }, { to: '/demo/propietario/novedades', label: 'Novedades', Icon: Newspaper }, { to: '/demo/propietario/edificio', label: 'Mi edificio', Icon: Building2 }, { to: '/demo/propietario/mas', label: 'Menú', Icon: MoreHorizontal }];
+const ownerNav = [{ to: '/demo/propietario', label: 'Inicio', Icon: Home, end: true }, { to: '/demo/propietario/edificio', label: 'Mi edificio', Icon: Building2 }, { to: '/demo/propietario/servicios', label: 'Servicios', Icon: Sparkles }, { to: '/demo/propietario/mas', label: 'Más', Icon: MoreHorizontal }];
 const adminNav = [{ path: '', label: 'Inicio', Icon: LayoutDashboard, end: true }, { path: '/comunicaciones', label: 'Comunicaciones', Icon: MessageCircle }, { path: '/finanzas', label: 'Finanzas', Icon: FileText }, { path: '/menu', label: 'Menú', Icon: MoreHorizontal }];
 function adminBase(pathname: string) { return pathname.startsWith('/admin') ? '/admin' : '/demo/administracion'; }
 

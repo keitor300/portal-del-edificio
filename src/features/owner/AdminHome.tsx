@@ -12,8 +12,12 @@ export function AdminHomePage() {
   const balance = data.settings.openingBalance + data.movements.reduce((total, movement) => total + (movement.type === 'Ingreso' ? 1 : -1) * (movement.amount ?? 0), 0);
   const meeting = [...data.meetings].filter(item => item.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const reservation = [...data.reservations].filter(item => item.status !== 'Cancelada' && item.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
-  const actions = [
+  const primaryActions = [
     { label: 'Nuevo aviso', description: 'Publicar una comunicación para el edificio', to: `${adminBase}/comunicaciones?new=1`, Icon: MessageCircle },
+    { label: 'Revisar reclamos', description: 'Ver los pedidos que requieren atención', to: `${adminBase}/servicios?tab=reclamos`, Icon: Wrench },
+    { label: 'Revisar reservas del SUM', description: 'Consultar fechas y horarios ocupados', to: `${adminBase}/servicios?tab=sum`, Icon: CalendarDays },
+  ];
+  const secondaryActions = [
     { label: 'Registrar movimiento', description: 'Cargar un ingreso o un gasto', to: `${adminBase}/finanzas?tab=movimientos&new=1`, Icon: FileText },
     { label: 'Agregar documento', description: 'Compartir un archivo con la comunidad', to: `${adminBase}/contenido?tab=documents&new=1`, Icon: FileText },
     { label: 'Crear reunión', description: 'Convocar y publicar un orden del día', to: `${adminBase}/comunidad?tab=reuniones&new=1`, Icon: Users },
@@ -21,9 +25,12 @@ export function AdminHomePage() {
   ];
 
   return <>
-    <div className="home-greeting"><div><p className="greeting-date">{formatDate(today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1>El edificio, al día<span className="greeting-dot">.</span></h1><p>Los pendientes y la actividad de tu comunidad.</p></div></div>
+    <div className="home-hero admin-home-hero">
+      <div className="home-greeting"><div><p className="greeting-date">{formatDate(today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p><p className="home-kicker">Centro de gestión</p><h1>El edificio, al día<span className="greeting-dot">.</span></h1><p>Una vista clara de lo que necesita atención.</p></div></div>
+      <figure className="home-hero-image"><img src="/images/vista.jpg" alt="Vista de la ciudad desde el edificio" width="1200" height="800" /><figcaption><span>Administración</span><small>Información clara, comunidad al día</small></figcaption></figure>
+    </div>
 
-    <section className="admin-primary-actions" aria-labelledby="admin-actions-title"><div className="admin-primary-heading"><div><span className="eyebrow">Acciones de administración</span><h2 id="admin-actions-title">¿Qué necesitás hacer?</h2></div><span className="muted">Demo</span></div><div className="admin-action-list">{actions.map(({ label, description, to, Icon }) => <Link key={label} to={to}><span className="admin-action-icon"><Icon size={20} /></span><span><strong>{label}</strong><small>{description}</small></span><ArrowUpRight size={18} /></Link>)}</div></section>
+    <section className="admin-primary-actions" aria-labelledby="admin-actions-title"><div className="admin-primary-heading"><div><span className="eyebrow">Prioridades de hoy</span><h2 id="admin-actions-title">¿Qué necesitás hacer?</h2></div><span className="muted">Demo</span></div><div className="admin-action-list">{primaryActions.map(({ label, description, to, Icon }) => <Link key={label} to={to}><span className="admin-action-icon"><Icon size={20} /></span><span><strong>{label}</strong><small>{description}</small></span><ArrowUpRight size={18} /></Link>)}</div><details className="admin-secondary-actions"><summary><span><strong>Más acciones</strong><small>Movimientos, documentos, reuniones y encuestas</small></span><ArrowUpRight size={18} /></summary><div className="admin-action-list">{secondaryActions.map(({ label, description, to, Icon }) => <Link key={label} to={to}><span className="admin-action-icon"><Icon size={20} /></span><span><strong>{label}</strong><small>{description}</small></span><ArrowUpRight size={18} /></Link>)}</div></details></section>
 
     <div className="admin-dashboard-summary"><Link to={`${adminBase}/servicios?tab=reclamos`}><span>Reclamos abiertos</span><strong>{open.length}</strong><small>Ver pendientes <ArrowUpRight size={15} /></small></Link><Link to={`${adminBase}/comunicaciones`}><span>Lectura del último aviso</span><strong>{data.notices[0]?.views ?? 0}<small> / 52</small></strong><small>Unidades · simulación</small></Link><Link to={`${adminBase}/finanzas`}><span>Saldo del edificio</span><strong>{money(balance)}</strong><small>Cuentas demo <ArrowUpRight size={15} /></small></Link></div>
 

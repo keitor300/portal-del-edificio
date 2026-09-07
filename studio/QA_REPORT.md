@@ -32,3 +32,12 @@ None found in the audited demo flows.
 - Administration notice links retain the administration context; owner links retain the owner context.
 - `/demo/administracion/servicios/sum` redirects to the canonical administrative SUM tab.
 - File inputs no longer create horizontal overflow at 320px.
+
+## Visual redesign pass - 2026-09-07
+
+- Owner home now shows one image-led building hero, one urgent notice, three priority actions, activity, news, and building status. Secondary destinations remain available in the grouped Más page.
+- Owner mobile navigation is now Inicio / Mi edificio / Servicios / Más. Novedades remains reachable from the home feed and its route is preserved.
+- Administration home now shows three priorities (Nuevo aviso, Revisar reclamos, Revisar reservas del SUM). Movements, documents, meetings, and surveys remain under Más acciones.
+- Owner and administration menus use native disclosure groups so only the first operational group is open by default; no route or feature was removed.
+- Visual evidence captured locally in `studio/.qa/owner-mobile.png`, `studio/.qa/admin-mobile.png`, `studio/.qa/owner-desktop.png`, and `studio/.qa/admin-desktop.png`. At 390px and 1280px, `scrollWidth` matched `innerWidth` and no Vite error overlay rendered.
+- Manual browser inspection covered public home, owner home, admin home, owner grouped menu, and admin grouped menu. Existing service, reservation, notices, and auth tests were rerun after the CSS and hierarchy changes.
