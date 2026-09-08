@@ -32,11 +32,23 @@ function normalizeEntity(value: unknown, fallback: Entity): Entity | null {
   } as Entity;
 }
 
+function messageUnit(author: string, unit?: unknown) {
+  if (typeof unit === 'string' && unit.trim()) return unit.trim().replace(/^unidad\s*/i, '').toUpperCase();
+  const match = /unidad\s+([a-z0-9-]+)/i.exec(author);
+  return match?.[1]?.toUpperCase() || '7B';
+}
+
+function validMessageDate(value: unknown) {
+  if (typeof value !== 'string') return false;
+  if (validDate(value)) return true;
+  return !Number.isNaN(Date.parse(value));
+}
+
 function normalizeMessages(value: unknown, fallback: Message[]): Message[] {
   if (!Array.isArray(value)) return fallback;
   return value.filter(isRecord).map((item, index) => {
     const seed = fallback[index] ?? { id: `chat-${index + 1}`, author: 'Administración', text: '', date: fallback[0]?.date ?? '' };
-    return { ...seed, ...item, id: typeof item.id === 'string' && item.id ? item.id : seed.id, author: typeof item.author === 'string' ? item.author : seed.author, text: typeof item.text === 'string' ? item.text : seed.text, date: validDate(item.date) ? item.date : seed.date } as Message;
+    return { ...seed, ...item, id: typeof item.id === 'string' && item.id ? item.id : seed.id, author: typeof item.author === 'string' ? item.author : seed.author, text: typeof item.text === 'string' ? item.text : seed.text, date: validMessageDate(item.date) ? item.date as string : seed.date, unit: messageUnit(typeof item.author === 'string' ? item.author : seed.author, item.unit ?? seed.unit) } as Message;
   }).filter(item => item.date);
 }
 

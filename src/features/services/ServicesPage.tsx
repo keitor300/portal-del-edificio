@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, CalendarDays, ChevronRight, ClipboardList, ContactRound, MessageCircle } from 'lucide-react';
 import { Field, Gateway, PageHeader, Tabs } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
-import type { Entity } from '../../lib/types';
+import type { Entity, Message } from '../../lib/types';
 import { Conversation } from './Conversation';
 import { IssuesPanel } from './IssuesPage';
 import { AdminSum } from './SumPage';
@@ -24,11 +24,18 @@ export function ServicesPage() {
 
 export function ChatPanel({ admin = false }: { admin?: boolean }) {
   const { data, sendMessage } = usePortal();
-  return <section className="section"><h2>{admin ? 'Conversación con Unidad 7B' : 'Administración'}</h2><Conversation messages={data.messages} author={admin ? 'Administración' : `Unidad ${OWNER_UNIT}`} onSend={sendMessage} /></section>;
+  const unitOf = (message: Message) => message.unit || (/unidad\s+([a-z0-9-]+)/i.exec(message.author)?.[1] ?? OWNER_UNIT).toUpperCase();
+  const units = useMemo(() => [...new Set([OWNER_UNIT, ...data.messages.map(unitOf)])], [data.messages]);
+  const [selectedUnit, setSelectedUnit] = useState(OWNER_UNIT);
+  useEffect(() => { if (!units.includes(selectedUnit)) setSelectedUnit(units[0] ?? OWNER_UNIT); }, [selectedUnit, units]);
+  const messages = data.messages.filter(message => unitOf(message) === (admin ? selectedUnit : OWNER_UNIT));
+  const send = (message: Message) => sendMessage({ ...message, unit: admin ? selectedUnit : OWNER_UNIT });
+  if (!admin) return <section className="section"><h2>Administración</h2><Conversation messages={messages} author={`Unidad ${OWNER_UNIT}`} onSend={send} /></section>;
+  return <section className="section admin-chat-section"><div className="admin-chat-heading"><div><h2>Consultas de propietarios</h2><p className="muted">Todas las conversaciones, ordenadas por unidad.</p></div><span className="status status-green">{units.length} unidades</span></div><div className="admin-chat-inbox"><nav className="admin-chat-threads" aria-label="Consultas por unidad">{units.map(unit => { const thread = data.messages.filter(message => unitOf(message) === unit); const last = thread[thread.length - 1]; return <button key={unit} type="button" className={selectedUnit === unit ? 'active' : ''} aria-pressed={selectedUnit === unit} onClick={() => setSelectedUnit(unit)}><span><strong>Unidad {unit}</strong><small>{last?.text || 'Sin mensajes todavía.'}</small></span><em>{thread.length}</em></button>; })}</nav><div className="admin-chat-conversation"><div className="admin-chat-conversation-heading"><h3>Conversación con Unidad {selectedUnit}</h3><span className="muted">{messages.length} mensajes</span></div><Conversation messages={messages} author="Administración" onSend={send} /></div></div></section>;
 }
 
 export function ChatPage() {
-  return <div className="services-page"><PageHeader title="Chat con administración" description="Conversación de la unidad 7B." back="/servicios" /><ChatPanel /></div>;
+  return <div className="services-page"><PageHeader title="Chat con administración" description="Consulta de la unidad 7B." back="/servicios" /><ChatPanel /></div>;
 }
 
 function ContactList({ contacts }: { contacts: Entity[] }) {

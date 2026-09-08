@@ -35,6 +35,11 @@ export function parseAmount(value: unknown): number | null {
   else return null;
   return parseAmount(Number(normalized));
 }
+export function parseNonNegativeAmount(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) && value >= 0 && value <= 1e12 ? Math.round(value * 100) / 100 : null;
+  if (typeof value === 'string' && /^0+(?:[.,]0{1,2})?$/.test(value.trim())) return 0;
+  return parseAmount(value);
+}
 
 export function parseDate(value: unknown, date1904 = false): string | null {
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : parseDate(localDate(value));

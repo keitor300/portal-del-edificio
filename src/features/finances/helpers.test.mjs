@@ -10,13 +10,19 @@ async function moduleUrl(path, replacements = {}) {
 }
 const utils = await moduleUrl('../../lib/utils.ts');
 const helperUrl = await moduleUrl('./helpers.ts', { '../../lib/utils': utils });
-const { parseAmount, parseDate, parseType, suggestMapping, validateRows, signedTotal, formatAmount } = await import(helperUrl);
+const { parseAmount, parseNonNegativeAmount, parseDate, parseType, suggestMapping, validateRows, signedTotal, formatAmount } = await import(helperUrl);
 const { financeSeed } = await import(await moduleUrl('./seed.ts', { '../../lib/utils': utils, './helpers': helperUrl }));
 
 test('Argentine currency accepts grouping and cents without accepting malformed or signed amounts', () => {
   for (const [input, expected] of [['$ 1.234.567,89', 1234567.89], ['ARS 125.000', 125000], ['1000,50', 1000.5], ['1234.56', 1234.56], [1.25, 1.25], ['1.234', 1234]]) assert.equal(parseAmount(input), expected);
   for (const input of ['', '0', '-100', '(100)', '1.23.456', '1,234.56', '12,345', '1e3', Infinity, NaN, -1, 0, 1.111, 'texto']) assert.equal(parseAmount(input), null, String(input));
   assert.match(formatAmount(1000.5), /1\.000,50/);
+});
+test('opening balance accepts zero while movement amounts remain positive', () => {
+  assert.equal(parseNonNegativeAmount('0'), 0);
+  assert.equal(parseNonNegativeAmount('0,00'), 0);
+  assert.equal(parseNonNegativeAmount('1.250,50'), 1250.5);
+  assert.equal(parseNonNegativeAmount('-1'), null);
 });
 test('dates reject rollover and support leap days and both Excel epochs', () => {
   assert.equal(parseDate('29/02/2024'), '2024-02-29');

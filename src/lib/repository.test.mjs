@@ -20,6 +20,7 @@ test('normalization repairs partial storage without allowing invalid dates or du
   assert.equal(typeof data.settings.openingBalance, 'number');
   assert.ok(data.documents.length > 0);
   assert.ok(Array.isArray(data.messages));
+  assert.ok(data.messages.every(message => message.unit));
 });
 
 test('normalization migrates the previous fixed-slot SUM rule to free-range wording', () => {

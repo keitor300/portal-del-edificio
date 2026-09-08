@@ -186,6 +186,17 @@ test('central conversation stays separate and attachments survive reload and rol
   await expect(page.getByRole('log')).toContainText('Respuesta central demo');
 });
 
+test('admin chat inbox separates consultations by unit', async () => {
+  await goto('/admin/servicios?tab=chat');
+  await expect(page.getByRole('heading', { name: 'Consultas de propietarios', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Unidad 3A/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Unidad 5C/ })).toBeVisible();
+  await page.getByRole('button', { name: /Unidad 3A/ }).click();
+  await expect(page.getByRole('heading', { name: 'Conversación con Unidad 3A', exact: true })).toBeVisible();
+  await expect(page.getByRole('log')).toContainText('revisión del ascensor 2');
+  await expect(page.getByRole('log')).not.toContainText('presupuesto de la terraza');
+});
+
 test('every service route renders at mobile, tablet and desktop sizes without overflow or broken images', async () => {
   for (const width of [320, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });

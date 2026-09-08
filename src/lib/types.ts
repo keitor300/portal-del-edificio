@@ -1,5 +1,5 @@
 export interface Attachment { name: string; url: string; type: string }
-export interface Message { id: string; author: string; text: string; date: string; attachment?: Attachment }
+export interface Message { id: string; author: string; text: string; date: string; attachment?: Attachment; unit?: string }
 export interface Entity {
   id: string; title: string; description: string; date: string;
   category?: string; status?: string; pinned?: boolean; urgent?: boolean; read?: boolean; views?: number;

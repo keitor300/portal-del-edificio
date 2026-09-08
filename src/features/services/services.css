@@ -48,12 +48,31 @@
 .services-instructions li + li { margin-top: 10px; }
 .services-page .tabs { overflow-x: auto; }
 .services-page .tabs button { flex-shrink: 0; }
+.admin-chat-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.admin-chat-heading h2 { margin-bottom: 4px; }
+.admin-chat-inbox { display: grid; grid-template-columns: minmax(190px, 0.36fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.admin-chat-threads { display: grid; gap: 8px; }
+.admin-chat-threads button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; min-height: 76px; padding: 12px 14px; border: 1px solid #dce1dc; border-radius: 7px; background: #fff; color: inherit; }
+.admin-chat-threads button:hover, .admin-chat-threads button.active { border-color: #245c48; background: #f1f7f3; }
+.admin-chat-threads button > span { display: grid; gap: 4px; min-width: 0; }
+.admin-chat-threads strong { color: #245c48; overflow-wrap: normal; white-space: nowrap; }
+.admin-chat-threads small { color: #58635c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-chat-threads em { display: grid; place-items: center; min-width: 26px; height: 26px; border-radius: 50%; background: #e5f0e7; color: #245c48; font-size: 12px; font-style: normal; font-weight: 700; }
+.admin-chat-conversation { min-width: 0; border: 1px solid #dce1dc; border-radius: 8px; padding: 18px; background: #fff; }
+.admin-chat-conversation-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.admin-chat-conversation-heading h3 { margin: 0; }
+.admin-chat-conversation .services-messages { margin-top: 16px; }
 @media (max-width: 760px) {
   .services-sum-layout, .services-gateways { grid-template-columns: minmax(0, 1fr); }
   .services-sum-layout { gap: 20px; }
   .services-page .list-row { flex-wrap: wrap; }
   .services-page .row-actions { width: 100%; }
   .services-photo { aspect-ratio: 16 / 9; }
+  .admin-chat-heading, .admin-chat-conversation-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .admin-chat-inbox { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .admin-chat-threads { display: flex; grid-template-columns: none; overflow-x: auto; padding-bottom: 4px; }
+  .admin-chat-threads button { flex: 0 0 148px; min-width: 148px; }
+  .admin-chat-conversation { padding: 14px; }
 }
 @media (max-width: 380px) {
   .sum-range-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
