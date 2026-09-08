@@ -46,10 +46,12 @@ function validMessageDate(value: unknown) {
 
 function normalizeMessages(value: unknown, fallback: Message[]): Message[] {
   if (!Array.isArray(value)) return fallback;
-  return value.filter(isRecord).map((item, index) => {
+  const normalized = value.filter(isRecord).map((item, index) => {
     const seed = fallback[index] ?? { id: `chat-${index + 1}`, author: 'Administración', text: '', date: fallback[0]?.date ?? '' };
     return { ...seed, ...item, id: typeof item.id === 'string' && item.id ? item.id : seed.id, author: typeof item.author === 'string' ? item.author : seed.author, text: typeof item.text === 'string' ? item.text : seed.text, date: validMessageDate(item.date) ? item.date as string : seed.date, unit: messageUnit(typeof item.author === 'string' ? item.author : seed.author, item.unit ?? seed.unit) } as Message;
   }).filter(item => item.date);
+  const knownIds = new Set(normalized.map(item => item.id));
+  return [...normalized, ...fallback.filter(item => !knownIds.has(item.id))];
 }
 
 function normalizeSettings(value: unknown, fallback: Settings): Settings {

@@ -28,3 +28,10 @@ test('normalization migrates the previous fixed-slot SUM rule to free-range word
   assert.match(data.settings.rules, /opciones en punto o media hora/);
   assert.match(data.settings.rules, /03:00/);
 });
+
+test('normalization keeps existing messages and adds new demo consultation threads', () => {
+  const data = normalizeDemoData({ messages: [{ id: 'old-chat', author: 'Unidad 7B', text: 'Consulta anterior', date: '2026-09-05' }] });
+  assert.ok(data.messages.some(message => message.id === 'old-chat' && message.unit === '7B'));
+  assert.ok(data.messages.some(message => message.unit === '3A'));
+  assert.ok(data.messages.some(message => message.unit === '5C'));
+});
