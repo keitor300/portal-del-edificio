@@ -8,6 +8,8 @@ The app is a static Vite SPA with a Vercel rewrite for internal route refresh. L
 
 Production: https://portal-del-edificio.vercel.app
 Deployment inspected: https://portal-del-edificio-68pn0t9yg-ksixs-projects.vercel.app
-Release commit: 99c3215
+Release commit: 0138781
 
 2026-11-06 SUM booking interaction polish: production deploy `dpl_Dzy9KMQzXGurVirmL2WJa8vXpbWo` is READY and aliases the public portal. Browser smoke QA passed at 390 x 844. Vercel error logs: none found.
+
+2026-11-06 Incremental task-discovery polish: production deployment `https://portal-del-edificio-2rngg8q2o-ksixs-projects.vercel.app` is READY and aliases the public portal. The deployment URL uses Vercel SSO, while the public alias is anonymously reachable. Public 390 x 844 smoke passed for Owner Chat and the Cargar expensas action without overflow or browser errors.

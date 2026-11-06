@@ -97,3 +97,4 @@ None found.
 - Mobile visual inspection at 390 x 844 verified the preserved owner landing, four distinct owner actions, visible help entry, administration action cards, issue overview, and the two-by-two community navigation.
 - Interactive task-entry check passed: owner chat, direct owner issue creation, administration expense loading, and administration vote creation all open their intended destination or dialog.
 - Browser workflow sweep passed at 320, 390, 768 and 1280px with no horizontal overflow, no broken images, no console errors and no accessibility smoke-test violations on service routes.
+- Production smoke passed at `https://portal-del-edificio.vercel.app` using a 390 x 844 viewport: the public alias returned 200, Owner Chat navigated correctly, Cargar expensas opened its form, no horizontal overflow occurred, and no browser errors were reported.
