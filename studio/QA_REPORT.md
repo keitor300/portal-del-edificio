@@ -62,3 +62,4 @@ None found.
 - Mobile inspection at 390 x 844: the two controls stack in the order of use, retain 58 px control height, show no horizontal overflow, and keep the bottom navigation clear of interactive choices.
 - Desktop inspection at 1440 x 900: date, start, and end choices remain grouped beside the SUM image without crowding the reservation form.
 - Validation: `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run test:community`, `npm run test:browser`, and `npm run build` all passed.
+- Protected preview QA passed with Vercel's short-lived development credential; the production smoke test passed at `https://portal-del-edificio.vercel.app/demo/propietario/servicios/sum` at 390 x 844. It verified the start/end sequence, available-range feedback, image load, no horizontal overflow, and no browser errors.
