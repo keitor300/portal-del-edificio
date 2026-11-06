@@ -17,4 +17,4 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 
 2026-11-06: Visual surface polish released in `82a95cb` to https://portal-del-edificio.vercel.app. Conversation turns, service rows, community meetings and financial entries now have restrained elevation and clearer visual separation; navigation, data and functionality remain unchanged. Local and public mobile QA passed.
 
-2026-11-06: Communications card polish validated locally. Notice category color, visual hierarchy and the administration action footer now make the cartelera easier to scan without modifying publishing or reading behavior. Production release pending.
+2026-11-06: Communications card polish released in `8c9c079` to https://portal-del-edificio.vercel.app. Notice category color, visual hierarchy and the administration action footer now make the cartelera easier to scan without modifying publishing or reading behavior. Local and public mobile QA passed.
