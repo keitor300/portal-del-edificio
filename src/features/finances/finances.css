@@ -11,7 +11,7 @@
 .finance-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 16px; margin: 20px 0; }
 .finance-filters .field, .finance-filters :is(input, select) { min-width: 0; width: 100%; }
 .finance-list { list-style: none; padding: 0; }
-.finance-list .list-row { gap: 16px; padding: 24px 0; }
+.finance-list .list-row { gap: 16px; padding: 19px 18px; }
 .finance-list .row-main { min-width: 0; display: grid; gap: 5px; overflow-wrap: anywhere; }
 .finance-list .row-main p { margin: 2px 0 5px; }
 .finance-list .status { justify-self: start; }

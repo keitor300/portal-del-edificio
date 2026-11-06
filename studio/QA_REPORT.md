@@ -98,3 +98,19 @@ None found.
 - Interactive task-entry check passed: owner chat, direct owner issue creation, administration expense loading, and administration vote creation all open their intended destination or dialog.
 - Browser workflow sweep passed at 320, 390, 768 and 1280px with no horizontal overflow, no broken images, no console errors and no accessibility smoke-test violations on service routes.
 - Production smoke passed at `https://portal-del-edificio.vercel.app` using a 390 x 844 viewport: the public alias returned 200, Owner Chat navigated correctly, Cargar expensas opened its form, no horizontal overflow occurred, and no browser errors were reported.
+
+## Operational surface polish - 2026-11-06
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- Rendered local captures: `studio/.qa/owner-chat-mobile.png`, `studio/.qa/owner-issues-mobile.png`, `studio/.qa/owner-community-mobile.png`, `studio/.qa/admin-chat-mobile.png`, and `studio/.qa/admin-chat-desktop.png`.
+- At 390 x 844 and 1440 x 1000, conversation turns, service lists, meetings and administration inbox panels had no horizontal overflow and no browser errors.
+- Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`.

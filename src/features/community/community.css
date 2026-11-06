@@ -16,8 +16,8 @@
 .community-form .field { min-width: 0; }
 .community-form textarea { resize: vertical; }
 .community-preserve { white-space: pre-wrap; overflow-wrap: anywhere; }
-.community-meeting { padding: 24px 0; border-bottom: 1px solid #d9dfda; }
-.community-meeting:first-of-type { padding-top: 0; }
+.community-meeting { padding: 21px; border: 1px solid #d9e1d9; border-radius: 8px; background: #fff; box-shadow: 0 6px 16px #173d2d08; }
+.community-meeting + .community-meeting { margin-top: 12px; }
 .community-meeting-content > * + * { margin-top: 16px; }
 .community-facts { display: flex; flex-wrap: wrap; gap: 20px 40px; margin: 20px 0; }
 .community-facts > div { min-width: 0; max-width: 100%; }
@@ -25,7 +25,7 @@
 .community-facts dd { margin: 4px 0 0; font-weight: 600; }
 .community-agenda { padding-left: 24px; }
 .community-agenda li + li { margin-top: 8px; }
-.community-notice { background: #f7f8f6; border-left: 4px solid #966215; padding: 16px; line-height: 1.6; }
+.community-notice { background: #fff9ec; border: 1px solid #eadaba; border-left: 4px solid #966215; border-radius: 8px; padding: 16px; box-shadow: 0 5px 14px #654a1e0a; line-height: 1.6; }
 .community-topic { align-items: flex-start; }
 .community-topic .row-actions { width: 100%; }
 .community-comments { padding-left: 0; list-style: none; }
