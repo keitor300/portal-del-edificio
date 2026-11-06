@@ -48,12 +48,12 @@ async function goto(path) {
 test('booking acceptance, reload, cross-role collision, cancellation, blocking and rule editing', async () => {
   await goto('/servicios/sum');
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
-  await page.getByLabel('Desde').selectOption('18:30');
-  await page.getByLabel('Hasta').selectOption('20:30');
-  await page.getByRole('button', { name: 'Revisar reserva' }).click();
+  await page.getByLabel('Hora de inicio').selectOption('18:30');
+  await page.getByLabel('Hora de finalización').selectOption('20:30');
+  await page.getByRole('button', { name: 'Continuar con la reserva' }).click();
   await expect(page.getByRole('alert')).toContainText('Aceptá el reglamento');
   await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Revisar reserva' }).click();
+  await page.getByRole('button', { name: 'Continuar con la reserva' }).click();
   await page.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
   await page.reload();
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
@@ -63,10 +63,10 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await goto('/admin/servicios?tab=sum');
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
   await page.getByLabel('Unidad', { exact: true }).fill('2C');
-  await page.getByLabel('Desde').selectOption('21:00');
-  await page.getByLabel('Hasta').selectOption('21:30');
+  await page.getByLabel('Hora de inicio').selectOption('21:00');
+  await page.getByLabel('Hora de finalización').selectOption('21:30');
   await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Revisar reserva' }).click();
+  await page.getByRole('button', { name: 'Continuar con la reserva' }).click();
   await page.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
   await page.getByLabel('Fecha a bloquear').fill('2099-09-06');
   await page.getByRole('button', { name: 'Bloquear día' }).click();
@@ -76,8 +76,8 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
   await page.getByRole('button', { name: /Cancelar reserva del 6 de septiembre a las 21:00, unidad 2C/ }).click();
   await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
-  await page.getByLabel('Desde').selectOption('18:00');
-  await page.getByLabel('Hasta').selectOption('19:00');
+  await page.getByLabel('Hora de inicio').selectOption('18:00');
+  await page.getByLabel('Hora de finalización').selectOption('19:00');
   await page.getByRole('button', { name: 'Bloquear día' }).click();
   await expect(page.getByRole('status')).toContainText('Fecha bloqueada por administración');
   await page.getByRole('button', { name: 'Desbloquear 6 de septiembre', exact: true }).click();

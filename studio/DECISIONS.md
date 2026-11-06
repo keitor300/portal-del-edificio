@@ -8,3 +8,4 @@
 - Native IAB inspection and repeatable Playwright browser tests/screenshots.
 - Premium-web-studio owns art direction. Complementary frontend concept-generation workflow inspected but not adopted; provided photos and specific operational brief define assets.
 - 2026-09-07 visual redesign: keep all routes and functionality, but reduce first-screen choices to three owner actions and three admin priorities. Move Novedades into the home feed, expose Servicios in primary owner navigation, and group secondary functions with native details disclosure. Use the supplied facade and city images as hero scenes with a warm ivory, deep forest, and brass editorial palette.
+- 2026-11-06 MODE: POLISH. The SUM booking flow keeps native date/time controls and all existing availability rules, but presents start and finish as two large sequential touch targets. This is intentionally clearer for iPhone and older residents than a dense custom time grid.

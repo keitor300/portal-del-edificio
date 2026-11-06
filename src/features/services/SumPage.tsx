@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { CalendarDays, Check, Expand, Plus, Save, Trash2, Unlock } from 'lucide-react';
+import { ArrowRight, CalendarDays, Check, Clock3, Expand, Plus, Save, Trash2, Unlock } from 'lucide-react';
 import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
@@ -13,13 +13,21 @@ export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndC
   const feedback = startTime && endTime ? rangeUnavailable(date, startTime, endTime, data.reservations, data.settings) : '';
   const endOptions = sumTimeOptions(date, true).filter(option => !startTime || !!validBookingRange(date, startTime, option.value));
   return <fieldset className="sum-range-picker" aria-label="Horario de la reserva">
+    <legend>Horario de la reserva</legend>
     <div className="sum-range-fields">
-      <Field label="Desde"><select value={startTime} required onChange={event => onStartChange(event.target.value)}><option value="">Elegí una hora</option>{sumTimeOptions(date).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
-      <span className="sum-range-separator" aria-hidden="true">a</span>
-      <Field label="Hasta"><select value={endTime} required onChange={event => onEndChange(event.target.value)}><option value="">Elegí una hora</option>{endOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+      <label className={`sum-time-choice ${startTime ? 'is-selected' : ''}`}>
+        <span className="sum-time-heading"><span className="sum-step-number">1</span><span><strong>Empieza</strong><small>Elegí la hora de inicio</small></span></span>
+        <span className="sum-time-control"><Clock3 size={21} aria-hidden="true" /><select aria-label="Hora de inicio" value={startTime} required onChange={event => onStartChange(event.target.value)}><option value="">Elegí una hora</option>{sumTimeOptions(date).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></span>
+      </label>
+      <ArrowRight className="sum-range-separator" size={22} aria-hidden="true" />
+      <label className={`sum-time-choice ${endTime ? 'is-selected' : ''} ${!startTime ? 'is-disabled' : ''}`}>
+        <span className="sum-time-heading"><span className="sum-step-number">2</span><span><strong>Termina</strong><small>{startTime ? 'Elegí la hora de finalización' : 'Primero elegí el inicio'}</small></span></span>
+        <span className="sum-time-control"><Clock3 size={21} aria-hidden="true" /><select aria-label="Hora de finalización" value={endTime} required disabled={!startTime} onChange={event => onEndChange(event.target.value)}><option value="">Elegí una hora</option>{endOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></span>
+      </label>
     </div>
-    <p className="sum-range-help">{window?.closeTime === '03:00' ? 'Viernes y sábado: opciones hasta las 03:00 del día siguiente.' : 'Domingo a jueves: opciones hasta la 01:00 del día siguiente.'} Las horas se eligen de la lista, en punto o media hora.</p>
-    {startTime && endTime && <p className={`sum-range-feedback ${feedback ? 'is-error' : 'is-ok'}`} role="status">{feedback || 'Este horario está disponible.'}</p>}
+    <p className="sum-range-help"><Clock3 size={18} aria-hidden="true" />{window?.closeTime === '03:00' ? 'Viernes y sábado: el SUM puede usarse hasta las 03:00 del día siguiente.' : 'Domingo a jueves: el SUM puede usarse hasta la 01:00 del día siguiente.'}</p>
+    {startTime && !endTime && <p className="sum-range-feedback" role="status">Ahora elegí hasta qué hora querés usar el SUM.</p>}
+    {startTime && endTime && <p className={`sum-range-feedback ${feedback ? 'is-error' : 'is-ok'}`} role="status">{feedback || `Horario elegido: ${startTime} a ${endTime}. Este horario está disponible.`}</p>}
   </fieldset>;
 }
 
@@ -63,12 +71,12 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
   return <>
     <form onSubmit={review} className="services-booking-form">
       {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input aria-label="Unidad" required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
-      <Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setStartTime(''); setEndTime(''); setError(''); }} /></Field>
+      <div className="sum-date-field"><Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setStartTime(''); setEndTime(''); setError(''); }} /></Field></div>
       <SumRangePicker date={date} startTime={startTime} endTime={endTime} onStartChange={value => { setStartTime(value); setEndTime(''); setError(''); }} onEndChange={value => { setEndTime(value); setError(''); }} />
       <div><h3>Reglamento del SUM</h3><div className="services-rules" role="region" aria-label="Reglamento del SUM" tabIndex={0}>{data.settings.rules || 'El reglamento todavía no está cargado.'}</div></div>
       <label className="services-check"><input type="checkbox" checked={accepted} onChange={event => setAcceptedRules(event.target.checked ? data.settings.rules : null)} />{admin ? 'Confirmo la aceptación del reglamento por esta unidad.' : 'Leí y acepto el reglamento del SUM.'}</label>
       {error && <p role="alert" className="error">{error}</p>}
-      <button className="button" type="submit"><CalendarDays size={20} aria-hidden="true" />Revisar reserva</button>
+      <button className="button sum-review-button" type="submit"><CalendarDays size={20} aria-hidden="true" />Continuar con la reserva</button>
     </form>
     {confirmation && <Modal title="Confirmar reserva del SUM" onClose={() => setConfirmation(false)}>
       <p><strong>Unidad {unit.trim().replace(/^unidad\s*/i, '').toUpperCase()}</strong></p>

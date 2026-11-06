@@ -41,3 +41,24 @@ None found in the audited demo flows.
 - Owner and administration menus use native disclosure groups so only the first operational group is open by default; no route or feature was removed.
 - Visual evidence captured locally in `studio/.qa/owner-mobile.png`, `studio/.qa/admin-mobile.png`, `studio/.qa/owner-desktop.png`, and `studio/.qa/admin-desktop.png`. At 390px and 1280px, `scrollWidth` matched `innerWidth` and no Vite error overlay rendered.
 - Manual browser inspection covered public home, owner home, admin home, owner grouped menu, and admin grouped menu. Existing service, reservation, notices, and auth tests were rerun after the CSS and hierarchy changes.
+
+## SUM booking polish - 2026-11-06
+
+## P0 - BLOCKERS
+
+None found.
+
+## P1 - IMPORTANT
+
+None found.
+
+## P2 - POLISH
+
+- The booking form now presents a date surface followed by two sequential time controls: `Empieza` and `Termina`. The end control is disabled until an owner chooses the start time, and selected times receive a high-contrast active state.
+
+## Evidence
+
+- Rendered local captures: `studio/.qa/sum-mobile-controls.png`, `studio/.qa/sum-mobile-selected.png`, and `studio/.qa/sum-desktop-polish.png`.
+- Mobile inspection at 390 x 844: the two controls stack in the order of use, retain 58 px control height, show no horizontal overflow, and keep the bottom navigation clear of interactive choices.
+- Desktop inspection at 1440 x 900: date, start, and end choices remain grouped beside the SUM image without crowding the reservation form.
+- Validation: `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run test:community`, `npm run test:browser`, and `npm run build` all passed.
