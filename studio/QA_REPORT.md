@@ -114,6 +114,24 @@ None found.
 - Rendered local captures: `studio/.qa/owner-chat-mobile.png`, `studio/.qa/owner-issues-mobile.png`, `studio/.qa/owner-community-mobile.png`, `studio/.qa/admin-chat-mobile.png`, and `studio/.qa/admin-chat-desktop.png`.
 - At 390 x 844 and 1440 x 1000, conversation turns, service lists, meetings and administration inbox panels had no horizontal overflow and no browser errors.
 - Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`.
+
+## Cross-page card alignment audit - 2026-11-06
+
+### P0 - BLOCKERS
+
+None found after correction.
+
+### P1 - IMPORTANT
+
+None found after correction.
+
+### Evidence
+
+- Corrected the mobile shared list-row padding that left content flush against its card edge in reused lists.
+- Rendered owner home, SUM, claims, building, notices, and administration home, communications, accounts, community and services at 390 x 844; all had no horizontal overflow, out-of-viewport cards or browser errors.
+- Rechecked the same route set at 1440 x 1000 with no horizontal overflow, out-of-viewport cards or browser errors.
+- Spot-checked corrected captures: `studio/.qa/audit-owner-issues-fixed.png`, `studio/.qa/audit-owner-sum-fixed.png`, `studio/.qa/audit-admin-community-fixed.png`, `studio/.qa/audit-admin-finances-fixed.png`, and `studio/.qa/audit-admin-notices-fixed.png`.
+- Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`.
 - Production smoke passed at `https://portal-del-edificio.vercel.app/demo/administracion/comunicaciones` using a 390 x 844 viewport: HTTP 200, 18 notice cards and 18 administration action footers rendered, with no horizontal overflow or browser errors.
 - Production smoke passed at `https://portal-del-edificio.vercel.app/demo/propietario/servicios/chat` using a 390 x 844 viewport: HTTP 200, three message cards rendered, no horizontal overflow and no browser errors.
 
