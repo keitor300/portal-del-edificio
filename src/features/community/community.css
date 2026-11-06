@@ -58,6 +58,8 @@
 .community-kind-cuts { border-color: #9c6618; }
 .community-kind-expenses { border-color: #65704a; }
 @media (max-width: 600px) {
+  .admin-community-page .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+  .admin-community-page .tabs button { width: 100%; }
   .community-calendar-filters { grid-template-columns: minmax(0, 1fr); }
   .community-page .list-row { align-items: stretch; }
   .community-page .list-row > .row-main { flex-basis: 100%; }

@@ -11,14 +11,14 @@ import { OWNER_UNIT } from './model';
 import './services.css';
 
 export function ServicesPage() {
-  return <div className="services-page"><PageHeader title="Servicios" description="Reservas, reclamos y contactos del edificio." />
+  return <div className="services-page"><PageHeader title="Servicios" description="Elegí lo que necesitás hacer en el edificio." />
     <div className="services-gateways">
-      <Gateway to="/servicios/sum" title="Reservar el SUM" description="Disponibilidad, reglamento y mis reservas" icon={<CalendarDays aria-hidden="true" />} />
-      <Gateway to="/servicios/reclamos" title="Reclamos" description="Crear un reclamo y consultar su seguimiento" icon={<ClipboardList aria-hidden="true" />} />
-      <Gateway to="/servicios/chat" title="Chat con administración" description="Consultas de tu unidad" icon={<MessageCircle aria-hidden="true" />} />
-      <Gateway to="/servicios/contactos" title="Contactos útiles" description="Administración y mantenimiento" icon={<ContactRound aria-hidden="true" />} />
+      <Gateway className="service-gateway service-sum" to="/servicios/sum" title="Reservar el SUM" description="Disponibilidad, reglas y mis reservas" icon={<CalendarDays aria-hidden="true" />} />
+      <Gateway className="service-gateway service-issues" to="/servicios/reclamos" title="Informar un problema" description="Crear un reclamo y seguirlo" icon={<ClipboardList aria-hidden="true" />} />
+      <Gateway className="service-gateway service-chat" to="/servicios/chat" title="Hablar con administración" description="Enviar una consulta de tu unidad" icon={<MessageCircle aria-hidden="true" />} />
+      <Gateway className="service-gateway service-contacts" to="/servicios/contactos" title="Contactos y ayuda" description="Administración, mantenimiento y urgencias" icon={<ContactRound aria-hidden="true" />} />
     </div>
-    <div className="services-urgent"><AlertTriangle aria-hidden="true" /><div><p><strong>¿Hay una urgencia?</strong></p><Link className="button secondary" to="/servicios/urgencias">Consultar urgencias<ChevronRight size={18} aria-hidden="true" /></Link></div></div>
+    <div className="services-urgent"><AlertTriangle aria-hidden="true" /><div><p><strong>¿Hay una urgencia?</strong></p><p>Encontrá una orientación segura y los contactos del edificio.</p><Link className="button secondary" to="/servicios/urgencias">Ver ayuda urgente<ChevronRight size={18} aria-hidden="true" /></Link></div></div>
   </div>;
 }
 
@@ -46,10 +46,10 @@ export function ContactsPage() {
   const { data } = usePortal();
   const [category, setCategory] = useState('');
   const categories = [...new Set(data.contacts.map(contact => contact.category).filter((value): value is string => !!value))];
-  return <div className="services-page"><PageHeader title="Contactos útiles" description="Directorio de ejemplo. Los proveedores, horarios y teléfonos deben confirmarse con administración." back="/servicios" />
+  return <div className="services-page"><PageHeader title="Contactos y ayuda" description="Directorio de ejemplo. Los proveedores, horarios y teléfonos deben confirmarse con administración." back="/servicios" />
+    <div className="services-contact-actions"><Link className="button" to="/servicios/chat"><MessageCircle size={18} aria-hidden="true" />Hablar con administración</Link><Link className="button secondary" to="/servicios/urgencias"><AlertTriangle size={18} aria-hidden="true" />Ver ayuda urgente</Link></div>
     <Field label="Categoría de contacto"><select value={category} onChange={event => setCategory(event.target.value)}><option value="">Todos los contactos</option>{categories.map(value => <option key={value}>{value}</option>)}</select></Field>
     <ContactList contacts={data.contacts.filter(contact => !category || contact.category === category)} />
-    <div className="form-actions"><Link className="button" to="/servicios/chat"><MessageCircle size={18} aria-hidden="true" />Consultar a administración</Link><Link className="button secondary" to="/servicios/urgencias"><AlertTriangle size={18} aria-hidden="true" />Urgencias</Link></div>
   </div>;
 }
 
@@ -78,7 +78,8 @@ export function AdminServicesPage() {
   const [params, setParams] = useSearchParams();
   const requested = params.get('tab');
   const tab = ['sum', 'reclamos', 'chat'].includes(requested ?? '') ? requested! : 'sum';
-  return <div className="services-page"><PageHeader title="Servicios del edificio" description="Reservas, reclamos y conversación local de administración." />
+  return <div className="services-page"><PageHeader title="Atención y servicios" description="Reservas, reclamos y consultas de los propietarios." />
+    <div className="admin-service-choices" aria-label="Elegir tarea de administración"><button type="button" className={tab === 'sum' ? 'active sum' : 'sum'} onClick={() => setParams({ tab: 'sum' })}><CalendarDays size={22} /><span><strong>Reservas del SUM</strong><small>Horarios y uso del salón</small></span></button><button type="button" className={tab === 'reclamos' ? 'active issues' : 'issues'} onClick={() => setParams({ tab: 'reclamos' })}><ClipboardList size={22} /><span><strong>Reclamos</strong><small>Pedidos de las unidades</small></span></button><button type="button" className={tab === 'chat' ? 'active chat' : 'chat'} onClick={() => setParams({ tab: 'chat' })}><MessageCircle size={22} /><span><strong>Consultas</strong><small>Mensajes por unidad</small></span></button></div>
     <Tabs items={[{ id: 'sum', label: 'SUM' }, { id: 'reclamos', label: 'Reclamos' }, { id: 'chat', label: 'Chat' }]} value={tab} onChange={value => { const next = new URLSearchParams(params); next.set('tab', value); setParams(next); }} />
     {tab === 'sum' && <AdminSum />}{tab === 'reclamos' && <IssuesPanel admin />}{tab === 'chat' && <ChatPanel admin />}
   </div>;

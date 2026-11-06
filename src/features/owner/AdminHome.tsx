@@ -1,4 +1,4 @@
-import { ArrowUpRight, CalendarDays, CalendarPlus, FilePlus2, FileText, Landmark, Megaphone, MessageCircle, Users, Wrench } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, CalendarPlus, ChevronRight, FilePlus2, FileText, Landmark, Megaphone, MessageCircle, Users, Wrench } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { Empty, Section, Status } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
@@ -18,6 +18,9 @@ export function AdminHomePage() {
     { label: 'Nuevo aviso', description: 'Informá una novedad a todo el edificio', to: `${adminBase}/comunicaciones?new=1`, Icon: Megaphone, tone: 'notice', featured: true },
     { label: 'Crear reunión', description: 'Convocá y armá el orden del día', to: `${adminBase}/comunidad?tab=reuniones&new=1`, Icon: CalendarPlus, tone: 'meeting' },
     { label: 'Registrar movimiento', description: 'Anotá un ingreso o un gasto de caja', to: `${adminBase}/finanzas?tab=movimientos&new=1`, Icon: Landmark, tone: 'finance' },
+    { label: 'Cargar expensas', description: 'Publicá la liquidación y su PDF', to: `${adminBase}/finanzas?tab=expensas&new=1`, Icon: FileText, tone: 'expenses' },
+  ];
+  const secondaryActions = [
     { label: 'Publicar reparación', description: 'Contá un trabajo o su avance', to: `${adminBase}/contenido?tab=works&new=1`, Icon: Wrench, tone: 'works' },
     { label: 'Agregar documento', description: 'Subí un acta, reglamento o archivo', to: `${adminBase}/contenido?tab=documents&new=1`, Icon: FilePlus2, tone: 'document' },
     { label: 'Crear encuesta', description: 'Pedí opinión a las unidades', to: `${adminBase}/comunidad?tab=encuestas&new=1`, Icon: Users, tone: 'survey' },
@@ -35,7 +38,7 @@ export function AdminHomePage() {
       <figure className="home-hero-image"><img src="/images/vista.jpg" alt="Vista de la ciudad desde el edificio" width="1200" height="800" /><figcaption><span>Administración</span><small>Información clara, comunidad al día</small></figcaption></figure>
     </div>
 
-    <section className="admin-creation-desk" aria-labelledby="admin-actions-title"><div className="admin-creation-heading"><div><span className="eyebrow">Acciones rápidas</span><h2 id="admin-actions-title">Crear y comunicar</h2><p>Elegí una acción para poner al edificio al día.</p></div><span className="admin-desk-note">Los cambios se reflejan en Propietario</span></div><div className="admin-creation-grid">{creationActions.map(({ label, description, to, Icon, tone, featured }) => <Link className={`admin-create-card ${tone}${featured ? ' featured' : ''}`} key={label} to={to}><span className="admin-create-icon"><Icon size={24} /></span><span className="admin-create-copy"><strong>{label}</strong><small>{description}</small></span><ArrowUpRight size={19} /></Link>)}</div></section>
+    <section className="admin-creation-desk" aria-labelledby="admin-actions-title"><div className="admin-creation-heading"><div><span className="eyebrow">Acciones rápidas</span><h2 id="admin-actions-title">¿Qué querés hacer?</h2><p>Elegí una acción clara para poner al edificio al día.</p></div><span className="admin-desk-note">Los cambios se reflejan en Propietario</span></div><div className="admin-creation-grid">{creationActions.map(({ label, description, to, Icon, tone, featured }) => <Link className={`admin-create-card ${tone}${featured ? ' featured' : ''}`} key={label} to={to}><span className="admin-create-icon"><Icon size={24} /></span><span className="admin-create-copy"><strong>{label}</strong><small>{description}</small></span><ArrowUpRight size={19} /></Link>)}</div><details className="admin-secondary-actions"><summary><span><strong>Otras acciones</strong><small>Reparaciones, documentos y encuestas</small></span><ChevronRight size={20} /></summary><div className="admin-action-list">{secondaryActions.map(({ label, description, to, Icon }) => <Link key={label} to={to}><span className="admin-action-icon"><Icon size={21} /></span><span><strong>{label}</strong><small>{description}</small></span><ArrowUpRight size={19} /></Link>)}</div></details></section>
 
     <section className="admin-monitoring" aria-labelledby="admin-monitoring-title"><div className="admin-monitoring-heading"><div><span className="eyebrow">Seguimiento</span><h2 id="admin-monitoring-title">Lo que requiere atención</h2></div><span className="muted">Actualizado en esta demo</span></div><div className="admin-monitoring-grid">{monitoring.map(({ label, value, description, to, Icon, tone }) => <Link className={`admin-monitor-card ${tone}`} to={to} key={label}><span className="admin-monitor-icon"><Icon size={20} /></span><span className="admin-monitor-copy"><span>{label}</span><strong>{value}</strong><small>{description}</small></span><ArrowUpRight size={18} /></Link>)}</div></section>
 

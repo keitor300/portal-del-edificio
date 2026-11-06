@@ -37,14 +37,14 @@ test('admin route requires the demo credentials, keeps internal links protected 
   await page.getByLabel('Contraseña').fill('admin');
   await page.getByRole('button', { name: 'Ingresar' }).click();
   await expect(page).toHaveURL(/\/admin\/servicios\?tab=sum$/);
-  await expect(page.getByRole('heading', { name: 'Servicios del edificio' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Atención y servicios' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Comunicaciones' }).first()).toHaveAttribute('href', '/admin/comunicaciones');
 
-  await page.getByRole('link', { name: 'Menú' }).first().click();
+  await page.getByRole('link', { name: 'Más herramientas' }).first().click();
   await expect(page).toHaveURL(/\/admin\/menu$/);
   await page.getByRole('link', { name: /Reservas del SUM/ }).click();
   await expect(page).toHaveURL(/\/admin\/servicios\?tab=sum$/);
-  await expect(page.getByRole('heading', { name: 'Servicios del edificio' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Atención y servicios' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Cerrar sesión' }).click();
   await expect(page).toHaveURL(/\/admin$/);

@@ -10,13 +10,13 @@ export { financeSeed } from './seed';
 
 export function FinancesPage({ admin = false }: { admin?: boolean }) {
   const [params, setParams] = useSearchParams();
-  const items = [{ id: 'movimientos', label: 'Movimientos' }, { id: 'expensas', label: 'Expensas' }, { id: 'presupuestos', label: 'Presupuestos' }, ...(admin ? [{ id: 'importar', label: 'Importar' }] : [])];
+  const items = [{ id: 'movimientos', label: admin ? 'Caja' : 'Movimientos' }, { id: 'expensas', label: 'Expensas' }, { id: 'presupuestos', label: 'Presupuestos' }, ...(admin ? [{ id: 'importar', label: 'Importar' }] : [])];
   const requestedTab = params.get('tab') || 'movimientos';
   const tab = items.some(item => item.id === requestedTab) ? requestedTab : 'movimientos';
   const newRequested = admin && params.get('new') === '1';
   const onNewHandled = () => { if (params.has('new')) { const next = new URLSearchParams(params); next.delete('new'); setParams(next, { replace: true }); } };
   const shared = { admin, newRequested, onNewHandled };
-  return <div className="finances"><PageHeader title={admin ? 'Caja y finanzas' : 'Cuentas del edificio'} description={admin ? 'Anotá la caja del consorcio y dejá cada movimiento visible.' : 'Saldo del consorcio, movimientos y presupuestos.'}/><Tabs items={items} value={tab} onChange={value => { const next = new URLSearchParams(params); next.set('tab', value); next.delete('new'); setParams(next); }}/>
+  return <div className="finances"><PageHeader title={admin ? 'Cuentas del consorcio' : 'Cuentas del edificio'} description={admin ? 'Anotá ingresos y gastos para que la caja sea transparente.' : 'Saldo, expensas y movimientos del consorcio.'}/><Tabs items={items} value={tab} onChange={value => { const next = new URLSearchParams(params); next.set('tab', value); next.delete('new'); setParams(next); }}/>
     <div key={`${tab}-${newRequested ? 'new' : 'list'}`}>{tab === 'movimientos' ? <Movements {...shared}/> : tab === 'expensas' ? <Expenses {...shared}/> : tab === 'presupuestos' ? <Budgets {...shared}/> : <ImportMovements/>}</div>
   </div>;
 }

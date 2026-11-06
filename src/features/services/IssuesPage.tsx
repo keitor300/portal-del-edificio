@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Camera, CheckCircle2, Plus, Save, X } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowRight, Camera, CheckCircle2, ChevronRight, Plus, Save, X } from 'lucide-react';
 import { Confirm, DocumentActions, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Attachment } from '../../lib/types';
@@ -78,7 +78,8 @@ function IssueDetail({ issueId, admin, onClose }: { issueId: string; admin: bool
 
 export function IssuesPanel({ admin = false }: { admin?: boolean }) {
   const { data } = usePortal();
-  const [newIssue, setNewIssue] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [newIssue, setNewIssue] = useState(() => !admin && params.get('new') === '1');
   const [selected, setSelected] = useState<string>();
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
@@ -86,17 +87,19 @@ export function IssuesPanel({ admin = false }: { admin?: boolean }) {
   const issues = data.issues.filter(item => admin || sameUnit(item.unit)).filter(item => (!status || (item.status || 'Recibido') === status) && (!category || item.category === category) &&
     `${item.title} ${item.description} ${item.unit} ${item.id}`.toLocaleLowerCase('es').includes(search.trim().toLocaleLowerCase('es'))).sort((a, b) => b.date.localeCompare(a.date));
 
+  function closeIssueForm() { setNewIssue(false); if (params.has('new')) { const next = new URLSearchParams(params); next.delete('new'); setParams(next, { replace: true }); } }
+
   return <>
-    <div className="section-heading"><h2>{admin ? 'Reclamos del edificio' : 'Mis reclamos'}</h2>{!admin && <button className="button" onClick={() => setNewIssue(true)}><Plus size={20} aria-hidden="true" />Nuevo reclamo</button>}</div>
-    <div className="services-filters">
+    <div className={`issues-overview${admin ? ' issues-overview-admin' : ''}`}><div><span className="eyebrow">{admin ? 'Seguimiento del edificio' : 'Tus reclamos'}</span><h2>{admin ? 'Reclamos de propietarios' : '¿Necesitás informar un problema?'}</h2><p>{admin ? 'Abrí cada reclamo para responder, actualizar el estado o resolverlo.' : 'Contanos qué pasó y seguí la respuesta de administración.'}</p></div>{!admin && <button className="button" onClick={() => setNewIssue(true)}><Plus size={20} aria-hidden="true" />Informar un problema</button>}</div>
+    <p className="muted" role="status">{issues.length} {issues.length === 1 ? 'reclamo' : 'reclamos'}</p>
+    <details className="service-filters-disclosure"><summary><span><strong>Filtrar reclamos</strong><small>Estado, categoría o búsqueda</small></span><ChevronRight size={20} aria-hidden="true" /></summary><div className="services-filters">
       <Field label="Estado"><select value={status} onChange={event => setStatus(event.target.value)}><option value="">Todos los estados</option>{ISSUE_STATUSES.map(value => <option key={value}>{value}</option>)}</select></Field>
       <Field label="Categoría"><select value={category} onChange={event => setCategory(event.target.value)}><option value="">Todas las categorías</option>{ISSUE_CATEGORIES.map(value => <option key={value}>{value}</option>)}</select></Field>
       <Field label={admin ? 'Buscar reclamo o unidad' : 'Buscar reclamo'}><input type="search" value={search} onChange={event => setSearch(event.target.value)} /></Field>
-    </div>
-    <p className="muted" role="status">{issues.length} {issues.length === 1 ? 'reclamo' : 'reclamos'}</p>
-    <div className="list">{issues.map(issue => <article className="list-row" key={issue.id}><div className="row-main"><strong>{issue.title}</strong><p>{issue.category} · {formatDate(issue.date)}{admin ? ` · Unidad ${issue.unit}` : ''}</p><span className={`status ${issue.status === 'Resuelto' ? 'status-green' : ''}`}>{issue.status || 'Recibido'}</span>{issue.attachment && <span className="services-attachment-note"> <Camera size={16} aria-hidden="true" /> Con foto</span>}</div><div className="row-actions"><button className="button secondary" onClick={() => setSelected(issue.id)} aria-label={`Ver reclamo: ${issue.title}`}>Ver seguimiento<ArrowRight size={18} aria-hidden="true" /></button></div></article>)}</div>
+    </div></details>
+    <div className="list issues-list">{issues.map(issue => <article className="list-row" key={issue.id}><div className="row-main"><strong>{issue.title}</strong><p>{issue.category} · {formatDate(issue.date)}{admin ? ` · Unidad ${issue.unit}` : ''}</p><span className={`status ${issue.status === 'Resuelto' ? 'status-green' : ''}`}>{issue.status || 'Recibido'}</span>{issue.attachment && <span className="services-attachment-note"> <Camera size={16} aria-hidden="true" /> Con foto</span>}</div><div className="row-actions"><button className="button secondary" onClick={() => setSelected(issue.id)} aria-label={`Abrir reclamo: ${issue.title}`}>Abrir reclamo<ArrowRight size={18} aria-hidden="true" /></button></div></article>)}</div>
     {!issues.length && <p className="empty">No hay reclamos para estos filtros.</p>}
-    {newIssue && <IssueForm onClose={() => setNewIssue(false)} onCreated={issueId => { setNewIssue(false); setSelected(issueId); }} />}
+    {newIssue && <IssueForm onClose={closeIssueForm} onCreated={issueId => { closeIssueForm(); setSelected(issueId); }} />}
     {selected && <IssueDetail issueId={selected} admin={admin} onClose={() => setSelected(undefined)} />}
   </>;
 }

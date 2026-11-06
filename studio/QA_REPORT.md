@@ -80,3 +80,20 @@ None found.
 - At 1440 x 1000, 390 x 844, and 320 x 700, the redesigned administration home rendered six direct creation actions and four separate follow-up cards without horizontal overflow or browser errors.
 - Each direct action was exercised: new notice, new meeting, new cash movement, new work update, new document, and new survey all opened their intended form from the administration home.
 - Validation: `npm run build`, `npm run lint`, and `npm test` passed. The suite completed 21 model tests, 5 community tests, and 8 browser workflow tests.
+
+## Incremental task-discovery polish - 2026-11-06
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- Rendered local captures: `studio/.qa/owner-actions-mobile.png`, `studio/.qa/owner-services-mobile.png`, `studio/.qa/owner-building-final-mobile.png`, `studio/.qa/admin-home-mobile.png`, `studio/.qa/admin-services-final-mobile.png`, and `studio/.qa/admin-community-final-mobile.png`.
+- Mobile visual inspection at 390 x 844 verified the preserved owner landing, four distinct owner actions, visible help entry, administration action cards, issue overview, and the two-by-two community navigation.
+- Interactive task-entry check passed: owner chat, direct owner issue creation, administration expense loading, and administration vote creation all open their intended destination or dialog.
+- Browser workflow sweep passed at 320, 390, 768 and 1280px with no horizontal overflow, no broken images, no console errors and no accessibility smoke-test violations on service routes.

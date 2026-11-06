@@ -137,7 +137,7 @@ test('administration notices persist, keep their role context and update the own
 
 test('issue photo and dedicated conversation persist; admin filters, replies, resolves and reopens', async () => {
   await goto('/servicios/reclamos');
-  await page.getByRole('button', { name: 'Nuevo reclamo' }).click();
+  await page.getByRole('button', { name: 'Informar un problema' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Categoría', { exact: true }).selectOption('Agua');
   await dialog.getByLabel('¿Qué ocurrió?').fill('Prueba: humedad en el hall');
@@ -150,13 +150,14 @@ test('issue photo and dedicated conversation persist; admin filters, replies, re
   await expect(dialog.getByRole('log')).toContainText('Detalle adicional del propietario');
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await page.reload();
-  await page.getByRole('button', { name: 'Ver reclamo: Prueba: humedad en el hall' }).click();
+  await page.getByRole('button', { name: 'Abrir reclamo: Prueba: humedad en el hall' }).click();
   await expect(dialog.getByRole('log')).toContainText('Detalle adicional del propietario');
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await goto('/admin/servicios?tab=reclamos');
+  await page.locator('.service-filters-disclosure summary').click();
   await page.getByLabel('Buscar reclamo o unidad').fill('Prueba: humedad');
   await expect(page.locator('.list-row')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Ver reclamo: Prueba: humedad en el hall' }).click();
+  await page.getByRole('button', { name: 'Abrir reclamo: Prueba: humedad en el hall' }).click();
   await dialog.getByLabel('Estado del reclamo').selectOption('En curso');
   await dialog.getByLabel('Mensaje', { exact: true }).fill('Respuesta local de administración');
   await dialog.getByRole('button', { name: 'Guardar mensaje demo' }).click();
@@ -166,7 +167,7 @@ test('issue photo and dedicated conversation persist; admin filters, replies, re
   await dialog.getByLabel('Estado del reclamo').selectOption('En curso');
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await goto('/servicios/reclamos');
-  await page.getByRole('button', { name: 'Ver reclamo: Prueba: humedad en el hall' }).click();
+  await page.getByRole('button', { name: 'Abrir reclamo: Prueba: humedad en el hall' }).click();
   await expect(dialog.getByRole('log')).toContainText('Respuesta local de administración');
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
 });
@@ -231,11 +232,11 @@ test('accessibility basics, modal focus, reduced motion and console health', asy
     assert.deepEqual(result.violations.map(item => item.id), [], `${path}: accessibility violations`);
   }
   await goto('/servicios/reclamos');
-  await page.getByRole('button', { name: 'Nuevo reclamo' }).click();
+  await page.getByRole('button', { name: 'Informar un problema' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   assert.ok(await page.evaluate(() => document.activeElement.closest('dialog') !== null));
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Nuevo reclamo' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Informar un problema' })).toBeFocused();
   assert.equal(await page.locator('.services-page button').first().evaluate(element => getComputedStyle(element).transitionDuration), '0s');
   assert.deepEqual(errors, []);
 });
