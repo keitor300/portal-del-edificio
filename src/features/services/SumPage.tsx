@@ -113,7 +113,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
       <Field label="Mostrar reservas"><select value={filter} onChange={event => setFilter(event.target.value)}>{['Próximas', 'Todas', 'Canceladas'].map(value => <option key={value}>{value}</option>)}</select></Field>
       {admin && <Field label="Filtrar por unidad"><input value={unit} onChange={event => setUnit(event.target.value)} placeholder="Ej. 7B" /></Field>}
     </div>
-    <div className="list">{reservations.length ? reservations.map(item => <div className="list-row" key={item.id}>
+    <div className="list reservation-list">{reservations.length ? reservations.map(item => <div className="list-row reservation-row" key={item.id}>
       <div className="row-main"><span className="reservation-unit">Unidad {normalizeUnit(item.unit)}</span><strong>{formatDate(item.date, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime}</p><span className={`status ${activeReservation(item) ? 'status-green' : ''}`}>{item.status || 'Confirmada'}</span></div>
       {activeReservation(item) && (admin || sameUnit(item.unit)) && (reservationEndsAt(item) ?? 0) > now.getTime() && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
     </div>) : <p className="empty">No hay reservas para este filtro.</p>}</div>
