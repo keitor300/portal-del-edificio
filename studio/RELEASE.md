@@ -17,3 +17,5 @@ Release commit: 0138781
 2026-11-06 Operational surface polish: production deployment `https://portal-del-edificio-juwnt2on0-ksixs-projects.vercel.app` is READY and aliases the public portal. Release commit: `82a95cb`. The public alias returned 200; Owner Chat rendered three elevated message cards at 390 x 844 with no horizontal overflow or browser errors.
 
 2026-11-06 Communications card polish: production deployment `https://portal-del-edificio-falw13u98-ksixs-projects.vercel.app` is READY and aliases the public portal. Release commit: `8c9c079`. The public administration communications screen returned 200; 18 color-coded notice cards and their action footers rendered at 390 x 844 without overflow or browser errors.
+
+2026-11-06 Cross-page card alignment audit: production deployment `https://portal-del-edificio-fe1q42gd6-ksixs-projects.vercel.app` is READY and aliases the public portal. Release commit: `61e9afb`. Public 390 x 844 checks confirmed Reclamos and Comunidad list cards retain their horizontal padding, with no overflow or browser errors.
