@@ -2,6 +2,7 @@ import { ArrowUpRight, Building2, CalendarDays, ChevronRight, ClipboardList, Fil
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { usePortal } from '../../hooks/usePortal';
+import type { Entity } from '../../lib/types';
 import { formatDate } from '../../lib/utils';
 
 const gallery = [
@@ -10,6 +11,25 @@ const gallery = [
   { src: '/images/sum.jpg', alt: 'Salón de usos múltiples con vista a la ciudad', label: 'El salón de usos múltiples' },
   { src: '/images/vista.jpg', alt: 'Vista panorámica de la ciudad desde el edificio', label: 'La vista desde arriba' },
 ];
+
+function noticeTone(notice: Entity) {
+  if (notice.urgent) return 'urgent';
+  switch (notice.category) {
+    case 'Mantenimiento': return 'maintenance';
+    case 'Reunión': return 'meeting';
+    case 'Comunidad': return 'community';
+    default: return 'information';
+  }
+}
+
+function PublicNoticeCard({ notice }: { notice: Entity }) {
+  const category = notice.urgent ? 'Importante' : notice.category ?? 'Información';
+  return <Link className={`public-news-row public-news-tone-${noticeTone(notice)}`} to={`/novedades/${notice.id}`}>
+    <time className="public-news-date" dateTime={notice.date} aria-label={formatDate(notice.date)}><strong>{formatDate(notice.date, { day: 'numeric' })}</strong><small>{formatDate(notice.date, { month: 'short' })}</small></time>
+    <span className="public-news-copy"><span className="public-news-topline"><span className="public-news-category">{category}</span></span><strong>{notice.title}</strong><span>{notice.description}</span></span>
+    <ArrowUpRight size={19} />
+  </Link>;
+}
 
 export function PublicHeader() {
   return <header className="public-header">
@@ -51,7 +71,7 @@ export function PublicHomePage() {
 
     <section className="public-news" aria-labelledby="news-title">
       <div className="public-section-heading"><div><span className="public-kicker">Cartelera</span><h2 id="news-title">Lo que está pasando</h2></div><Link to="/novedades" className="public-text-link">Ver todas <ArrowUpRight size={17} /></Link></div>
-      <div className="public-news-list">{notices.map((notice, index) => <Link className={`public-news-row ${index === 0 && notice.urgent ? 'public-news-primary' : ''}`} to={`/novedades/${notice.id}`} key={notice.id}><span className="public-news-date">{formatDate(notice.date)}</span><span className="public-news-copy"><strong>{notice.title}</strong><span>{notice.description}</span></span><span className="public-demo-badge">{notice.urgent ? 'Importante' : 'Demo'}</span><ArrowUpRight size={18} /></Link>)}</div>
+      <div className="public-news-list">{notices.map(notice => <PublicNoticeCard notice={notice} key={notice.id} />)}</div>
     </section>
 
     <section className="public-actions" aria-labelledby="actions-title">
@@ -87,7 +107,7 @@ export function PublicHomePage() {
 
 export function PublicNewsPage() {
   const { data } = usePortal();
-  return <PublicLayout><section className="public-inner-page"><span className="public-kicker">Cartelera del edificio</span><h1>Novedades</h1><p className="public-lead">Las comunicaciones más recientes de Edificio 13 y 34.</p><div className="public-news-list public-news-page-list">{[...data.notices].sort((a, b) => Number(b.urgent) - Number(a.urgent) || b.date.localeCompare(a.date)).map(notice => <Link className={`public-news-row ${notice.urgent ? 'public-news-primary' : ''}`} to={`/novedades/${notice.id}`} key={notice.id}><span className="public-news-date">{formatDate(notice.date)}</span><span className="public-news-copy"><strong>{notice.title}</strong><span>{notice.description}</span></span><span className="public-demo-badge">{notice.urgent ? 'Importante' : 'Demo'}</span><ArrowUpRight size={18} /></Link>)}</div></section></PublicLayout>;
+  return <PublicLayout><section className="public-inner-page"><span className="public-kicker">Cartelera del edificio</span><h1>Novedades</h1><p className="public-lead">Las comunicaciones más recientes de Edificio 13 y 34.</p><div className="public-news-list public-news-page-list">{[...data.notices].sort((a, b) => Number(b.urgent) - Number(a.urgent) || b.date.localeCompare(a.date)).map(notice => <PublicNoticeCard notice={notice} key={notice.id} />)}</div></section></PublicLayout>;
 }
 
 export function PublicBuildingPage() {

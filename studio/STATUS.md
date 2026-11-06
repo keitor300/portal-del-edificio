@@ -20,3 +20,5 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 2026-11-06: Communications card polish released in `8c9c079` to https://portal-del-edificio.vercel.app. Notice category color, visual hierarchy and the administration action footer now make the cartelera easier to scan without modifying publishing or reading behavior. Local and public mobile QA passed.
 
 2026-11-06: Cross-page visual audit released in `61e9afb` to https://portal-del-edificio.vercel.app. The shared list-card alignment issue is corrected across the main owner and administration routes at mobile and desktop viewports. Public mobile QA passed.
+
+2026-11-06: Public Cartelera visual polish validated locally. Public notice cards now use readable date tiles, category signals and restrained color without changing news routes or content. Production release pending.
