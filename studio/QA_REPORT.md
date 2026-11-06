@@ -63,3 +63,20 @@ None found.
 - Desktop inspection at 1440 x 900: date, start, and end choices remain grouped beside the SUM image without crowding the reservation form.
 - Validation: `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run test:community`, `npm run test:browser`, and `npm run build` all passed.
 - Protected preview QA passed with Vercel's short-lived development credential; the production smoke test passed at `https://portal-del-edificio.vercel.app/demo/propietario/servicios/sum` at 390 x 844. It verified the start/end sequence, available-range feedback, image load, no horizontal overflow, and no browser errors.
+
+## Administration redesign - 2026-11-06
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- Rendered local captures: `studio/.qa/admin-redesign-desktop.png`, `studio/.qa/admin-redesign-mobile.png`, `studio/.qa/admin-redesign-narrow.png`, `studio/.qa/admin-notice-editor-mobile.png`, and `studio/.qa/admin-meeting-editor-mobile.png`.
+- At 1440 x 1000, 390 x 844, and 320 x 700, the redesigned administration home rendered six direct creation actions and four separate follow-up cards without horizontal overflow or browser errors.
+- Each direct action was exercised: new notice, new meeting, new cash movement, new work update, new document, and new survey all opened their intended form from the administration home.
+- Validation: `npm run build`, `npm run lint`, and `npm test` passed. The suite completed 21 model tests, 5 community tests, and 8 browser workflow tests.
