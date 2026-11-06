@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 
 const bundle = await build({ entryPoints: [new URL('./model.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1')], bundle: true, write: false, format: 'esm', platform: 'node' });
-const { slotUnavailable, rangeUnavailable, bookingError, serviceSeed, validDate, sameUnit, isValidReservation, reservationEndsAt, reservationEndDate, reservationTouchesDate, sumOperatingWindow, sumTimeOptions, validBookingRange } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
+const { BUILDING_UNITS, slotUnavailable, rangeUnavailable, bookingError, serviceSeed, validDate, sameUnit, isBuildingUnit, isValidReservation, reservationEndsAt, reservationEndDate, reservationTouchesDate, sumOperatingWindow, sumTimeOptions, validBookingRange } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 const settings = { rules: 'Reglamento demo', blockedDates: [], openingBalance: 0, seedDate: '2026-09-05' };
 const now = new Date('2026-09-05T09:00:00');
 const reservation = { id: 'booking', title: 'SUM', description: '', date: '2026-09-06', time: '10:00', endTime: '15:00', unit: '3A', status: 'Confirmada' };
@@ -29,11 +29,19 @@ test('past days, already started ranges and invalid times are refused', () => {
   assert.equal(rangeUnavailable('', '10:00', '11:00', [], settings, now), 'Elegí una fecha válida.');
   assert.match(rangeUnavailable('2026-09-06', '16:00', '15:00', [], settings, now), /horario válido/);
 });
-test('rules must be present and explicitly accepted and a unit is required', () => {
+test('rules must be present and explicitly accepted and a listed unit is required', () => {
   assert.equal(bookingError('2099-09-06', '10:00', '12:30', '7B', false, [], settings), 'Aceptá el reglamento para continuar.');
   assert.equal(bookingError('2099-09-06', '10:00', '12:30', '7B', true, [], { ...settings, rules: '' }), 'Administración debe cargar el reglamento antes de reservar.');
-  assert.equal(bookingError('2099-09-06', '10:00', '12:30', ' ', true, [], settings), 'Indicá la unidad.');
+  assert.equal(bookingError('2099-09-06', '10:00', '12:30', ' ', true, [], settings), 'Elegí una unidad del edificio.');
+  assert.equal(bookingError('2099-09-06', '10:00', '12:30', '10Z', true, [], settings), 'Elegí una unidad del edificio.');
   assert.equal(bookingError('2099-09-06', '10:00', '12:30', '7B', true, [], settings), '');
+});
+test('the reservation selector contains the 52 dwellings and excludes garages', () => {
+  assert.equal(BUILDING_UNITS.length, 52);
+  assert.ok(isBuildingUnit('PB L1'));
+  assert.ok(isBuildingUnit('7B'));
+  assert.ok(isBuildingUnit('9C'));
+  assert.equal(isBuildingUnit('SS 01'), false);
 });
 test('free ranges collide precisely and legacy reservations remain conservative', () => {
   assert.equal(rangeUnavailable('2026-09-06', '14:00', '16:00', [{ ...reservation, time: '14:00', endTime: '18:00' }], settings, now), 'Ese horario se superpone con otra reserva.');

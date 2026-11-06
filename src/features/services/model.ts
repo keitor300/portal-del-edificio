@@ -2,6 +2,18 @@ import type { DemoData, Entity, Settings } from '../../lib/types';
 import { relativeDate, today } from '../../lib/utils';
 
 export const OWNER_UNIT = '7B';
+export const BUILDING_UNITS = [
+  'PB L1', 'PB L2', 'PB L3',
+  '101', '102', '103', '104',
+  '201', '202', '203', '204',
+  '301', '302', '303', '304', '305',
+  '4A', '4B', '4C', '4D', '4E', '4F', '4G',
+  '5A', '5B', '5C', '5D', '5E', '5F', '5G',
+  '6A', '6B', '6C', '6D', '6E', '6F', '6G',
+  '7A', '7B', '7C', '7D', '7E', '7F', '7G',
+  '8A', '8B', '8C', '8D', '8E',
+  '9A', '9B', '9C',
+] as const;
 export const ISSUE_CATEGORIES = ['Agua', 'Ascensor', 'Gas', 'Electricidad', 'Limpieza', 'Otro'];
 export const ISSUE_STATUSES = ['Recibido', 'En curso', 'Resuelto'];
 export const SUM_SLOTS = [
@@ -25,8 +37,10 @@ export function validDate(date: string) {
     parsed.getMonth() + 1 === Number(date.slice(5, 7)) && parsed.getDate() === Number(date.slice(8, 10));
 }
 
+export const normalizeUnit = (unit: string | undefined) => (unit ?? '').replace(/^unidad\s*/i, '').trim().replace(/\s+/g, ' ').toUpperCase();
+export const isBuildingUnit = (unit: string | undefined) => BUILDING_UNITS.some(candidate => normalizeUnit(candidate) === normalizeUnit(unit));
 export const activeReservation = (reservation: Entity) => !['cancelada', 'cancelado', 'cancelled'].includes((reservation.status ?? '').trim().toLowerCase());
-export const sameUnit = (unit: string | undefined, expected = OWNER_UNIT) => (unit ?? '').replace(/^unidad\s*/i, '').replace(/\s/g, '').toUpperCase() === expected.toUpperCase();
+export const sameUnit = (unit: string | undefined, expected = OWNER_UNIT) => normalizeUnit(unit).replace(/\s/g, '') === normalizeUnit(expected).replace(/\s/g, '');
 
 function calendarMinutes(date: string) {
   const [year, month, day] = date.split('-').map(Number);
@@ -149,7 +163,7 @@ export function slotUnavailable(date: string, time: string, reservations: Entity
 }
 
 export function bookingError(date: string, startTime: string, endTime: string, unit: string, accepted: boolean, reservations: Entity[], settings: Settings) {
-  if (!unit.trim()) return 'Indicá la unidad.';
+  if (!isBuildingUnit(unit)) return 'Elegí una unidad del edificio.';
   if (!accepted) return 'Aceptá el reglamento para continuar.';
   if (!settings.rules.trim()) return 'Administración debe cargar el reglamento antes de reservar.';
   return rangeUnavailable(date, startTime, endTime, reservations, settings);

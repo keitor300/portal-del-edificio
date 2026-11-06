@@ -1,13 +1,13 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, CalendarDays, Check, Clock3, Expand, Plus, Save, Trash2, Unlock } from 'lucide-react';
+import { ArrowRight, Building2, CalendarDays, Check, Clock3, Expand, Plus, Save, Trash2, Unlock } from 'lucide-react';
 import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, id, today } from '../../lib/utils';
-import { activeReservation, bookingError, isValidReservation, OWNER_UNIT, rangeUnavailable, reservationEndsAt, reservationTouchesDate, sameUnit, sumOperatingWindow, sumTimeOptions, SUM_SLOTS, validBookingRange, validDate } from './model';
+import { activeReservation, bookingError, BUILDING_UNITS, isValidReservation, normalizeUnit, OWNER_UNIT, rangeUnavailable, reservationEndsAt, reservationTouchesDate, sameUnit, sumOperatingWindow, sumTimeOptions, SUM_SLOTS, validBookingRange, validDate } from './model';
 import './services.css';
 
-export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndChange }: { date: string; startTime: string; endTime: string; onStartChange: (value: string) => void; onEndChange: (value: string) => void }) {
+export function SumRangePicker({ date, startTime, endTime, unit, onStartChange, onEndChange }: { date: string; startTime: string; endTime: string; unit: string; onStartChange: (value: string) => void; onEndChange: (value: string) => void }) {
   const { data } = usePortal();
   const window = sumOperatingWindow(date);
   const feedback = startTime && endTime ? rangeUnavailable(date, startTime, endTime, data.reservations, data.settings) : '';
@@ -27,7 +27,7 @@ export function SumRangePicker({ date, startTime, endTime, onStartChange, onEndC
     </div>
     <p className="sum-range-help"><Clock3 size={18} aria-hidden="true" />{window?.closeTime === '03:00' ? 'Viernes y sábado: el SUM puede usarse hasta las 03:00 del día siguiente.' : 'Domingo a jueves: el SUM puede usarse hasta la 01:00 del día siguiente.'}</p>
     {startTime && !endTime && <p className="sum-range-feedback" role="status">Ahora elegí hasta qué hora querés usar el SUM.</p>}
-    {startTime && endTime && <p className={`sum-range-feedback ${feedback ? 'is-error' : 'is-ok'}`} role="status">{feedback || `Horario elegido: ${startTime} a ${endTime}. Este horario está disponible.`}</p>}
+    {startTime && endTime && <p className={`sum-range-feedback ${feedback ? 'is-error' : 'is-ok'}`} role="status">{feedback || `${unit ? `Unidad ${normalizeUnit(unit)} · ` : ''}Horario elegido: ${startTime} a ${endTime}. Este horario está disponible.`}</p>}
   </fieldset>;
 }
 
@@ -70,16 +70,24 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
 
   return <>
     <form onSubmit={review} className="services-booking-form">
-      {admin && <Field label="Unidad" hint="Unidad para la que se carga la reserva."><input aria-label="Unidad" required value={unit} maxLength={20} placeholder="Ej. 3A" onChange={event => setUnit(event.target.value)} /></Field>}
+      <div className={`sum-unit-field ${unit ? 'is-selected' : ''}`}>
+        <span className="sum-unit-icon" aria-hidden="true"><Building2 size={22} /></span>
+        <Field label="Unidad que reserva" hint={admin ? 'Elegí la unidad para la que se carga esta reserva.' : 'Confirmá la unidad antes de elegir el horario.'}>
+          <select aria-label="Unidad que reserva" required value={unit} onChange={event => { setUnit(event.target.value); setError(''); }}>
+            {admin && <option value="">Elegí una unidad</option>}
+            {BUILDING_UNITS.map(option => <option key={option} value={option}>Unidad {option}</option>)}
+          </select>
+        </Field>
+      </div>
       <div className="sum-date-field"><Field label="Fecha de reserva"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setStartTime(''); setEndTime(''); setError(''); }} /></Field></div>
-      <SumRangePicker date={date} startTime={startTime} endTime={endTime} onStartChange={value => { setStartTime(value); setEndTime(''); setError(''); }} onEndChange={value => { setEndTime(value); setError(''); }} />
+      <SumRangePicker date={date} startTime={startTime} endTime={endTime} unit={unit} onStartChange={value => { setStartTime(value); setEndTime(''); setError(''); }} onEndChange={value => { setEndTime(value); setError(''); }} />
       <div><h3>Reglamento del SUM</h3><div className="services-rules" role="region" aria-label="Reglamento del SUM" tabIndex={0}>{data.settings.rules || 'El reglamento todavía no está cargado.'}</div></div>
       <label className="services-check"><input type="checkbox" checked={accepted} onChange={event => setAcceptedRules(event.target.checked ? data.settings.rules : null)} />{admin ? 'Confirmo la aceptación del reglamento por esta unidad.' : 'Leí y acepto el reglamento del SUM.'}</label>
       {error && <p role="alert" className="error">{error}</p>}
       <button className="button sum-review-button" type="submit"><CalendarDays size={20} aria-hidden="true" />Continuar con la reserva</button>
     </form>
     {confirmation && <Modal title="Confirmar reserva del SUM" onClose={() => setConfirmation(false)}>
-      <p><strong>Unidad {unit.trim().replace(/^unidad\s*/i, '').toUpperCase()}</strong></p>
+      <p><strong>Unidad {normalizeUnit(unit)}</strong></p>
       <p>{formatDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br />{startTime} a {endTime}{selectedRange?.endDate !== date && ` · continúa el ${formatDate(selectedRange?.endDate ?? date, { weekday: 'long', day: 'numeric', month: 'long' })}`}</p>
       <p>Reglamento aceptado. La reserva se guardará en esta demo.</p>
       <div className="form-actions"><button className="button secondary" onClick={() => setConfirmation(false)}>Volver</button><button className="button" onClick={reserve}><Check size={18} aria-hidden="true" />Confirmar reserva</button></div>
@@ -106,7 +114,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
       {admin && <Field label="Filtrar por unidad"><input value={unit} onChange={event => setUnit(event.target.value)} placeholder="Ej. 7B" /></Field>}
     </div>
     <div className="list">{reservations.length ? reservations.map(item => <div className="list-row" key={item.id}>
-      <div className="row-main"><strong>{formatDate(item.date, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime} · Unidad {item.unit}</p><span className={`status ${activeReservation(item) ? 'status-green' : ''}`}>{item.status || 'Confirmada'}</span></div>
+      <div className="row-main"><span className="reservation-unit">Unidad {normalizeUnit(item.unit)}</span><strong>{formatDate(item.date, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime}</p><span className={`status ${activeReservation(item) ? 'status-green' : ''}`}>{item.status || 'Confirmada'}</span></div>
       {activeReservation(item) && (admin || sameUnit(item.unit)) && (reservationEndsAt(item) ?? 0) > now.getTime() && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
     </div>) : <p className="empty">No hay reservas para este filtro.</p>}</div>
     {cancel && <Confirm title="Cancelar reserva" description={`Se liberará el turno del ${formatDate(cancel.date)} de ${cancel.time} a ${cancel.endTime}, unidad ${cancel.unit}.`} onClose={() => setCancel(undefined)} onConfirm={() => { update('reservations', cancel.id, { status: 'Cancelada' }); notify('Reserva cancelada en la demo. El turno vuelve a estar disponible.'); }} />}
@@ -116,7 +124,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
 export function SumPage() {
   const [fullPhoto, setFullPhoto] = useState(false);
   return <div className="services-page">
-    <PageHeader title="Reservar el SUM" description="Elegí una fecha y un horario disponible para tu unidad 7B." back="/servicios" />
+    <PageHeader title="Reservar el SUM" description="Seleccioná la unidad, la fecha y un horario disponible." back="/servicios" />
     <div className="services-sum-layout"><div><img className="services-photo" src="/images/sum.jpg" alt="Salón de usos múltiples del edificio, con mesas, sillas y ventanales" width={1200} height={675} fetchPriority="high" /><div className="services-photo-caption"><p className="muted">Salón de usos múltiples</p><button className="button secondary small" onClick={() => setFullPhoto(true)}><Expand size={18} aria-hidden="true" />Foto completa</button></div></div><BookingForm /></div>
     <ReservationList />
     {fullPhoto && <Modal title="Salón de usos múltiples" wide onClose={() => setFullPhoto(false)}><img className="services-photo-full" src="/images/sum.jpg" alt="Fotografía completa del salón de usos múltiples del edificio" width={1200} height={675} /></Modal>}

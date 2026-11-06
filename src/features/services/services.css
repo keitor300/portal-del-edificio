@@ -17,10 +17,14 @@
 .services-photo-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 8px; }
 .services-photo-caption p { margin: 0; }
 .services-booking-form { display: grid; gap: 18px; }
-.sum-date-field { padding: 14px; border: 1px solid #d7ddd6; border-radius: 8px; background: #fff; }
-.sum-date-field .field { margin: 0; }
-.sum-date-field label { color: #245c48; font-weight: 700; }
-.sum-date-field input { min-height: 56px; margin-top: 8px; font-size: 18px; font-weight: 650; }
+.sum-date-field, .sum-unit-field { padding: 14px; border: 1px solid #d7ddd6; border-radius: 8px; background: #fff; }
+.sum-date-field .field, .sum-unit-field .field { margin: 0; }
+.sum-date-field label, .sum-unit-field label { color: #245c48; font-weight: 700; }
+.sum-date-field input, .sum-unit-field select { min-height: 56px; margin-top: 8px; font-size: 18px; font-weight: 650; }
+.sum-unit-field { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 12px; }
+.sum-unit-field.is-selected { border-color: #245c48; background: #f1f7f3; }
+.sum-unit-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 7px; background: #e2efe6; color: #245c48; }
+.sum-unit-field select { width: 100%; }
 .sum-range-picker { border: 0; padding: 0; margin: 0; min-width: 0; }
 .sum-range-picker legend { margin-bottom: 10px; color: #1f2c25; font-size: 18px; font-weight: 750; }
 .sum-range-picker > p { margin: 0 0 12px; }
@@ -64,6 +68,7 @@
 .services-filters .button { flex-grow: 0; }
 .services-page .list-row { gap: 12px; }
 .services-page .row-main { min-width: 0; }
+.reservation-unit { display: inline-flex; width: fit-content; margin-bottom: 6px; padding: 4px 8px; border-radius: 5px; background: #e5f0e7; color: #245c48; font-size: 14px; font-weight: 750; }
 .services-page .row-actions { flex-wrap: wrap; }
 .services-photo-preview { width: 100%; max-width: 400px; aspect-ratio: 4 / 3; object-fit: contain; background: #f7f8f6; }
 .services-detail-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-block: 12px 20px; }

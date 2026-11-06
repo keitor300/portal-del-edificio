@@ -47,6 +47,10 @@ async function goto(path) {
 
 test('booking acceptance, reload, cross-role collision, cancellation, blocking and rule editing', async () => {
   await goto('/servicios/sum');
+  await expect(page.getByLabel('Unidad que reserva')).toHaveValue('7B');
+  await page.getByLabel('Unidad que reserva').selectOption('4D');
+  await expect(page.getByLabel('Unidad que reserva')).toHaveValue('4D');
+  await page.getByLabel('Unidad que reserva').selectOption('7B');
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
   await page.getByLabel('Hora de inicio').selectOption('18:30');
   await page.getByLabel('Hora de finalización').selectOption('20:30');
@@ -58,11 +62,12 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await page.reload();
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
   await expect(page.getByText(/18:30 a 20:30/).first()).toBeVisible();
+  await expect(page.locator('.reservation-unit', { hasText: 'Unidad 7B' }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Reservas del SUM' })).toBeVisible();
   await expect(page.getByText(/Unidad 3A/).first()).toBeVisible();
   await goto('/admin/servicios?tab=sum');
   await page.getByLabel('Fecha de reserva').fill('2099-09-06');
-  await page.getByLabel('Unidad', { exact: true }).fill('2C');
+  await page.getByLabel('Unidad que reserva').selectOption('4D');
   await page.getByLabel('Hora de inicio').selectOption('21:00');
   await page.getByLabel('Hora de finalización').selectOption('21:30');
   await page.getByRole('checkbox').check();
@@ -74,7 +79,7 @@ test('booking acceptance, reload, cross-role collision, cancellation, blocking a
   await page.getByRole('button', { name: /Cancelar reserva del .*2099.*18:30/ }).count().then(count => assert.equal(count, 0));
   await page.getByRole('button', { name: /Cancelar reserva del 6 de septiembre a las 18:30, unidad 7B/ }).click();
   await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
-  await page.getByRole('button', { name: /Cancelar reserva del 6 de septiembre a las 21:00, unidad 2C/ }).click();
+  await page.getByRole('button', { name: /Cancelar reserva del 6 de septiembre a las 21:00, unidad 4D/ }).click();
   await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
   await page.getByLabel('Hora de inicio').selectOption('18:00');
   await page.getByLabel('Hora de finalización').selectOption('19:00');

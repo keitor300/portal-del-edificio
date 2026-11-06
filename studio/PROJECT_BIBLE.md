@@ -11,7 +11,7 @@ Typography: local Inter for reading and controls, Georgia fallback for display h
 Hierarchy: identity + compact role selector; image-led greeting; one urgent notice; three owner priority actions; activity and news; secondary functions collapsed by topic. Administration follows the same hierarchy with three priorities and a collapsed More actions group.
 Journey: owner mobile navigation is Inicio / Mi edificio / Servicios / Más; Novedades remains reachable from the home feed. Admin desktop keeps four stable destinations and mobile uses the existing drawer. Details panels expose the complete feature set without front-loading it.
 Scenes: owner home with facade hero; owner grouped menu; admin home with city-view hero; admin grouped menu; existing operational pages unchanged.
-SUM booking polish: date remains a native control; start and finish become two labelled, high-contrast choice surfaces with a visible selected state and concise availability feedback. On narrow phones they stack vertically in the order of use.
+SUM booking polish: unit, date, start and finish remain native controls; the unit is a closed selector containing the 52 dwellings, while start and finish are two labelled, high-contrast choice surfaces with a visible selected state and concise availability feedback. On narrow phones they stack vertically in the order of use.
 Imagery: supplied facade on home, lobby/building information, SUM booking, city/terrace gallery. Original full image accessible. Do not label building photos as evidence of work progress.
 Motion: short feedback transitions only, reduced-motion supported.
 Assets: four supplied JPEGs, Lucide icons, simple PWA icon and real downloadable demo PDFs.
