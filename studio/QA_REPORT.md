@@ -115,3 +115,19 @@ None found.
 - At 390 x 844 and 1440 x 1000, conversation turns, service lists, meetings and administration inbox panels had no horizontal overflow and no browser errors.
 - Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`.
 - Production smoke passed at `https://portal-del-edificio.vercel.app/demo/propietario/servicios/chat` using a 390 x 844 viewport: HTTP 200, three message cards rendered, no horizontal overflow and no browser errors.
+
+## Communications card polish - 2026-11-06
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- Rendered local captures: `studio/.qa/admin-notices-mobile.png`, `studio/.qa/admin-notices-desktop.png`, and `studio/.qa/owner-notices-mobile.png`.
+- At 390 x 844 and 1440 x 1000, all 18 communication cards rendered with their category treatment and no horizontal overflow or browser errors.
+- Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`.

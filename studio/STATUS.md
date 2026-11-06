@@ -16,3 +16,5 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 2026-11-06: Incremental task-discovery polish released in `0138781` to https://portal-del-edificio.vercel.app. Owner landing keeps its current composition and now exposes Chat as a fourth primary action; services, accounts, contacts, complaints, administration creation, community actions and menu labels use clearer task-first language and visual hierarchy. Local visual QA, all available test suites, and public production smoke passed.
 
 2026-11-06: Visual surface polish released in `82a95cb` to https://portal-del-edificio.vercel.app. Conversation turns, service rows, community meetings and financial entries now have restrained elevation and clearer visual separation; navigation, data and functionality remain unchanged. Local and public mobile QA passed.
+
+2026-11-06: Communications card polish validated locally. Notice category color, visual hierarchy and the administration action footer now make the cartelera easier to scan without modifying publishing or reading behavior. Production release pending.
