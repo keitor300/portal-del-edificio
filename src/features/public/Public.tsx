@@ -49,6 +49,11 @@ export function PublicHomePage() {
       </div>
     </section>
 
+    <section className="public-news" aria-labelledby="news-title">
+      <div className="public-section-heading"><div><span className="public-kicker">Cartelera</span><h2 id="news-title">Lo que está pasando</h2></div><Link to="/novedades" className="public-text-link">Ver todas <ArrowUpRight size={17} /></Link></div>
+      <div className="public-news-list">{notices.map((notice, index) => <Link className={`public-news-row ${index === 0 && notice.urgent ? 'public-news-primary' : ''}`} to={`/novedades/${notice.id}`} key={notice.id}><span className="public-news-date">{formatDate(notice.date)}</span><span className="public-news-copy"><strong>{notice.title}</strong><span>{notice.description}</span></span><span className="public-demo-badge">{notice.urgent ? 'Importante' : 'Demo'}</span><ArrowUpRight size={18} /></Link>)}</div>
+    </section>
+
     <section className="public-actions" aria-labelledby="actions-title">
       <div className="public-section-heading"><div><span className="public-kicker">Accesos rápidos</span><h2 id="actions-title">¿Qué necesitás consultar?</h2></div><span className="public-demo-badge">Recorrido demo</span></div>
       <div className="public-action-grid">
@@ -59,11 +64,6 @@ export function PublicHomePage() {
         <Link className="public-action" to="/demo/propietario/servicios/reclamos"><ClipboardList size={23} /><span><strong>Hacer un reclamo</strong><small>Seguimiento de solicitudes</small></span><ChevronRight size={18} /></Link>
         <Link className="public-action" to="/contacto"><MessageCircle size={23} /><span><strong>Contactar</strong><small>Canal de administración</small></span><ChevronRight size={18} /></Link>
       </div>
-    </section>
-
-    <section className="public-news" aria-labelledby="news-title">
-      <div className="public-section-heading"><div><span className="public-kicker">Cartelera</span><h2 id="news-title">Lo que está pasando</h2></div><Link to="/novedades" className="public-text-link">Ver todas <ArrowUpRight size={17} /></Link></div>
-      <div className="public-news-list">{notices.map((notice, index) => <Link className={`public-news-row ${index === 0 && notice.urgent ? 'public-news-primary' : ''}`} to={`/novedades/${notice.id}`} key={notice.id}><span className="public-news-date">{formatDate(notice.date)}</span><span className="public-news-copy"><strong>{notice.title}</strong><span>{notice.description}</span></span><span className="public-demo-badge">{notice.urgent ? 'Importante' : 'Demo'}</span><ArrowUpRight size={18} /></Link>)}</div>
     </section>
 
     <section className="public-sum" aria-labelledby="sum-title">
