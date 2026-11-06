@@ -114,6 +114,7 @@ None found.
 - Rendered local captures: `studio/.qa/owner-chat-mobile.png`, `studio/.qa/owner-issues-mobile.png`, `studio/.qa/owner-community-mobile.png`, `studio/.qa/admin-chat-mobile.png`, and `studio/.qa/admin-chat-desktop.png`.
 - At 390 x 844 and 1440 x 1000, conversation turns, service lists, meetings and administration inbox panels had no horizontal overflow and no browser errors.
 - Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`.
+- Production smoke passed at `https://portal-del-edificio.vercel.app/` using a 390 x 844 viewport: HTTP 200, four public Cartelera cards and four category signals rendered, with no horizontal overflow or browser errors.
 - Production smoke passed at `https://portal-del-edificio.vercel.app` using a 390 x 844 viewport: Reclamos and Comunidad returned 200, their list cards retained at least 16px horizontal padding, and no horizontal overflow or browser errors were reported.
 
 ## Cross-page card alignment audit - 2026-11-06
