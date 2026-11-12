@@ -23,3 +23,22 @@ Commit: `36a6708`.
 - Local `npm test`, `npm run build`, `npm run typecheck` and `npm run lint` passed before deployment.
 - The deploy build completed remotely and Vercel reported `READY`.
 - No backend, authentication, database or cross-device synchronization was introduced; the demo boundary remains documented in `QA_REPORT.md`.
+
+## Preview QA - Interior surfaces and forms (2026-11-12)
+
+- Preview: https://portal-del-edificio-pn4xaf7ft-ksixs-projects.vercel.app
+- Branch: `redesign/interiores-formularios`
+- Commit: `3b3b790`.
+- Vercel status: `READY`.
+- Production was not changed for this scope.
+
+### Online smoke
+
+- Checked at 390 x 844 and 1440 x 960: owner accounts, owner documents, owner notices, administration finances, administration communications, and administration works.
+- Every checked screen rendered without horizontal overflow or console errors.
+- Opened and verified the new cash-movement modal and the works editor modal on the preview deployment.
+
+### Local verification
+
+- `npm run typecheck`, `npm run lint`, `npm run build`, and `npm test` passed.
+- Test suites: 21 unit checks, 5 community checks, and 8 browser checks.
