@@ -75,7 +75,7 @@ export function PublicHomePage() {
         <span className="public-kicker">Bienvenido al portal</span>
         <h1>Edificio 13 y 34</h1>
         <p>Información, espacios y vida en comunidad, reunidos en un mismo lugar.</p>
-        <div className="public-hero-actions"><Link className="public-primary-link" to="/demo/propietario/servicios/sum"><CalendarDays size={18} />Reservar el SUM</Link><Link className="public-secondary-link" to="/novedades">Ver novedades <ArrowUpRight size={17} /></Link></div>
+        <div className="public-hero-actions"><Link className="public-primary-link" to="/demo/propietario/servicios/sum"><CalendarDays size={18} />Reservar el SUM</Link><Link className="public-secondary-link" to="/demo/administracion"><Wrench size={17} />Ver demo Administración <ArrowUpRight size={17} /></Link></div>
       </div>
     </section>
 
