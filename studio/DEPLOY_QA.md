@@ -26,7 +26,7 @@ Commit: `36a6708`.
 
 ## Preview QA - Interior surfaces and forms (2026-11-12)
 
-- Preview: https://portal-del-edificio-pn4xaf7ft-ksixs-projects.vercel.app
+- Preview: https://portal-del-edificio-git-redesign-interior-2cdecc-ksixs-projects.vercel.app
 - Branch: `redesign/interiores-formularios`
 - Commit: `3b3b790`.
 - Vercel status: `READY`.
