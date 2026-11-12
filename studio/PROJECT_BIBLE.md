@@ -21,3 +21,14 @@ Provider none; supplied photographs; no generation/prompt needed. Cost zero. JPE
 
 ## Authorization
 User explicitly requests final Vercel production and GitHub publication if available; authorized for this new portal. Preview QA before promotion. No DNS/custom domain changes.
+
+## Creative Gate - 2026-11-12 Reference Redesign - CLOSED
+Objective: bring the supplied high-fidelity reference into the public landing, owner portal, administration dashboard, and shared operational patterns without changing functional behavior.
+User: residents and administration of Edificio 13 y 34; the interface must remain legible and touch-friendly for older residents.
+Concept: a calm, premium building desk. The visual order is photography, urgent context, then a small set of large, self-explanatory actions.
+Visual direction: warm ivory canvas, rounded white capsule header, deep forest primary actions, coral only for urgent alerts, and soft green, blue, amber, and blush task surfaces. Shadows stay subtle and borders preserve definition.
+Typography: Inter remains the UI font; strong sans headings and labels replace the former editorial emphasis so operational screens remain immediate and clear.
+Imagery: only the supplied facade, hall, SUM, and city-view photos. No generated media, new providers, or changes to source images.
+Hierarchy and journey: public landing presents the facade hero, compact notifications, four primary access cards, building status, and the next community event. Owner and administration preserve their current data and routes, but use the same visual hierarchy and large action cards. Internal screens use the capsule header, clearer panel surfaces, color-coded state, and roomy touch targets.
+Motion: brief hover and focus elevation only; all transitions are disabled under reduced motion.
+Validation: desktop and mobile reference comparison, safe navigation through CTAs and menu, form and state checks, overflow, contrast, reduced motion, typecheck, lint, existing tests, and build. No preview or production deployment without further user authorization.

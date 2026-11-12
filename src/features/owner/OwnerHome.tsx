@@ -16,7 +16,7 @@ export function OwnerHomePage() {
 
   return <>
     <div className="home-hero">
-      <div className="home-greeting"><div><p className="greeting-date">{formatDate(today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p><p className="home-kicker">Portal de la comunidad</p><h1>Hola, Unidad 7B<span className="greeting-dot">.</span></h1><p>Todo lo importante de tu edificio, en un solo lugar.</p></div><span className="unit-mark"><Building2 size={20} />52 unidades · Una comunidad</span></div>
+      <div className="home-greeting"><div><p className="greeting-date">{formatDate(today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p><p className="home-kicker">Bienvenido al portal</p><h1>Hola, Unidad 7B<span className="greeting-dot">.</span></h1><p>Todo lo importante de tu edificio, en un solo lugar.</p><Link className="home-hero-cta" to="/demo/propietario/servicios/sum"><CalendarDays size={22} />Reservar el SUM<ArrowRight size={20} /></Link></div><span className="unit-mark"><Building2 size={20} />52 unidades · Una comunidad</span></div>
       <figure className="home-hero-image"><img src="/images/fachada.jpg" alt="Fachada del Edificio 13 y 34" width="802" height="829" /><figcaption><span>Edificio 13 y 34</span><small>Un espacio que compartimos</small></figcaption></figure>
     </div>
 

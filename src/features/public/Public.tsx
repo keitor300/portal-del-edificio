@@ -1,9 +1,9 @@
-import { ArrowUpRight, Building2, CalendarDays, ChevronRight, ClipboardList, FileText, Home, LockKeyhole, Mail, MessageCircle, ShieldCheck, Wrench } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, Bell, Building2, CalendarDays, ChevronRight, FileText, Home, LockKeyhole, Mail, MessageCircle, ReceiptText, ShieldCheck, Users, Wrench } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
-import { formatDate } from '../../lib/utils';
+import { formatDate, today } from '../../lib/utils';
 
 const gallery = [
   { src: '/images/fachada.jpg', alt: 'Fachada del Edificio 13 y 34', label: 'La fachada' },
@@ -31,15 +31,25 @@ function PublicNoticeCard({ notice }: { notice: Entity }) {
   </Link>;
 }
 
+function PublicNotificationRow({ notice }: { notice: Entity }) {
+  const label = notice.urgent ? 'Hoy' : formatDate(notice.date, { day: 'numeric', month: 'short' });
+  return <Link className={`public-notification-row public-news-tone-${noticeTone(notice)}`} to={`/novedades/${notice.id}`}>
+    <span className="public-notification-icon">{notice.urgent ? <AlertTriangle size={21} /> : notice.category === 'Reunión' ? <CalendarDays size={21} /> : <Bell size={21} />}</span>
+    <span className="public-notification-copy"><strong>{notice.title}</strong><small>{notice.description}</small></span>
+    <span className="public-notification-date">{label}</span>
+    <ChevronRight size={18} />
+  </Link>;
+}
+
 export function PublicHeader() {
   return <header className="public-header">
     <div className="public-header-inner">
       <Link to="/" className="public-brand" aria-label="Edificio 13 y 34, inicio">
         <span className="public-brand-mark"><Building2 size={21} /></span>
-        <span><strong>Edificio 13 y 34</strong><small>Información y comunidad</small></span>
+        <span><strong>Portal del Edificio</strong><small>Edificio 13 y 34</small></span>
       </Link>
       <nav className="public-nav" aria-label="Navegación del edificio">
-        <Link to="/novedades">Novedades</Link>
+        <Link to="/novedades"><Bell size={17} />Novedades</Link>
         <Link to="/edificio">El edificio</Link>
         <Link to="/contacto">Contacto</Link>
         <Link to="/demo/propietario" className="public-demo-link">Explorar demo <ArrowUpRight size={16} /></Link>
@@ -56,44 +66,37 @@ export function PublicHomePage() {
   const { data } = usePortal();
   const notices = [...data.notices].sort((a, b) => Number(b.urgent) - Number(a.urgent) || Number(b.pinned) - Number(a.pinned) || b.date.localeCompare(a.date)).slice(0, 4);
   const statuses = data.statuses.slice(0, 3);
-  const currentWork = data.works[0];
+  const nextMeeting = [...data.meetings].filter(item => item.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
 
   return <PublicLayout>
     <section className="public-hero">
       <div className="public-hero-image"><img src="/images/fachada.jpg" alt="Fachada del Edificio 13 y 34" /></div>
       <div className="public-hero-content">
-        <span className="public-kicker">Un edificio, una comunidad</span>
+        <span className="public-kicker">Bienvenido al portal</span>
         <h1>Edificio 13 y 34</h1>
         <p>Información, espacios y vida en comunidad, reunidos en un mismo lugar.</p>
         <div className="public-hero-actions"><Link className="public-primary-link" to="/demo/propietario/servicios/sum"><CalendarDays size={18} />Reservar el SUM</Link><Link className="public-secondary-link" to="/novedades">Ver novedades <ArrowUpRight size={17} /></Link></div>
       </div>
     </section>
 
-    <section className="public-news" aria-labelledby="news-title">
-      <div className="public-section-heading"><div><span className="public-kicker">Cartelera</span><h2 id="news-title">Lo que está pasando</h2></div><Link to="/novedades" className="public-text-link">Ver todas <ArrowUpRight size={17} /></Link></div>
-      <div className="public-news-list">{notices.map(notice => <PublicNoticeCard notice={notice} key={notice.id} />)}</div>
+    <section className="public-notification-panel" aria-labelledby="news-title">
+      <div className="public-notification-heading"><div><span className="public-notification-title"><Bell size={24} /> <strong id="news-title">Notificaciones</strong><em>{notices.length}</em></span><small>Lo importante del edificio, reunido para vos.</small></div><Link to="/novedades" className="public-text-link">Ver todas <ArrowUpRight size={17} /></Link></div>
+      <div className="public-notification-list">{notices.slice(0, 3).map(notice => <PublicNotificationRow notice={notice} key={notice.id} />)}</div>
     </section>
 
     <section className="public-actions" aria-labelledby="actions-title">
-      <div className="public-section-heading"><div><span className="public-kicker">Accesos rápidos</span><h2 id="actions-title">¿Qué necesitás consultar?</h2></div><span className="public-demo-badge">Recorrido demo</span></div>
+      <div className="public-section-heading"><div><span className="public-kicker">Todo a mano</span><h2 id="actions-title">Elegí lo que necesitás</h2></div><span className="public-demo-badge">Recorrido demo</span></div>
       <div className="public-action-grid">
-        <Link className="public-action public-action-sum" to="/demo/propietario/servicios/sum"><CalendarDays size={23} /><span><strong>Reservar el SUM</strong><small>Disponibilidad y reglamento</small></span><ChevronRight size={18} /></Link>
-        <Link className="public-action" to="/demo/propietario/edificio/cuentas"><FileText size={23} /><span><strong>Cuentas del edificio</strong><small>Movimientos y liquidaciones</small></span><ChevronRight size={18} /></Link>
-        <Link className="public-action" to="/demo/propietario/mas/estado"><ShieldCheck size={23} /><span><strong>Estado del edificio</strong><small>Servicios y mantenimiento</small></span><ChevronRight size={18} /></Link>
-        <Link className="public-action" to="/demo/propietario/edificio/documentos"><FileText size={23} /><span><strong>Documentos</strong><small>Actas, reglamento y archivos</small></span><ChevronRight size={18} /></Link>
-        <Link className="public-action" to="/demo/propietario/servicios/reclamos"><ClipboardList size={23} /><span><strong>Hacer un reclamo</strong><small>Seguimiento de solicitudes</small></span><ChevronRight size={18} /></Link>
-        <Link className="public-action" to="/contacto"><MessageCircle size={23} /><span><strong>Contactar</strong><small>Canal de administración</small></span><ChevronRight size={18} /></Link>
+        <Link className="public-action public-action-expenses" to="/demo/propietario/edificio/expensas"><ReceiptText size={31} /><span><strong>Expensas</strong><small>Consultá y descargá tus expensas</small></span><ChevronRight size={19} /></Link>
+        <Link className="public-action public-action-documents" to="/demo/propietario/edificio/documentos"><FileText size={31} /><span><strong>Documentos</strong><small>Reglamentos, actas y archivos</small></span><ChevronRight size={19} /></Link>
+        <Link className="public-action public-action-issues" to="/demo/propietario/servicios/reclamos"><Wrench size={31} /><span><strong>Reclamos</strong><small>Informá un problema y seguí su estado</small></span><ChevronRight size={19} /></Link>
+        <Link className="public-action public-action-meetings" to="/demo/propietario/edificio/reuniones"><CalendarDays size={31} /><span><strong>Reuniones</strong><small>Próximas reuniones, actas y encuestas</small></span><ChevronRight size={19} /></Link>
       </div>
     </section>
 
-    <section className="public-sum" aria-labelledby="sum-title">
-      <div className="public-sum-image"><img src="/images/sum.jpg" alt="Salón de usos múltiples del edificio" /></div>
-      <div className="public-sum-copy"><span className="public-kicker">Espacio común</span><h2 id="sum-title">El SUM, listo para tu próximo encuentro.</h2><p>Consultá los turnos disponibles, revisá el reglamento y reservá el salón para una reunión, un festejo o una actividad de la comunidad.</p><Link className="public-primary-link" to="/demo/propietario/servicios/sum"><CalendarDays size={18} />Consultar disponibilidad</Link></div>
-    </section>
-
     <section className="public-state" aria-labelledby="state-title">
-      <div className="public-section-heading"><div><span className="public-kicker">Seguimiento</span><h2 id="state-title">El edificio en marcha</h2></div><Link to="/demo/propietario/mas/estado" className="public-text-link">Ver estado completo <ArrowUpRight size={17} /></Link></div>
-      <div className="public-state-grid"><div className="public-status-list">{statuses.map(status => <div className="public-status-row" key={status.id}><span className="public-status-icon"><ShieldCheck size={18} /></span><span><strong>{status.title}</strong><small>{status.description}</small></span><em>{status.status}</em></div>)}</div>{currentWork && <Link className="public-work-feature" to="/demo/propietario/edificio/obras"><span className="public-kicker">Obra en curso</span><Wrench size={24} /><strong>{currentWork.title}</strong><p>{currentWork.status} · {currentWork.progress ?? 0}% de avance</p><span className="public-text-link">Ver avances <ArrowUpRight size={16} /></span></Link>}</div>
+      <div className="public-section-heading"><div><span className="public-kicker">Información al día</span><h2 id="state-title">El edificio, en orden</h2></div></div>
+      <div className="public-state-grid"><section className="public-status-panel"><div className="public-status-panel-heading"><Building2 size={24} /><strong>Estado del edificio</strong><Link to="/demo/propietario/mas/estado">Ver todo <ArrowUpRight size={16} /></Link></div><div className="public-status-list">{statuses.map(status => <div className="public-status-row" key={status.id}><span className="public-status-icon"><ShieldCheck size={19} /></span><span><strong>{status.title}</strong><small>{status.description}</small></span><em>{status.status}</em></div>)}</div></section>{nextMeeting ? <Link className="public-event-feature" to="/demo/propietario/edificio/reuniones"><img src="/images/hall.jpg" alt="Hall del Edificio 13 y 34" /><span className="public-event-overlay"><span className="public-event-kicker"><CalendarDays size={19} />Próximo evento</span><strong>{nextMeeting.title}</strong><small>{formatDate(nextMeeting.date)} · {nextMeeting.time} h</small><span className="public-event-action">Ver detalles <ArrowUpRight size={17} /></span></span></Link> : <Link className="public-event-feature" to="/demo/propietario/servicios/sum"><img src="/images/sum.jpg" alt="Salón de usos múltiples" /><span className="public-event-overlay"><span className="public-event-kicker"><Users size={19} />Espacio común</span><strong>Reservá el SUM</strong><small>Consultá disponibilidad y reglas.</small><span className="public-event-action">Ver horarios <ArrowUpRight size={17} /></span></span></Link>}</div>
     </section>
 
     <section className="public-building" aria-labelledby="building-title">

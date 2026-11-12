@@ -34,7 +34,7 @@ export function AdminHomePage() {
 
   return <>
     <div className="home-hero admin-home-hero">
-      <div className="home-greeting"><div><p className="greeting-date">{formatDate(today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p><p className="home-kicker">Centro de gestión</p><h1>El edificio, al día<span className="greeting-dot">.</span></h1><p>Una vista clara de lo que necesita atención.</p></div></div>
+      <div className="home-greeting"><div><p className="greeting-date">{formatDate(today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p><p className="home-kicker">Centro de gestión</p><h1>El edificio, al día<span className="greeting-dot">.</span></h1><p>Una vista clara de lo que necesita atención.</p><Link className="home-hero-cta" to={`${adminBase}/comunicaciones?new=1`}><Megaphone size={21} />Publicar un aviso<ArrowUpRight size={20} /></Link></div></div>
       <figure className="home-hero-image"><img src="/images/vista.jpg" alt="Vista de la ciudad desde el edificio" width="1200" height="800" /><figcaption><span>Administración</span><small>Información clara, comunidad al día</small></figcaption></figure>
     </div>
 

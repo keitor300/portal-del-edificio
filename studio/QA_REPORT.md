@@ -153,6 +153,26 @@ None found.
 - Production smoke passed at `https://portal-del-edificio.vercel.app/demo/administracion/comunicaciones` using a 390 x 844 viewport: HTTP 200, 18 notice cards and 18 administration action footers rendered, with no horizontal overflow or browser errors.
 - Production smoke passed at `https://portal-del-edificio.vercel.app/demo/propietario/servicios/chat` using a 390 x 844 viewport: HTTP 200, three message cards rendered, no horizontal overflow and no browser errors.
 
+## High-fidelity reference redesign - 2026-11-12
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- Compared rendered local public, owner and administration scenes against the supplied reference at 1440 x 1050 and 390 x 844. Captures: `studio/.qa/reference-public-desktop.png`, `reference-public-mobile.png`, `reference-owner-desktop.png`, `reference-owner-mobile.png`, `reference-admin-desktop.png`, and `reference-admin-mobile.png`.
+- The public landing now renders the supplied facade hero, notification module, four task cards, real building state and a real upcoming meeting. Owner and administration retain their existing CTA destinations and data while following the same capsule-header and split-hero hierarchy.
+- Internal mobile captures for Servicios and Cuentas (`reference-services-mobile.png`, `reference-finances-mobile.png`) retained the new visual system with no horizontal overflow.
+- Safe interaction checks passed: public and owner `Reservar el SUM` both navigated to `/demo/propietario/servicios/sum`; administration `Publicar un aviso` opened `/demo/administracion/comunicaciones?new=1`.
+- Render sweep returned HTTP 200, zero console or page errors and no horizontal overflow on public, owner and administration at desktop and mobile viewports.
+- Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`. The existing browser suite also passed accessibility basics, modal focus, reduced motion, responsive service routes and console health.
+- No preview or production deployment was created, per current authorization.
+
 ## Communications card polish - 2026-11-06
 
 ### P0 - BLOCKERS
