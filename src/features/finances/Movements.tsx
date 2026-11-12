@@ -20,7 +20,7 @@ function MovementForm({ item, onClose }: { item: Entity; onClose: () => void }) 
     if (data.movements.some(row => row.id !== next.id && movementKey(row) === movementKey(next))) { setError('Ya existe un movimiento con la misma fecha, concepto, tipo e importe.'); return; }
     save('movements', next); notify('Movimiento guardado.'); onClose();
   }
-  return <Modal title={data.movements.some(row => row.id === item.id) ? 'Editar movimiento de caja' : 'Anotar movimiento de caja'} onClose={onClose}>
+  return <Modal title={data.movements.some(row => row.id === item.id) ? 'Editar movimiento de caja' : 'Anotar movimiento de caja'} onClose={onClose} icon={<Landmark size={23} aria-hidden="true"/>}>
     <form onSubmit={submit} className="finance-form">
       <Field label="Qué se anotó"><input required maxLength={240} value={draft.title} onChange={e => set({ title: e.target.value })}/></Field>
       <div className="form-grid"><Field label="Fecha del movimiento"><input type="date" required value={draft.date} onChange={e => set({ date: e.target.value })}/></Field><Field label="Ingreso o egreso"><select value={draft.type} onChange={e => set({ type: e.target.value })}><option>Ingreso</option><option>Egreso</option></select></Field></div>
@@ -45,7 +45,7 @@ function OpeningBalanceForm({ onClose }: { onClose: () => void }) {
     notify('Saldo inicial de caja actualizado.');
     onClose();
   }
-  return <Modal title="Definir saldo inicial de caja" onClose={onClose}>
+  return <Modal title="Definir saldo inicial de caja" onClose={onClose} icon={<Landmark size={23} aria-hidden="true"/>}>
     <form onSubmit={submit} className="finance-form">
       <p className="muted">Este importe es el dinero disponible antes de los movimientos registrados. Se usa para calcular el saldo actual que pueden consultar los propietarios.</p>
       <Field label="Saldo inicial en pesos" hint="Podés ingresar 0 si la caja comenzó sin saldo."><input inputMode="decimal" required value={amount} onChange={event => { setAmount(event.target.value); setError(''); }}/></Field>

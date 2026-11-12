@@ -173,6 +173,25 @@ None found.
 - Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`. The existing browser suite also passed accessibility basics, modal focus, reduced motion, responsive service routes and console health.
 - No preview or production deployment was created, per current authorization.
 
+## Internal surfaces and forms - 2026-11-12
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- The public landing was not changed. Internal owner and administration pages now share elevated ivory filters, softer tabs, richer finance summaries, and category-tinted gateway surfaces.
+- The visual system covers owner Cuentas, Expensas, Documentos, Novedades, SUM, Reclamos, Comunidad and Más, plus administration Finanzas, Comunicaciones, Comunidad, Servicios, Contenido and Menú.
+- New and editing forms use a consistent modal header, grouped field surfaces, native inputs, clearer attachment treatment and a stable cancel/save action row. The generic content editor now groups information and attachments with labelled icon panels.
+- Mobile rendered checks covered 390 x 844 captures for owner Documents, Cuentas, Novedades, SUM, Reclamos, Reuniones, Calendario and administration Finanzas, Comunicaciones, Comunidad, Servicios and Contenido. Representative forms for cash movements and works were inspected. No overflow or console errors occurred.
+- Route sweep passed 36 owner and 14 administration viewport checks at 390 x 844 and 1440 x 960, with no HTTP failures, console errors or horizontal overflow.
+- Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`.
+
 ## Communications card polish - 2026-11-06
 
 ### P0 - BLOCKERS

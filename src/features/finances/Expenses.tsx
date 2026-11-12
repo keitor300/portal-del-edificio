@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Check, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Check, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Confirm, DocumentActions, Empty, Field, Modal, Status } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
@@ -30,7 +30,7 @@ function ExpenseForm({ item, onClose }: { item: Entity; onClose: () => void }) {
     save('expenses', { ...draft, title: `Expensas · ${periodLabel(draft.period!)}`, amount: parsed });
     notify(draft.status === 'Publicado' ? 'Liquidación publicada.' : 'Borrador guardado.'); onClose();
   }
-  return <Modal title={data.expenses.some(row => row.id === item.id) ? 'Editar liquidación o reemplazar PDF' : 'Nueva liquidación'} onClose={onClose}>
+  return <Modal title={data.expenses.some(row => row.id === item.id) ? 'Editar liquidación o reemplazar PDF' : 'Nueva liquidación'} onClose={onClose} icon={<FileText size={23} aria-hidden="true"/>}>
     <form onSubmit={submit} className="finance-form">
       <div className="form-grid"><Field label="Período"><input type="month" required value={draft.period || ''} onChange={e => set({ period: e.target.value })}/></Field><Field label="Vencimiento"><input type="date" required value={draft.dueDate || ''} onChange={e => set({ dueDate: e.target.value })}/></Field></div>
       <Field label="Importe de la unidad 7B en pesos"><input required inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)}/></Field>
