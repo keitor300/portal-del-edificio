@@ -1,5 +1,21 @@
 # QA Report
 
+## 2026-11-14 - Chat visual polish
+
+## P0 - BLOCKERS
+
+None.
+
+## P1 - IMPORTANT
+
+None. The first pass exposed a contrast issue in message timestamps and an accessible-label regression in the shared issue conversation; both were corrected before completion.
+
+## P2 - POLISH
+
+None required for release. Owner and administration conversations now render as sender-aligned bubbles with readable avatars, a clear demo notice and a compact reply surface.
+
+Validated at 390x844 and 1440x1000. Owner chat, administration inbox and shared issue conversations have no horizontal overflow, no console errors and zero WCAG A/AA violations in the focused audit. All 9 browser workflows, 21 unit workflows, 5 community workflows, lint and production build pass.
+
 ## P0 - BLOCKERS
 
 None found.

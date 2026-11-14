@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { Send } from 'lucide-react';
+import { Building2, MessageCircle, Send, ShieldCheck, UserRound } from 'lucide-react';
 import { DocumentActions, Field, UploadField } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Attachment, Message } from '../../lib/types';
@@ -26,20 +26,30 @@ export function Conversation({ messages, author, onSend, closed = false }: {
   }
 
   return <div className="services-conversation">
-    <p className="muted">Conversación demo, guardada en este navegador. No envía mensajes reales ni atiende emergencias.</p>
+    <div className="services-chat-note" role="note">
+      <span className="services-chat-note-icon"><ShieldCheck size={22} aria-hidden="true" /></span>
+      <div><strong>Canal de consultas del edificio</strong><p>Esta conversación demo se guarda en este navegador. No atiende emergencias.</p></div>
+      <span className="services-chat-note-badge"><i aria-hidden="true" />Demo local</span>
+    </div>
     <div role="log" aria-label="Mensajes de la conversación" aria-live="polite" aria-relevant="additions" className="services-messages">
       {!messages.length && <p className="empty">Todavía no hay mensajes.</p>}
-      {messages.map(message => <article key={message.id} className={`services-message ${message.author === author ? 'services-message-own' : ''}`}>
-        <div className="services-message-meta"><strong>{message.author}</strong><time dateTime={message.date}>{formatDate(message.date, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time></div>
-        {message.text && <p className="services-preserve">{message.text}</p>}
-        {message.attachment && <DocumentActions attachment={message.attachment} label={`Ver ${message.attachment.name}`} />}
-      </article>)}
+      {messages.map(message => {
+        const own = message.author === author;
+        return <article key={message.id} className={`services-message ${own ? 'services-message-own' : ''}`}>
+          <span className="services-message-avatar" aria-hidden="true">{message.author === 'Administración' ? <Building2 size={19} /> : <UserRound size={19} />}</span>
+          <div className="services-message-bubble">
+            <div className="services-message-meta"><strong>{message.author}</strong><time dateTime={message.date}>{formatDate(message.date, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time></div>
+            {message.text && <p className="services-preserve">{message.text}</p>}
+            {message.attachment && <DocumentActions attachment={message.attachment} label={`Ver ${message.attachment.name}`} />}
+          </div>
+        </article>;
+      })}
     </div>
     {closed ? <p className="status">Reclamo resuelto. La conversación queda disponible para consulta.</p> : <form onSubmit={submit} className="services-composer">
-      <Field label="Mensaje"><textarea value={text} onChange={event => setText(event.target.value)} rows={3} maxLength={3000} /></Field>
-      <UploadField value={attachment} onChange={setAttachment} />
+      <div className="services-composer-heading"><span><MessageCircle size={21} aria-hidden="true" /></span><div><strong>Escribí un mensaje</strong><small>Podés agregar un archivo si necesitás mostrar un comprobante o una foto.</small></div></div>
+      <Field label="Mensaje"><textarea value={text} onChange={event => setText(event.target.value)} rows={3} maxLength={3000} placeholder="Escribí tu consulta..." /></Field>
       {error && <p role="alert" className="error">{error}</p>}
-      <div className="form-actions"><button type="submit" className="button"><Send size={18} aria-hidden="true" />Guardar mensaje demo</button></div>
+      <div className="services-composer-tools"><UploadField value={attachment} onChange={setAttachment} /><button type="submit" className="button services-send-button"><Send size={18} aria-hidden="true" />Guardar mensaje demo</button></div>
     </form>}
   </div>;
 }

@@ -50,3 +50,7 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 2026-11-14: Owner tools directory released in `3cfffb9` to https://portal-del-edificio.vercel.app. Preview and production authenticated mobile/desktop smoke passed; canonical alias points to READY deployment `dpl_47yPZ3HcXfGaL1QkHgtVxttzeXjn`.
 
 2026-11-14: Owner tools directory implemented and validated locally. All 14 destinations pass navigation checks with an approved owner session; mobile and desktop have no overflow or browser errors, WCAG A/AA reports zero violations, and all 35 automated workflows plus typecheck, lint and build pass.
+
+2026-11-14: Creative Gate CLOSED for chat visual polish. Scope is the shared owner/administration conversation and reply surface only; message persistence, attachments, routes, data and validation remain unchanged.
+
+2026-11-14: Chat visual polish implemented and validated locally. Owner and administration views now use sender-aligned message bubbles, distinct avatars, a clearer channel notice and a compact reply card. Mobile/desktop overflow, console health and focused WCAG A/AA checks pass; all unit, community and browser workflows plus lint and production build pass. Deployment remains unchanged.
