@@ -12,6 +12,23 @@ const gallery = [
   { src: '/images/vista.jpg', alt: 'Vista panorámica de la ciudad desde el edificio', label: 'La vista desde arriba' },
 ];
 
+type OwnerAccessWindowProps = {
+  target?: '_blank';
+  rel?: 'noopener noreferrer';
+};
+
+function ownerAccessWindowProps(): OwnerAccessWindowProps {
+  if (typeof window === 'undefined') {
+    return { target: '_blank', rel: 'noopener noreferrer' };
+  }
+
+  const navigatorWithStandalone = window.navigator as Navigator & { standalone?: boolean };
+  const isInstalledApp = window.matchMedia('(display-mode: standalone)').matches
+    || navigatorWithStandalone.standalone === true;
+
+  return isInstalledApp ? {} : { target: '_blank', rel: 'noopener noreferrer' };
+}
+
 function noticeTone(notice: Entity) {
   if (notice.urgent) return 'urgent';
   switch (notice.category) {
@@ -52,7 +69,7 @@ export function PublicHeader() {
         <Link to="/novedades"><Bell size={17} />Novedades</Link>
         <Link to="/edificio">El edificio</Link>
         <Link to="/contacto">Contacto</Link>
-        <Link to="/login?next=%2Fdemo%2Fpropietario" target="_blank" rel="noopener noreferrer" className="public-demo-link">Ingresar propietarios <ArrowUpRight size={16} /></Link>
+        <Link to="/login?next=%2Fdemo%2Fpropietario" {...ownerAccessWindowProps()} className="public-demo-link">Ingresar propietarios <ArrowUpRight size={16} /></Link>
       </nav>
     </div>
   </header>;
@@ -75,7 +92,7 @@ export function PublicHomePage() {
         <span className="public-kicker">Bienvenido al portal</span>
         <h1>Edificio 13 y 34</h1>
         <p>Información, espacios y vida en comunidad, reunidos en un mismo lugar.</p>
-        <div className="public-hero-actions"><Link className="public-primary-link" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fsum" target="_blank" rel="noopener noreferrer"><CalendarDays size={18} />Reservar el SUM</Link><Link className="public-secondary-link" to="/demo/administracion"><Wrench size={17} />Ver demo Administración <ArrowUpRight size={17} /></Link></div>
+        <div className="public-hero-actions"><Link className="public-primary-link" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fsum" {...ownerAccessWindowProps()}><CalendarDays size={18} />Reservar el SUM</Link><Link className="public-secondary-link" to="/demo/administracion"><Wrench size={17} />Ver demo Administración <ArrowUpRight size={17} /></Link></div>
       </div>
     </section>
 
@@ -87,16 +104,16 @@ export function PublicHomePage() {
     <section className="public-actions" aria-labelledby="actions-title">
       <div className="public-section-heading"><div><span className="public-kicker">Todo a mano</span><h2 id="actions-title">Elegí lo que necesitás</h2></div><span className="public-demo-badge">Recorrido demo</span></div>
       <div className="public-action-grid">
-        <Link className="public-action public-action-expenses" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Fexpensas" target="_blank" rel="noopener noreferrer"><ReceiptText size={31} /><span><strong>Expensas</strong><small>Consultá y descargá tus expensas</small></span><ChevronRight size={19} /></Link>
-        <Link className="public-action public-action-documents" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Fdocumentos" target="_blank" rel="noopener noreferrer"><FileText size={31} /><span><strong>Documentos</strong><small>Reglamentos, actas y archivos</small></span><ChevronRight size={19} /></Link>
-        <Link className="public-action public-action-issues" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Freclamos" target="_blank" rel="noopener noreferrer"><Wrench size={31} /><span><strong>Reclamos</strong><small>Informá un problema y seguí su estado</small></span><ChevronRight size={19} /></Link>
-        <Link className="public-action public-action-meetings" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Freuniones" target="_blank" rel="noopener noreferrer"><CalendarDays size={31} /><span><strong>Reuniones</strong><small>Próximas reuniones, actas y encuestas</small></span><ChevronRight size={19} /></Link>
+        <Link className="public-action public-action-expenses" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Fexpensas" {...ownerAccessWindowProps()}><ReceiptText size={31} /><span><strong>Expensas</strong><small>Consultá y descargá tus expensas</small></span><ChevronRight size={19} /></Link>
+        <Link className="public-action public-action-documents" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Fdocumentos" {...ownerAccessWindowProps()}><FileText size={31} /><span><strong>Documentos</strong><small>Reglamentos, actas y archivos</small></span><ChevronRight size={19} /></Link>
+        <Link className="public-action public-action-issues" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Freclamos" {...ownerAccessWindowProps()}><Wrench size={31} /><span><strong>Reclamos</strong><small>Informá un problema y seguí su estado</small></span><ChevronRight size={19} /></Link>
+        <Link className="public-action public-action-meetings" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Freuniones" {...ownerAccessWindowProps()}><CalendarDays size={31} /><span><strong>Reuniones</strong><small>Próximas reuniones, actas y encuestas</small></span><ChevronRight size={19} /></Link>
       </div>
     </section>
 
     <section className="public-state" aria-labelledby="state-title">
       <div className="public-section-heading"><div><span className="public-kicker">Información al día</span><h2 id="state-title">El edificio, en orden</h2></div></div>
-      <div className="public-state-grid"><section className="public-status-panel"><div className="public-status-panel-heading"><Building2 size={24} /><strong>Estado del edificio</strong><Link to="/login?next=%2Fdemo%2Fpropietario%2Fmas%2Festado" target="_blank" rel="noopener noreferrer">Ver todo <ArrowUpRight size={16} /></Link></div><div className="public-status-list">{statuses.map(status => <div className="public-status-row" key={status.id}><span className="public-status-icon"><ShieldCheck size={19} /></span><span><strong>{status.title}</strong><small>{status.description}</small></span><em>{status.status}</em></div>)}</div></section>{nextMeeting ? <Link className="public-event-feature" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Freuniones" target="_blank" rel="noopener noreferrer"><img src="/images/hall.jpg" alt="Hall del Edificio 13 y 34" /><div className="public-event-overlay"><span className="public-event-kicker"><CalendarDays size={19} />Próximo evento</span><strong>{nextMeeting.title}</strong><small>{formatDate(nextMeeting.date)} · {nextMeeting.time} h</small><span className="public-event-action">Ver detalles <ArrowUpRight size={17} /></span></div></Link> : <Link className="public-event-feature" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fsum" target="_blank" rel="noopener noreferrer"><img src="/images/sum.jpg" alt="Salón de usos múltiples" /><div className="public-event-overlay"><span className="public-event-kicker"><Users size={19} />Espacio común</span><strong>Reservá el SUM</strong><small>Consultá disponibilidad y reglas.</small><span className="public-event-action">Ver horarios <ArrowUpRight size={17} /></span></div></Link>}</div>
+      <div className="public-state-grid"><section className="public-status-panel"><div className="public-status-panel-heading"><Building2 size={24} /><strong>Estado del edificio</strong><Link to="/login?next=%2Fdemo%2Fpropietario%2Fmas%2Festado" {...ownerAccessWindowProps()}>Ver todo <ArrowUpRight size={16} /></Link></div><div className="public-status-list">{statuses.map(status => <div className="public-status-row" key={status.id}><span className="public-status-icon"><ShieldCheck size={19} /></span><span><strong>{status.title}</strong><small>{status.description}</small></span><em>{status.status}</em></div>)}</div></section>{nextMeeting ? <Link className="public-event-feature" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Freuniones" {...ownerAccessWindowProps()}><img src="/images/hall.jpg" alt="Hall del Edificio 13 y 34" /><div className="public-event-overlay"><span className="public-event-kicker"><CalendarDays size={19} />Próximo evento</span><strong>{nextMeeting.title}</strong><small>{formatDate(nextMeeting.date)} · {nextMeeting.time} h</small><span className="public-event-action">Ver detalles <ArrowUpRight size={17} /></span></div></Link> : <Link className="public-event-feature" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fsum" {...ownerAccessWindowProps()}><img src="/images/sum.jpg" alt="Salón de usos múltiples" /><div className="public-event-overlay"><span className="public-event-kicker"><Users size={19} />Espacio común</span><strong>Reservá el SUM</strong><small>Consultá disponibilidad y reglas.</small><span className="public-event-action">Ver horarios <ArrowUpRight size={17} /></span></div></Link>}</div>
     </section>
 
     <section className="public-building" aria-labelledby="building-title">
@@ -104,7 +121,7 @@ export function PublicHomePage() {
       <div className="public-building-grid">{gallery.map(item => <figure key={item.src}><img src={item.src} alt={item.alt} /><figcaption>{item.label}</figcaption></figure>)}</div>
     </section>
 
-    <section className="public-about" aria-labelledby="about-title"><div><span className="public-kicker">Un solo lugar</span><h2 id="about-title">Lo cotidiano, más claro.</h2></div><div className="public-about-copy"><p>El portal reúne comunicaciones, documentos, espacios comunes, cuentas y el estado general del edificio para que cada vecino encuentre lo importante sin perderse.</p><Link to="/login?next=%2Fdemo%2Fpropietario" target="_blank" rel="noopener noreferrer" className="public-text-link">Explorar la demostración <ArrowUpRight size={17} /></Link></div></section>
+    <section className="public-about" aria-labelledby="about-title"><div><span className="public-kicker">Un solo lugar</span><h2 id="about-title">Lo cotidiano, más claro.</h2></div><div className="public-about-copy"><p>El portal reúne comunicaciones, documentos, espacios comunes, cuentas y el estado general del edificio para que cada vecino encuentre lo importante sin perderse.</p><Link to="/login?next=%2Fdemo%2Fpropietario" {...ownerAccessWindowProps()} className="public-text-link">Explorar la demostración <ArrowUpRight size={17} /></Link></div></section>
   </PublicLayout>;
 }
 
@@ -118,11 +135,11 @@ export function PublicBuildingPage() {
 }
 
 export function PublicContactPage() {
-  return <PublicLayout><section className="public-inner-page public-contact-page"><span className="public-kicker">Estamos cerca</span><h1>Contacto</h1><p className="public-lead">Para consultar información del edificio, la administración puede centralizar las respuestas dentro del portal.</p><div className="public-contact-lines"><div><Mail size={22} /><span><strong>Administración</strong><small>Canal demo de consultas del edificio</small></span></div><div><Home size={22} /><span><strong>Edificio 13 y 34</strong><small>Información institucional y novedades</small></span></div></div><Link className="public-primary-link" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fchat" target="_blank" rel="noopener noreferrer"><MessageCircle size={18} />Abrir canal demo <ArrowUpRight size={18} /></Link></section></PublicLayout>;
+  return <PublicLayout><section className="public-inner-page public-contact-page"><span className="public-kicker">Estamos cerca</span><h1>Contacto</h1><p className="public-lead">Para consultar información del edificio, la administración puede centralizar las respuestas dentro del portal.</p><div className="public-contact-lines"><div><Mail size={22} /><span><strong>Administración</strong><small>Canal demo de consultas del edificio</small></span></div><div><Home size={22} /><span><strong>Edificio 13 y 34</strong><small>Información institucional y novedades</small></span></div></div><Link className="public-primary-link" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fchat" {...ownerAccessWindowProps()}><MessageCircle size={18} />Abrir canal demo <ArrowUpRight size={18} /></Link></section></PublicLayout>;
 }
 
 export function DemoEntryPage() {
-  return <PublicLayout><section className="public-inner-page demo-entry"><span className="public-kicker">Recorrido interactivo</span><h1>Explorar la demo</h1><p className="public-lead">Elegí una vista para recorrer el portal con datos de ejemplo. Propietarios requiere una cuenta de demostración aprobada en este navegador.</p><div className="demo-entry-links"><Link to="/login?next=%2Fdemo%2Fpropietario" target="_blank" rel="noopener noreferrer"><Home size={21} /><span><strong>Vista propietario</strong><small>Novedades, edificio, servicios y comunidad</small></span><ArrowUpRight size={19} /></Link><Link to="/demo/administracion"><Wrench size={21} /><span><strong>Vista administración demo</strong><small>Recorrido abierto con datos de ejemplo</small></span><ArrowUpRight size={19} /></Link><Link to="/admin"><LockKeyhole size={21} /><span><strong>Acceso administración</strong><small>Panel protegido para la demostración</small></span><ArrowUpRight size={19} /></Link></div></section></PublicLayout>;
+  return <PublicLayout><section className="public-inner-page demo-entry"><span className="public-kicker">Recorrido interactivo</span><h1>Explorar la demo</h1><p className="public-lead">Elegí una vista para recorrer el portal con datos de ejemplo. En la vista propietario podés ingresar directamente como Unidad 7B o probar el registro y la aprobación.</p><div className="demo-entry-links"><Link to="/login?next=%2Fdemo%2Fpropietario" {...ownerAccessWindowProps()}><Home size={21} /><span><strong>Vista propietario</strong><small>Novedades, edificio, servicios y comunidad</small></span><ArrowUpRight size={19} /></Link><Link to="/demo/administracion"><Wrench size={21} /><span><strong>Vista administración demo</strong><small>Recorrido abierto con datos de ejemplo</small></span><ArrowUpRight size={19} /></Link><Link to="/admin"><LockKeyhole size={21} /><span><strong>Acceso administración</strong><small>Panel protegido para la demostración</small></span><ArrowUpRight size={19} /></Link></div></section></PublicLayout>;
 }
 
 function PublicFooter() {

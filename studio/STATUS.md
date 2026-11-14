@@ -58,3 +58,5 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 2026-11-14: Installed-app login failure reproduced against production. A fresh app had no browser-local approved account, so ordinary login could not succeed. One-tap Unit 7B demo access and persistent-until-logout owner sessions are implemented locally; registration and approval remain unchanged. Mobile accessibility, reopening behavior and all 36 automated workflows pass.
 
 2026-11-14: Installed-app access fix and chat polish deployed to https://portal-del-edificio.vercel.app. Canonical alias points to READY deployment `dpl_Gb7PJrkWZhhEXwebLdXCwPLXB7Ec`; public mobile smoke confirmed quick access and session persistence after reopening.
+
+2026-11-14: Installed-app navigation correction implemented and validated locally. Public owner links now keep login inside an installed iPhone app while retaining new-tab behavior in ordinary browsers. The standalone iPhone flow, Unit 7B access, destination preservation, all 37 automated workflows, lint and production build pass.

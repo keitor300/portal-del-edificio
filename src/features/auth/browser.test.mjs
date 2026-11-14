@@ -30,6 +30,7 @@ test('owner registration requires approval, preserves SUM destination and revoke
   const landing = await ownerContext.newPage();
   try {
     await landing.goto(baseURL);
+    await expect(landing.getByRole('link', {name:'Reservar el SUM',exact:true}).first()).toHaveAttribute('target', '_blank');
     const popup = ownerContext.waitForEvent('page');
     await landing.getByRole('link', {name:'Reservar el SUM',exact:true}).first().click();
     const owner = await popup;
@@ -122,4 +123,31 @@ test('quick demo access works in a fresh app context and survives reopening it',
     await app.getByRole('button', { name: 'Cerrar sesión' }).click();
     await expect(app).toHaveURL(/\/login/);
   } finally { await appContext.close(); }
+});
+
+test('installed iPhone app keeps owner login and its session inside the app', async () => {
+  const installedContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    locale: 'es-AR',
+    isMobile: true,
+    hasTouch: true,
+  });
+  await installedContext.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, 'standalone', {
+      configurable: true,
+      get: () => true,
+    });
+  });
+  const app = await installedContext.newPage();
+  try {
+    await app.goto(baseURL);
+    const reserveLink = app.getByRole('link', { name: 'Reservar el SUM', exact: true }).first();
+    await expect(reserveLink).not.toHaveAttribute('target', '_blank');
+    await reserveLink.click();
+    await expect(app).toHaveURL(/\/login\?next=%2Fdemo%2Fpropietario%2Fservicios%2Fsum$/);
+    await app.getByRole('button', { name: 'Entrar como Unidad 7B', exact: true }).click();
+    await expect(app).toHaveURL(/\/demo\/propietario\/servicios\/sum$/);
+    await expect(app.getByLabel('Unidad que reserva')).toHaveValue('7B');
+    assert.equal(await app.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  } finally { await installedContext.close(); }
 });

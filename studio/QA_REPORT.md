@@ -287,6 +287,19 @@ None found.
 - Axe WCAG A/AA reported zero violations.
 - Validation passed: `npm run typecheck`, `npm run lint`, 35 automated workflows (21 unit, 5 community and 9 browser), `npm run build`, and `git diff --check`.
 
+## Installed mobile app login navigation - 2026-11-14
+
+### P0 - BLOCKERS
+
+None found after correction.
+
+### Evidence
+
+- The failure was reproduced as a split browser context: owner links opened Safari from the installed home-screen app, so the login session was not available inside the app.
+- Every public owner-access link now remains in the current window when iOS standalone or installed-app display mode is active. Ordinary browser use still opens the requested new tab.
+- A dedicated 390 x 844 touch test simulates iPhone standalone mode, opens `Reservar el SUM`, enters as Unit 7B, reaches the SUM route in the same page and confirms no horizontal overflow.
+- Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 11 browser workflows), and `npm run build`.
+
 ## Owner tools directory - 2026-11-14
 
 ### P0 - BLOCKERS
