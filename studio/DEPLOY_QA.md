@@ -71,3 +71,12 @@ Commit: `36a6708`.
 - Release commit: `3cfffb9`.
 - Protected preview and public production checks passed at 390 x 844 and 1440 x 1000: four frequent owner actions, 14 complete directory destinations, no horizontal overflow, no console or page errors.
 - Public smoke confirmed `Ver cuentas` reaches `/demo/propietario/edificio/cuentas` in both viewports.
+
+## Installed-app owner access and chat polish (2026-11-14)
+
+- Preview: https://portal-del-edificio-fftozn7s2-ksixs-projects.vercel.app
+- Preview deployment: `dpl_7McsmoSpqiUfMATRJGPEFXGS5iPq`, status `READY`.
+- Production: https://portal-del-edificio.vercel.app
+- Production deployment: `dpl_Gb7PJrkWZhhEXwebLdXCwPLXB7Ec`, status `READY`.
+- Release commits: `f7089bc` and `900d045`.
+- Protected preview and public production checks passed at 390 x 844: one-tap Unit 7B access, direct navigation to the requested owner route, session persistence after closing/reopening the app context, no horizontal overflow, no console errors, and zero WCAG A/AA violations.
