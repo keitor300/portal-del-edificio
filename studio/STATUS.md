@@ -47,4 +47,6 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 
 2026-11-14: Owner tools directory implemented and validated locally. Mobile and desktop visual QA, all 14 destinations, WCAG A/AA, typecheck, lint, build and all 35 automated workflows pass without overflow or browser errors.
 
+2026-11-14: Owner tools directory released in `3cfffb9` to https://portal-del-edificio.vercel.app. Preview and production authenticated mobile/desktop smoke passed; canonical alias points to READY deployment `dpl_47yPZ3HcXfGaL1QkHgtVxttzeXjn`.
+
 2026-11-14: Owner tools directory implemented and validated locally. All 14 destinations pass navigation checks with an approved owner session; mobile and desktop have no overflow or browser errors, WCAG A/AA reports zero violations, and all 35 automated workflows plus typecheck, lint and build pass.

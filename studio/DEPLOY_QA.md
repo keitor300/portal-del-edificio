@@ -61,3 +61,13 @@ Commit: `36a6708`.
 - Release commit: `d5f77cb`.
 - Protected preview and public production checks passed at 390 x 844 and 1440 x 1000: four frequent actions, 12 complete directory destinations, no horizontal overflow, no console or page errors.
 - Public smoke confirmed `Coordinar el SUM` reaches `/demo/administracion/servicios?tab=sum` in both viewports.
+
+## Owner tools directory (2026-11-14)
+
+- Preview: https://portal-del-edificio-684u93l7c-ksixs-projects.vercel.app
+- Preview deployment: `dpl_HWvxgwKXv54hXZtFSCKbWyj78w6M`, status `READY`.
+- Production: https://portal-del-edificio.vercel.app
+- Production deployment: `dpl_47yPZ3HcXfGaL1QkHgtVxttzeXjn`, status `READY`.
+- Release commit: `3cfffb9`.
+- Protected preview and public production checks passed at 390 x 844 and 1440 x 1000: four frequent owner actions, 14 complete directory destinations, no horizontal overflow, no console or page errors.
+- Public smoke confirmed `Ver cuentas` reaches `/demo/propietario/edificio/cuentas` in both viewports.
