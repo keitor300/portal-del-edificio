@@ -34,3 +34,5 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 2026-11-14: Creative Gate CLOSED for owner-access usability polish. Scope: first-time guidance, unit-based login and recovery, email capture during registration, and clearer approval details. No route, media, dependency, or storage-platform change.
 
 2026-11-14: Owner-access usability polish implemented in `0f60af9`. Local validation and Vercel preview QA passed, including the complete public SUM to registration, approval and unit-bound reservation path. Production gate passed with rollback target recorded.
+
+2026-11-14: Owner-access usability polish deployed to https://portal-del-edificio.vercel.app. Production mobile and desktop smoke passed; canonical alias points to READY deployment `dpl_A4D4kLsoB6jb9C5Lc46g3c52nEu4`.
