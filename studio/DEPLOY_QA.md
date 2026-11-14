@@ -42,3 +42,12 @@ Commit: `36a6708`.
 
 - `npm run typecheck`, `npm run lint`, `npm run build`, and `npm test` passed.
 - Test suites: 21 unit checks, 5 community checks, and 8 browser checks.
+
+## Preview QA - Owner access usability (2026-11-14)
+
+- Preview: https://portal-del-edificio-dptn6b7f8-ksixs-projects.vercel.app
+- Branch: `feature/acceso-propietarios-demo`
+- Commit: `0f60af9`.
+- Vercel status: `READY`.
+- Online 390 x 844 workflow passed: public SUM link opened login in a new tab, new-owner guidance opened registration, email and unit were saved, Administration displayed and approved the request, and login returned to SUM with the approved unit selected.
+- No horizontal overflow, console errors, or page errors were found.

@@ -21,3 +21,5 @@ Release commit: 0138781
 2026-11-06 Cross-page card alignment audit: production deployment `https://portal-del-edificio-fe1q42gd6-ksixs-projects.vercel.app` is READY and aliases the public portal. Release commit: `61e9afb`. Public 390 x 844 checks confirmed Reclamos and Comunidad list cards retain their horizontal padding, with no overflow or browser errors.
 
 2026-11-06 Public Cartelera polish: production deployment `https://portal-del-edificio-3ppv83wik-ksixs-projects.vercel.app` is READY and aliases the public portal. Release commit: `8222979`. The public homepage returned 200; four category-aware Cartelera cards rendered at 390 x 844 without overflow or browser errors.
+
+2026-11-14 Owner access usability polish production gate: local build, lint, typecheck, all 35 workflows, mobile/desktop visual QA, and protected-preview online QA passed. Release commit: `0f60af9`. Rollback target: production deployment `dpl_C1nhM9DdyXNCrVN2QAug8CtSd7V7` (`portal-del-edificio-e8ask7s75-ksixs-projects.vercel.app`).

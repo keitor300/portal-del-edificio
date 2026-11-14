@@ -32,3 +32,5 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 2026-11-12: Internal surfaces and form redesign implemented in `3b3b790` on `redesign/interiores-formularios`. GitHub branch and Vercel preview are ready at https://portal-del-edificio-git-redesign-interior-2cdecc-ksixs-projects.vercel.app. Local checks and online mobile/desktop smoke passed; production remains unchanged pending authorization.
 
 2026-11-14: Creative Gate CLOSED for owner-access usability polish. Scope: first-time guidance, unit-based login and recovery, email capture during registration, and clearer approval details. No route, media, dependency, or storage-platform change.
+
+2026-11-14: Owner-access usability polish implemented in `0f60af9`. Local validation and Vercel preview QA passed, including the complete public SUM to registration, approval and unit-bound reservation path. Production gate passed with rollback target recorded.
