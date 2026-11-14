@@ -1,13 +1,17 @@
 export const ACCOUNTS_KEY = 'portal-owner-accounts-demo-v1';
 const SESSION_KEY = 'portal-owner-session-demo-v1';
 export const ACCESS_EVENT = 'portal-owner-access-change';
-export type OwnerAccount = { id: string; dni: string; name: string; unit: string; salt: string; hash: string; recoveryHash: string; status: 'Pendiente' | 'Aprobado' | 'Rechazado' | 'Suspendido'; created: string };
+export type OwnerAccount = { id: string; dni: string; email?: string; name: string; unit: string; salt: string; hash: string; recoveryHash: string; status: 'Pendiente' | 'Aprobado' | 'Rechazado' | 'Suspendido'; created: string };
 export function accounts(): OwnerAccount[] {
   try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]'); } catch { return []; }
 }
 export function saveAccounts(items: OwnerAccount[]) {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(items));
   window.dispatchEvent(new Event(ACCESS_EVENT));
+}
+export function accountForUnit(unit: string) {
+  const normalized = unit.trim().toUpperCase();
+  return accounts().find(item => item.unit.trim().toUpperCase() === normalized);
 }
 export async function passwordHash(password: string, salt: string) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);

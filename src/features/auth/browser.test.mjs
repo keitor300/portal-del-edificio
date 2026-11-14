@@ -34,9 +34,12 @@ test('owner registration requires approval, preserves SUM destination and revoke
     await landing.getByRole('link', {name:'Reservar el SUM',exact:true}).first().click();
     const owner = await popup;
     await owner.waitForURL(/\/login/);
+    await expect(owner.getByText('¿Primera vez en el portal?')).toBeVisible();
+    await expect(owner.getByText('Antes de ingresar, tenés que solicitar el acceso de tu unidad.')).toBeVisible();
     await owner.getByRole('button',{name:'Solicitar acceso',exact:true}).click();
     await owner.getByLabel('Nombre y apellido').fill('Persona Demo');
-    await owner.getByLabel('DNI (usuario)').fill('12345678');
+    await owner.getByLabel('DNI',{exact:true}).fill('12345678');
+    await owner.getByLabel('Email',{exact:true}).fill('persona.demo@example.com');
     await owner.getByLabel('Unidad',{exact:true}).selectOption('5C');
     await owner.getByLabel('Contraseña',{exact:true}).fill('Demo123456');
     await owner.getByLabel('Repetir contraseña').fill('Demo123456');
@@ -51,6 +54,7 @@ test('owner registration requires approval, preserves SUM destination and revoke
     admin.on('dialog',dialog=>dialog.accept());
     await admin.getByRole('button',{name:'Aprobar acceso'}).click();
     await expect(admin.locator('.access-request .status')).toHaveText('Aprobado');
+    await expect(admin.locator('.access-request')).toContainText('persona.demo@example.com');
     await owner.getByRole('button',{name:'Ingresar',exact:true}).click();
     await expect(owner).toHaveURL(/\/demo\/propietario\/servicios\/sum$/);
     await expect(owner.getByLabel('Unidad que reserva')).toHaveValue('5C');
@@ -59,7 +63,7 @@ test('owner registration requires approval, preserves SUM destination and revoke
     await admin.getByRole('button',{name:'Suspender acceso'}).click();
     await expect(owner).toHaveURL(/\/login/);
     await owner.getByRole('button',{name:'Olvidé mi contraseña'}).click();
-    await owner.getByLabel('DNI (usuario)').fill('12345678');
+    await owner.getByLabel('Unidad',{exact:true}).selectOption('5C');
     await owner.getByLabel('Clave de recuperación').fill(recoveryCode);
     await owner.getByLabel('Nueva contraseña',{exact:true}).fill('NuevaDemo123');
     await owner.getByLabel('Repetir contraseña').fill('NuevaDemo123');

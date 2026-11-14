@@ -30,3 +30,5 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 2026-11-12: Creative Gate CLOSED for the internal-surface and form redesign. The public landing is frozen. Scope covers every internal owner and administration route plus creation/editing forms for finance, communications, content, works, community and services. The visual system is a close adaptation of the supplied warm ivory, forest and soft-surface references; all controls remain visible and native where platform input behavior matters.
 
 2026-11-12: Internal surfaces and form redesign implemented in `3b3b790` on `redesign/interiores-formularios`. GitHub branch and Vercel preview are ready at https://portal-del-edificio-git-redesign-interior-2cdecc-ksixs-projects.vercel.app. Local checks and online mobile/desktop smoke passed; production remains unchanged pending authorization.
+
+2026-11-14: Creative Gate CLOSED for owner-access usability polish. Scope: first-time guidance, unit-based login and recovery, email capture during registration, and clearer approval details. No route, media, dependency, or storage-platform change.

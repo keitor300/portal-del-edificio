@@ -207,3 +207,22 @@ None found.
 - Rendered local captures: `studio/.qa/admin-notices-mobile.png`, `studio/.qa/admin-notices-desktop.png`, and `studio/.qa/owner-notices-mobile.png`.
 - At 390 x 844 and 1440 x 1000, all 18 communication cards rendered with their category treatment and no horizontal overflow or browser errors.
 - Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 8 browser workflows), `npm run build`, and `git diff --check`.
+
+## Owner access usability polish - 2026-11-14
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- Login now identifies an owner with unit and password. The first-time panel explicitly sends new residents to access registration.
+- Registration captures name, DNI, email, unit and password, and explains request, administration review and access as three short steps.
+- Administration displays unit, DNI and email before approval. Existing browser-local accounts without email remain compatible and display `No informado`.
+- The end-to-end browser workflow passed registration, pending state, administration approval, direct return to SUM, account-unit binding, suspension, password recovery and suspended-access rejection.
+- Rendered checks at 390 x 844 and 1440 x 900 found no horizontal overflow or browser errors. The mobile registration screen displayed all three guidance steps and every field correctly.
+- Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 9 browser workflows), `npm run build`, and `git diff --check`.
