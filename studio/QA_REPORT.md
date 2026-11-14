@@ -245,3 +245,41 @@ None found.
 - Every directory destination was opened directly: owner access, services overview, SUM, claims, chat, meetings, polls, voting, documents, works, building status and portal information.
 - Axe WCAG A/AA reported zero violations after the secondary text contrast adjustment.
 - Validation passed: `npm run typecheck`, `npm run lint`, 35 automated workflows (21 unit, 5 community and 9 browser), `npm run build`, and `git diff --check`.
+
+## Owner tools directory - 2026-11-14
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- The owner "Más" screen now leads with four large everyday actions: SUM booking, building accounts, reporting a problem and contacting administration.
+- All 14 existing destinations remain permanently visible in four groups: daily services, information and accounts, participation, and help and contacts. No disclosure must be opened to discover an option.
+- Rendered captures at 390 x 844 and 1440 x 1000 show complete copy, 94 px or larger card targets, no horizontal overflow and no console or page errors.
+- Every destination was opened directly, including SUM, claims, chat, accounts, documents, building status, works, meetings, calendar, listings, contacts, emergencies, FAQ and lost objects.
+- Axe WCAG A/AA reported zero violations.
+- Validation passed: `npm run typecheck`, `npm run lint`, 35 automated workflows (21 unit, 5 community and 9 browser), `npm run build`, and `git diff --check`.
+
+## Owner tools directory - 2026-11-14
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- The owner "Más" screen now presents four large frequent actions before the complete directory: SUM, accounts, reporting a problem and contacting administration.
+- All 14 existing destinations remain visible without disclosures, grouped as daily services, information and accounts, participation, and help and contacts.
+- Rendered captures at 390 x 844 and 1440 x 1000 show complete copy, 94 px or larger touch surfaces, no horizontal overflow and no console or page errors.
+- Every destination was opened with an approved owner session and rendered its expected heading; authentication and unit context remained active.
+- Axe WCAG A/AA reported zero violations.
+- Validation passed: `npm run typecheck`, `npm run lint`, 35 automated workflows (21 unit, 5 community and 9 browser), `npm run build`, and `git diff --check`.
