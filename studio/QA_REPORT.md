@@ -226,3 +226,22 @@ None found.
 - The end-to-end browser workflow passed registration, pending state, administration approval, direct return to SUM, account-unit binding, suspension, password recovery and suspended-access rejection.
 - Rendered checks at 390 x 844 and 1440 x 900 found no horizontal overflow or browser errors. The mobile registration screen displayed all three guidance steps and every field correctly.
 - Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 9 browser workflows), `npm run build`, and `git diff --check`.
+
+## Administration tools directory - 2026-11-14
+
+### P0 - BLOCKERS
+
+None found.
+
+### P1 - IMPORTANT
+
+None found.
+
+### Evidence
+
+- The administration tools index now presents four large frequent actions before the complete directory. All 12 existing destinations remain available and visible without opening disclosures.
+- The former repeated "Atención y servicios" entry is preserved as the clearer "Panel de atención" overview; no route or capability was removed.
+- Rendered captures at 390 x 844 and 1440 x 1000 show aligned cards, complete copy, 94 px or larger touch surfaces, no horizontal overflow and no console or page errors.
+- Every directory destination was opened directly: owner access, services overview, SUM, claims, chat, meetings, polls, voting, documents, works, building status and portal information.
+- Axe WCAG A/AA reported zero violations after the secondary text contrast adjustment.
+- Validation passed: `npm run typecheck`, `npm run lint`, 35 automated workflows (21 unit, 5 community and 9 browser), `npm run build`, and `git diff --check`.
