@@ -1,3 +1,4 @@
+import { currentOwnerUnit } from '../auth/ownerAccounts';
 import { useRef, useState, type FormEvent } from 'react';
 import { Heart, MessageCircle, Plus, Send } from 'lucide-react';
 import { Empty, Field, Modal, Status } from '../../components/UI';
@@ -13,7 +14,7 @@ export function TopicForm({ onClose, admin = false }: { onClose: () => void; adm
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!title.trim() || !description.trim()) { setError('Completá el título y la descripción.'); return; }
-    save('topics', { id: id(), title: title.trim(), description: description.trim(), date: today(), unit: admin ? 'Administración' : 'Unidad 7B', status: 'Pendiente', interests: 0, interested: false, messages: [] });
+    save('topics', { id: id(), title: title.trim(), description: description.trim(), date: today(), unit: admin ? 'Administración' : `Unidad ${currentOwnerUnit()}`, status: 'Pendiente', interests: 0, interested: false, messages: [] });
     notify('Tema enviado para revisión.'); onClose();
   }
   return <Modal title="Proponer un tema" onClose={onClose}><form onSubmit={submit} className="community-form"><Field label="Título del tema"><input value={title} onChange={event => setTitle(event.target.value)} required maxLength={120} autoFocus /></Field><Field label="Contanos tu propuesta"><textarea value={description} onChange={event => setDescription(event.target.value)} required maxLength={3000} rows={5} /></Field>{error && <p className="error" role="alert">{error}</p>}<div className="form-actions"><button className="button secondary" type="button" onClick={onClose}>Cancelar</button><button className="button" type="submit"><Send size={20} />Enviar tema</button></div></form></Modal>;
@@ -30,7 +31,7 @@ export function TopicDiscussion({ topicId, onClose, admin = false }: { topicId: 
     if (!topic || submitting.current) return;
     if (!text.trim()) { setError('Escribí un comentario antes de enviarlo.'); return; }
     submitting.current = true;
-    update('topics', topic.id, { messages: [...(topic.messages ?? []), { id: id(), author: admin ? 'Administración' : 'Unidad 7B', text: text.trim(), date: new Date().toISOString() }] });
+    update('topics', topic.id, { messages: [...(topic.messages ?? []), { id: id(), author: admin ? 'Administración' : `Unidad ${currentOwnerUnit()}`, text: text.trim(), date: new Date().toISOString() }] });
     setText(''); setError(''); notify('Comentario publicado.');
     window.setTimeout(() => { submitting.current = false; }, 0);
   }

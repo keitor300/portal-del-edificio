@@ -1,3 +1,4 @@
+import { signedOwner } from '../auth/ownerAccounts';
 import { useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, Building2, CalendarDays, Check, Clock3, Expand, Plus, Save, Trash2, Unlock } from 'lucide-react';
 import { Confirm, Field, Modal, PageHeader } from '../../components/UI';
@@ -36,7 +37,7 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
   const [date, setDate] = useState(today());
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [unit, setUnit] = useState(admin ? '' : OWNER_UNIT);
+  const [unit, setUnit] = useState(admin ? '' : signedOwner()?.unit || OWNER_UNIT);
   const [acceptedRules, setAcceptedRules] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [confirmation, setConfirmation] = useState(false);
@@ -73,7 +74,7 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
       <div className={`sum-unit-field ${unit ? 'is-selected' : ''}`}>
         <span className="sum-unit-icon" aria-hidden="true"><Building2 size={22} /></span>
         <Field label="Unidad que reserva" hint={admin ? 'Elegí la unidad para la que se carga esta reserva.' : 'Confirmá la unidad antes de elegir el horario.'}>
-          <select aria-label="Unidad que reserva" required value={unit} onChange={event => { setUnit(event.target.value); setError(''); }}>
+          <select aria-label="Unidad que reserva" disabled={!admin && !!signedOwner()} required value={unit} onChange={event => { setUnit(event.target.value); setError(''); }}>
             {admin && <option value="">Elegí una unidad</option>}
             {BUILDING_UNITS.map(option => <option key={option} value={option}>Unidad {option}</option>)}
           </select>
@@ -115,7 +116,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
     </div>
     <div className="list reservation-list">{reservations.length ? reservations.map(item => <div className="list-row reservation-row" key={item.id}>
       <div className="row-main"><span className="reservation-unit">Unidad {normalizeUnit(item.unit)}</span><strong>{formatDate(item.date, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime}</p><span className={`status ${activeReservation(item) ? 'status-green' : ''}`}>{item.status || 'Confirmada'}</span></div>
-      {activeReservation(item) && (admin || sameUnit(item.unit)) && (reservationEndsAt(item) ?? 0) > now.getTime() && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
+      {activeReservation(item) && (admin || sameUnit(item.unit, signedOwner()?.unit || OWNER_UNIT)) && (reservationEndsAt(item) ?? 0) > now.getTime() && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
     </div>) : <p className="empty">No hay reservas para este filtro.</p>}</div>
     {cancel && <Confirm title="Cancelar reserva" description={`Se liberará el turno del ${formatDate(cancel.date)} de ${cancel.time} a ${cancel.endTime}, unidad ${cancel.unit}.`} onClose={() => setCancel(undefined)} onConfirm={() => { update('reservations', cancel.id, { status: 'Cancelada' }); notify('Reserva cancelada en la demo. El turno vuelve a estar disponible.'); }} />}
   </section>;

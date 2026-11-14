@@ -1,3 +1,4 @@
+import { currentOwnerUnit } from '../auth/ownerAccounts';
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Camera, CheckCircle2, ChevronRight, Plus, Save, X } from 'lucide-react';
@@ -6,7 +7,7 @@ import { usePortal } from '../../hooks/usePortal';
 import type { Attachment } from '../../lib/types';
 import { formatDate, id, readAttachment, today } from '../../lib/utils';
 import { Conversation } from './Conversation';
-import { ISSUE_CATEGORIES, ISSUE_STATUSES, OWNER_UNIT, sameUnit } from './model';
+import { ISSUE_CATEGORIES, ISSUE_STATUSES, sameUnit } from './model';
 import './services.css';
 
 function IssueForm({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
@@ -24,13 +25,13 @@ function IssueForm({ onClose, onCreated }: { onClose: () => void; onCreated: (id
     if (!ISSUE_CATEGORIES.includes(category) || !description.trim()) { setError('Elegí una categoría y contanos qué ocurrió.'); return; }
     saving.current = true;
     const issueId = id();
-    save('issues', { id: issueId, title: description.trim().split('\n')[0].slice(0, 90), description: description.trim(), category, unit: OWNER_UNIT, date: today(), status: 'Recibido', attachment: photo, messages: [] });
+    save('issues', { id: issueId, title: description.trim().split('\n')[0].slice(0, 90), description: description.trim(), category, unit: currentOwnerUnit(), date: today(), status: 'Recibido', attachment: photo, messages: [] });
     notify('Reclamo guardado en esta demo. No se envió fuera del navegador.');
     onCreated(issueId);
   }
 
   return <Modal title="Nuevo reclamo" onClose={onClose} wide><form onSubmit={submit} className="services-composer">
-    <p className="muted">Unidad 7B · Registro local de demostración. Para una situación de riesgo, consultá <Link to="/servicios/urgencias" onClick={onClose}>Urgencias</Link>.</p>
+    <p className="muted">Unidad {currentOwnerUnit()} · Registro local de demostración. Para una situación de riesgo, consultá <Link to="/servicios/urgencias" onClick={onClose}>Urgencias</Link>.</p>
     <Field label="Categoría"><select aria-label="Categoría" required value={category} onChange={event => setCategory(event.target.value)}><option value="">Elegir categoría</option>{ISSUE_CATEGORIES.map(value => <option key={value}>{value}</option>)}</select></Field>
     <Field label="¿Qué ocurrió?" hint="Indicá el lugar y una descripción breve."><textarea aria-label="¿Qué ocurrió?" required rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} /></Field>
     <Field label="Foto (opcional)" hint="JPG, PNG o WebP. Hasta 1 MB."><input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={async event => {
@@ -68,7 +69,7 @@ function IssueDetail({ issueId, admin, onClose }: { issueId: string; admin: bool
     {issue.attachment && <DocumentActions attachment={issue.attachment} label="Ver foto adjunta" />}
     {admin && <div className="services-filters"><Field label="Estado del reclamo"><select value={issue.status || 'Recibido'} onChange={event => { if (event.target.value === 'Resuelto') setResolve(true); else changeStatus(event.target.value); }}>{ISSUE_STATUSES.map(status => <option key={status}>{status}</option>)}</select></Field>{issue.status !== 'Resuelto' && <button className="button secondary" onClick={() => setResolve(true)}><CheckCircle2 size={18} aria-hidden="true" />Resolver reclamo</button>}</div>}
     <h3>Seguimiento del reclamo</h3>
-    <Conversation messages={issue.messages ?? []} author={admin ? 'Administración' : `Unidad ${OWNER_UNIT}`} closed={issue.status === 'Resuelto'} onSend={message => {
+    <Conversation messages={issue.messages ?? []} author={admin ? 'Administración' : `Unidad ${currentOwnerUnit()}`} closed={issue.status === 'Resuelto'} onSend={message => {
       const current = data.issues.find(item => item.id === issueId);
       if (current && current.status !== 'Resuelto') update('issues', issueId, { messages: [...(current.messages ?? []), message] });
     }} />

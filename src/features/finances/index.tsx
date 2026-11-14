@@ -1,3 +1,4 @@
+import { currentOwnerUnit } from '../auth/ownerAccounts';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader, Tabs } from '../../components/UI';
 import { Movements } from './Movements';
@@ -20,5 +21,5 @@ export function FinancesPage({ admin = false }: { admin?: boolean }) {
     <div key={`${tab}-${newRequested ? 'new' : 'list'}`}>{tab === 'movimientos' ? <Movements {...shared}/> : tab === 'expensas' ? <Expenses {...shared}/> : tab === 'presupuestos' ? <Budgets {...shared}/> : <ImportMovements/>}</div>
   </div>;
 }
-export function ExpensesPage() { return <div className="finances"><PageHeader title="Expensas" description="Liquidaciones y vencimientos de tu unidad 7B."/><Expenses/></div>; }
+export function ExpensesPage() { return <div className="finances"><PageHeader title="Expensas" description={`Liquidaciones y vencimientos de tu unidad ${currentOwnerUnit()}.`}/><Expenses/></div>; }
 export function BudgetsPage() { return <div className="finances"><PageHeader title="Presupuestos" description="Propuestas y gastos del consorcio por categoría."/><Budgets/></div>; }

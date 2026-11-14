@@ -1,5 +1,6 @@
 import type { DemoData, Entity, Settings } from '../../lib/types';
 import { relativeDate, today } from '../../lib/utils';
+import { currentOwnerUnit } from '../auth/ownerAccounts';
 
 export const OWNER_UNIT = '7B';
 export const BUILDING_UNITS = [
@@ -40,7 +41,7 @@ export function validDate(date: string) {
 export const normalizeUnit = (unit: string | undefined) => (unit ?? '').replace(/^unidad\s*/i, '').trim().replace(/\s+/g, ' ').toUpperCase();
 export const isBuildingUnit = (unit: string | undefined) => BUILDING_UNITS.some(candidate => normalizeUnit(candidate) === normalizeUnit(unit));
 export const activeReservation = (reservation: Entity) => !['cancelada', 'cancelado', 'cancelled'].includes((reservation.status ?? '').trim().toLowerCase());
-export const sameUnit = (unit: string | undefined, expected = OWNER_UNIT) => normalizeUnit(unit).replace(/\s/g, '') === normalizeUnit(expected).replace(/\s/g, '');
+export const sameUnit = (unit: string | undefined, expected = typeof window === 'undefined' ? OWNER_UNIT : currentOwnerUnit()) => normalizeUnit(unit).replace(/\s/g, '') === normalizeUnit(expected).replace(/\s/g, '');
 
 function calendarMinutes(date: string) {
   const [year, month, day] = date.split('-').map(Number);

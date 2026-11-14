@@ -5,6 +5,7 @@ import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, id, readAttachment, today } from '../../lib/utils';
 import { currentPeriod, entityPeriod, formatAmount as money, parseAmount, parseDate, periodLabel } from './helpers';
+import { currentOwnerUnit } from '../auth/ownerAccounts';
 
 function ExpenseForm({ item, onClose }: { item: Entity; onClose: () => void }) {
   const { data, save, notify } = usePortal();
@@ -50,7 +51,7 @@ export function Expenses({ admin = false, newRequested = false, onNewHandled }: 
   const [editing, setEditing] = useState<Entity | null>(() => admin && newRequested ? makeNew() : null);
   const [deleting, setDeleting] = useState<Entity | null>(null);
   const [historyPeriod, setHistoryPeriod] = useState('');
-  const visible = data.expenses.filter(row => admin || row.status === 'Publicado').sort((a, b) => entityPeriod(b).localeCompare(entityPeriod(a)));
+  const visible = data.expenses.filter(row => admin || (row.status === 'Publicado' && (row.unit || '7B') === currentOwnerUnit())).sort((a, b) => entityPeriod(b).localeCompare(entityPeriod(a)));
   const current = visible.find(row => entityPeriod(row) === currentPeriod());
   const history = visible.filter(row => row.id !== current?.id);
   function renderRow(row: Entity) {

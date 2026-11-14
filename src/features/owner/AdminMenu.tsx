@@ -13,6 +13,7 @@ const groups: { title: string; items: AdminMenuItem[] }[] = [
   {
     title: 'Atención y servicios',
     items: [
+      { label: 'Accesos de propietarios', description: 'Revisá solicitudes y aprobá el ingreso por DNI y unidad.', path: '/accesos', Icon: Users },
       { label: 'Atención y servicios', description: 'Reservas, reclamos y consultas de propietarios.', path: '/servicios', Icon: Wrench },
       { label: 'Reservas del SUM', description: 'Revisá y coordiná el uso del salón.', path: '/servicios?tab=sum', Icon: CalendarDays },
       { label: 'Reclamos', description: 'Seguimiento de pedidos de propietarios.', path: '/servicios?tab=reclamos', Icon: ClipboardList },
