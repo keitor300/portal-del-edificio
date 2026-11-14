@@ -25,3 +25,5 @@ Release commit: 0138781
 2026-11-14 Owner access usability polish production gate: local build, lint, typecheck, all 35 workflows, mobile/desktop visual QA, and protected-preview online QA passed. Release commit: `0f60af9`. Rollback target: production deployment `dpl_C1nhM9DdyXNCrVN2QAug8CtSd7V7` (`portal-del-edificio-e8ask7s75-ksixs-projects.vercel.app`).
 
 2026-11-14 Owner access usability polish released: production deployment `dpl_A4D4kLsoB6jb9C5Lc46g3c52nEu4` (`portal-del-edificio-jt8mhr8v9-ksixs-projects.vercel.app`) is READY and aliases `https://portal-del-edificio.vercel.app`. Public mobile and desktop smoke returned HTTP 200, showed first-time guidance and the complete registration form, and reported no overflow or browser errors.
+
+2026-11-14 Administration tools directory released: production deployment `dpl_3U5BLo9Foy5uEL4vKRvZE2HueoLk` (`portal-del-edificio-9dkdp9c3e-ksixs-projects.vercel.app`) is READY and aliases `https://portal-del-edificio.vercel.app`. Release commit: `d5f77cb`. Public mobile and desktop smoke confirmed the complete task-first directory, working SUM navigation, no overflow and no browser errors.

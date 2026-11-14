@@ -40,3 +40,5 @@ GitHub keitor300 and Vercel CLI authentication verified. Administration simplifi
 2026-11-14: Creative Gate CLOSED for the administration tools directory polish. Scope is limited to clearer task hierarchy, always-visible groups and larger semantic cards on `/menu`; all routes, functions, data and permissions remain unchanged.
 
 2026-11-14: Administration tools directory implemented and validated locally. Four frequent tasks are prominent, all 12 destinations remain visible in three semantic groups, mobile and desktop render without overflow, WCAG A/AA has zero violations, and all 35 automated workflows plus typecheck, lint and build pass.
+
+2026-11-14: Administration tools directory released in `d5f77cb` to https://portal-del-edificio.vercel.app. Preview and production mobile/desktop smoke passed; canonical alias points to READY deployment `dpl_3U5BLo9Foy5uEL4vKRvZE2HueoLk`.

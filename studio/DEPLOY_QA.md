@@ -51,3 +51,13 @@ Commit: `36a6708`.
 - Vercel status: `READY`.
 - Online 390 x 844 workflow passed: public SUM link opened login in a new tab, new-owner guidance opened registration, email and unit were saved, Administration displayed and approved the request, and login returned to SUM with the approved unit selected.
 - No horizontal overflow, console errors, or page errors were found.
+
+## Administration tools directory (2026-11-14)
+
+- Preview: https://portal-del-edificio-5toprr55s-ksixs-projects.vercel.app
+- Preview deployment: `dpl_8wLpmAKFp64uzXYF3tstB4rP5ybd`, status `READY`.
+- Production: https://portal-del-edificio.vercel.app
+- Production deployment: `dpl_3U5BLo9Foy5uEL4vKRvZE2HueoLk`, status `READY`.
+- Release commit: `d5f77cb`.
+- Protected preview and public production checks passed at 390 x 844 and 1440 x 1000: four frequent actions, 12 complete directory destinations, no horizontal overflow, no console or page errors.
+- Public smoke confirmed `Coordinar el SUM` reaches `/demo/administracion/servicios?tab=sum` in both viewports.
