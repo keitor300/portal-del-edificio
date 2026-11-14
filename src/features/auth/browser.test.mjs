@@ -103,3 +103,23 @@ test('admin route requires the demo credentials, keeps internal links protected 
   await expect(page.getByRole('heading', { name: 'Ingresar a administración' })).toBeVisible();
   assert.deepEqual(errors, []);
 });
+
+test('quick demo access works in a fresh app context and survives reopening it', async () => {
+  const appContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
+  let app = await appContext.newPage();
+  try {
+    await app.goto(`${baseURL}/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fchat`);
+    await app.getByRole('button', { name: 'Entrar como Unidad 7B', exact: true }).click();
+    await expect(app).toHaveURL(/\/demo\/propietario\/servicios\/chat$/);
+    await expect(app.getByRole('heading', { name: 'Chat con administración' })).toBeVisible();
+    await expect(app.getByText('Propietario demo · Unidad 7B')).toBeVisible();
+    await app.close();
+
+    app = await appContext.newPage();
+    await app.goto(`${baseURL}/demo/propietario/servicios/chat`);
+    await expect(app).toHaveURL(/\/demo\/propietario\/servicios\/chat$/);
+    await expect(app.getByRole('heading', { name: 'Chat con administración' })).toBeVisible();
+    await app.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await expect(app).toHaveURL(/\/login/);
+  } finally { await appContext.close(); }
+});

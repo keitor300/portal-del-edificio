@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Building2, Check, Clock3, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
+import { Building2, Check, Clock3, DoorOpen, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
 import { Field, PageHeader } from '../../components/UI';
 import { BUILDING_UNITS } from '../services/model';
-import { ACCESS_EVENT, accountForUnit, accounts, ownerDestination, passwordHash, saveAccounts, signedOwner, startOwnerSession, type OwnerAccount } from './ownerAccounts';
+import { ACCESS_EVENT, accountForUnit, accounts, ownerDestination, passwordHash, saveAccounts, signedOwner, startDemoOwnerSession, startOwnerSession, type OwnerAccount } from './ownerAccounts';
 
 function useAccessRefresh() {
   const [, refresh] = useState(0);
@@ -41,6 +41,7 @@ export function OwnerLoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   function switchMode(value: typeof mode) { setMode(value); setError(''); setMessage(''); setPassword(''); setConfirmation(''); }
+  function enterDemo() { startDemoOwnerSession(); navigate(next, {replace:true}); }
   async function submit(event: FormEvent) {
     event.preventDefault(); if (busy) return;
     setError(''); setMessage(''); setBusy(true);
@@ -78,6 +79,8 @@ export function OwnerLoginPage() {
   return <div className="admin-login-page"><main className="admin-login-card owner-login-card">
     <Link to="/" className="admin-login-brand"><span className="brand-mark"><Building2 size={26}/></span><span><strong>Edificio 13 y 34</strong><small>Acceso de propietarios</small></span></Link>
     <div className="admin-login-heading"><ShieldCheck size={28}/><div><h1>{mode === 'register' ? 'Solicitá tu acceso' : mode === 'recover' ? 'Recuperar contraseña' : 'Ingresá a tu cuenta'}</h1><p>{mode === 'register' ? 'Completá tus datos para que Administración verifique la solicitud.' : mode === 'recover' ? 'Elegí tu unidad y usá la clave de recuperación.' : 'Elegí tu unidad y escribí tu contraseña.'}</p></div></div>
+    {mode === 'login' && <section className="access-demo-entry" aria-labelledby="demo-entry-title"><span className="access-demo-entry-icon"><DoorOpen size={25}/></span><div><strong id="demo-entry-title">Entrar a la demostración</strong><p>Accedé ahora como propietario de la Unidad 7B.</p></div><button type="button" className="button" onClick={enterDemo}>Entrar como Unidad 7B</button></section>}
+    {mode === 'login' && <div className="access-login-divider"><span>o ingresá con tu cuenta</span></div>}
     {mode === 'login' && <section className="access-first-time" aria-labelledby="first-time-title"><span className="access-first-time-icon"><UserPlus size={25}/></span><div><strong id="first-time-title">¿Primera vez en el portal?</strong><p>Antes de ingresar, tenés que solicitar el acceso de tu unidad.</p></div><button type="button" className="button secondary" onClick={() => switchMode('register')}>Solicitar acceso</button></section>}
     {mode === 'register' && <ol className="access-register-steps"><li><span>1</span><strong>Completás tus datos</strong></li><li><span>2</span><strong>Administración los revisa</strong></li><li><span>3</span><strong>Ingresás con tu unidad</strong></li></ol>}
     {message && <div className="access-feedback" role="status"><Clock3 size={22}/><p>{message}</p></div>}

@@ -7,6 +7,13 @@
 .access-recovery{padding:16px;background:#eef4fc;border:1px solid #cedbec;border-radius:8px;margin-bottom:20px}
 .access-recovery code{display:block;overflow-wrap:anywhere;margin:12px 0;user-select:all}
 .access-secondary-actions{display:grid;gap:12px;margin-top:20px;text-align:center}
+.access-demo-entry{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 14px;align-items:center;padding:18px;margin:20px 0 16px;background:#e4f1e7;border:1px solid #c5ddca;border-radius:14px;color:#174f40;box-shadow:0 8px 18px #173d2d0a}
+.access-demo-entry-icon{display:grid;place-items:center;width:46px;height:46px;grid-row:1/3;background:#fff;border-radius:12px;color:#17654f}
+.access-demo-entry strong{font-size:18px}.access-demo-entry p{margin:3px 0 0;line-height:1.5;color:#49645b}
+.access-demo-entry .button{grid-column:1/-1;width:100%;min-height:52px;margin-top:12px;justify-content:center;border-radius:12px}
+.access-login-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:#6b756e;font-size:13px;text-align:center}
+.access-login-divider::before,.access-login-divider::after{content:'';height:1px;flex:1;background:#d9ded8}
+.access-login-divider span{white-space:nowrap}
 .access-first-time{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;align-items:center;padding:18px;margin:18px 0 22px;background:#eaf3ef;border:1px solid #cfe1d8;border-radius:8px;color:#174f40}
 .access-first-time-icon{display:grid;place-items:center;width:46px;height:46px;grid-row:1/3;background:#fff;border-radius:8px}
 .access-first-time strong{font-size:18px}.access-first-time p{margin:3px 0 0;line-height:1.5;color:#49645b}

@@ -2,6 +2,7 @@ export const ACCOUNTS_KEY = 'portal-owner-accounts-demo-v1';
 const SESSION_KEY = 'portal-owner-session-demo-v1';
 export const ACCESS_EVENT = 'portal-owner-access-change';
 export type OwnerAccount = { id: string; dni: string; email?: string; name: string; unit: string; salt: string; hash: string; recoveryHash: string; status: 'Pendiente' | 'Aprobado' | 'Rechazado' | 'Suspendido'; created: string };
+export const DEMO_OWNER: OwnerAccount = { id: 'owner-demo-7b', dni: '', name: 'Propietario demo', unit: '7B', salt: '', hash: '', recoveryHash: '', status: 'Aprobado', created: '2026-01-01T00:00:00.000Z' };
 export function accounts(): OwnerAccount[] {
   try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]'); } catch { return []; }
 }
@@ -19,15 +20,20 @@ export async function passwordHash(password: string, salt: string) {
   return Array.from(new Uint8Array(bytes), value => value.toString(16).padStart(2, '0')).join('');
 }
 export function signedOwner() {
-  const account = accounts().find(item => item.id === sessionStorage.getItem(SESSION_KEY));
+  const sessionId = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+  if (sessionId === DEMO_OWNER.id) return DEMO_OWNER;
+  const account = accounts().find(item => item.id === sessionId);
   return account?.status === 'Aprobado' ? account : undefined;
 }
 export function currentOwnerUnit() { return signedOwner()?.unit || '7B'; }
 export function startOwnerSession(account: OwnerAccount) {
-  sessionStorage.setItem(SESSION_KEY, account.id);
+  localStorage.setItem(SESSION_KEY, account.id);
+  sessionStorage.removeItem(SESSION_KEY);
   window.dispatchEvent(new Event(ACCESS_EVENT));
 }
+export function startDemoOwnerSession() { startOwnerSession(DEMO_OWNER); }
 export function logoutOwner() {
+  localStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(SESSION_KEY);
   window.dispatchEvent(new Event(ACCESS_EVENT));
 }

@@ -16,6 +16,12 @@ None required for release. Owner and administration conversations now render as 
 
 Validated at 390x844 and 1440x1000. Owner chat, administration inbox and shared issue conversations have no horizontal overflow, no console errors and zero WCAG A/AA violations in the focused audit. All 9 browser workflows, 21 unit workflows, 5 community workflows, lint and production build pass.
 
+## 2026-11-14 - Installed app owner access
+
+Production diagnosis confirmed that a fresh app context had zero local owner accounts and no demo shortcut. The login now offers one-tap access as Unit 7B while preserving registration and administration approval. The owner session survives closing and reopening the app and is removed by explicit logout.
+
+Validated at 390x844 with no horizontal overflow, console errors or WCAG A/AA violations. All 21 unit, 5 community and 10 browser workflows pass.
+
 ## P0 - BLOCKERS
 
 None found.
