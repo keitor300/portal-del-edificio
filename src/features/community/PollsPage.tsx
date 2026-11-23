@@ -3,7 +3,7 @@ import { Check, Vote } from 'lucide-react';
 import { DocumentActions, Empty, PageHeader, Status, Tabs } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
-import { ballotPatch, BUILDING_UNITS, FORMAL_NOTICE, fullDate, pollHasEnded, pollResults } from './model';
+import { ballotPatch, BUILDING_UNITS, CONSULTATION_NOTICE, FORMAL_NOTICE, fullDate, pollHasEnded, pollResults } from './model';
 import './community.css';
 import { productionPortal } from '../../lib/api';
 import { currentOwnerUnit } from '../auth/ownerAccounts';
@@ -11,7 +11,7 @@ import { currentOwnerUnit } from '../auth/ownerAccounts';
 export function PollResults({ poll }: { poll: Entity }) {
   const { votes, total } = pollResults(poll);
   return <div className="community-results">
-    <p className="muted">Participación: <strong>{total} de {BUILDING_UNITS} unidades</strong> ({Math.round(total / BUILDING_UNITS * 100)} %). Datos demo.</p>
+    <p className="muted">Participación: <strong>{total} de {BUILDING_UNITS} unidades</strong> ({Math.round(total / BUILDING_UNITS * 100)} %).{!productionPortal && ' Datos demo.'}</p>
     <ul className="community-result-list" aria-label={`Resultados: ${poll.title}`}>
       {(poll.options ?? []).map((option, index) => {
         const percent = total ? Math.round(votes[index] / total * 100) : 0;
@@ -26,6 +26,7 @@ function PollCard({ poll }: { poll: Entity }) {
   const { data, update, notify } = usePortal();
   const [choice, setChoice] = useState<number>();
   const submitted = useRef(false);
+  const [saving, setSaving] = useState(false);
   const radioName = useId();
   const ended = pollHasEnded(poll);
   const hasVoted = poll.voted !== undefined;
@@ -36,21 +37,22 @@ function PollCard({ poll }: { poll: Entity }) {
     const patch = current && ballotPatch(current, choice);
     if (!patch) { notify('Esta consulta ya no admite tu voto.'); return; }
     submitted.current = true;
+    setSaving(true);
     try {await update('polls', poll.id, patch);
     notify(productionPortal ? `Tu voto quedó registrado para la unidad ${currentOwnerUnit()}.` : 'Tu voto demo quedó registrado para la Unidad 7B.');
     }catch(cause){notify((cause as Error).message);}
-    finally{submitted.current=false;}
+    finally{submitted.current=false;setSaving(false);}
   }
   return <article className="section community-poll" aria-labelledby={`${radioName}-title`}>
     <div className="section-heading"><h2 id={`${radioName}-title`}>{poll.title}</h2><Status tone={ended ? 'neutral' : 'green'}>{ended ? 'Cerrada' : 'Abierta'}</Status></div>
     <p className="community-preserve">{poll.description}</p>
-    {poll.formal && <p className="community-notice">{FORMAL_NOTICE}</p>}
+    {poll.formal && <p className="community-notice">{productionPortal ? CONSULTATION_NOTICE : FORMAL_NOTICE}</p>}
     {poll.dueDate && <p className="muted">{ended ? 'Fecha de cierre' : 'Disponible hasta el'}: {fullDate(poll.dueDate)}.</p>}
     {poll.attachment && <DocumentActions attachment={poll.attachment} label="Ver documento" />}
     {!hasVoted && !ended && <form onSubmit={vote}>
-      <fieldset className="community-options"><legend>Tu elección · Unidad {currentOwnerUnit()}</legend>{(poll.options ?? []).map((option, index) => <label className="community-option" key={index}><input type="radio" required name={radioName} value={index} checked={choice === index} onChange={() => setChoice(index)} /><span>{option}</span></label>)}</fieldset>
-      <button className="button" type="submit" disabled={choice === undefined}><Vote size={20} />{poll.formal ? 'Registrar voto demo' : 'Votar'}</button>
-      <p className="muted">Un voto por unidad en esta demo. Una vez registrado, no se puede cambiar.</p>
+      <fieldset className="community-options" disabled={saving}><legend>Tu elección · Unidad {currentOwnerUnit()}</legend>{(poll.options ?? []).map((option, index) => <label className="community-option" key={index}><input type="radio" required name={radioName} value={index} checked={choice === index} onChange={() => setChoice(index)} /><span>{option}</span></label>)}</fieldset>
+      <button className="button" type="submit" disabled={saving || choice === undefined} aria-busy={saving}><Vote size={20} />{saving ? 'Registrando voto…' : poll.formal ? productionPortal ? 'Registrar voto' : 'Registrar voto demo' : 'Votar'}</button>
+      <p className="muted">Un voto por unidad{!productionPortal && ' en esta demo'}. Una vez registrado, no se puede cambiar.</p>
     </form>}
     {hasVoted && <p className="community-voted" role="status"><Check size={20} />Tu voto: {poll.options?.[poll.voted!] ?? 'Registrado'}</p>}
     <PollResults poll={poll} />

@@ -2,6 +2,7 @@ import type { DemoData, Entity } from '../../lib/types';
 import { localDate, today } from '../../lib/utils';
 
 export const FORMAL_NOTICE = 'Votación formal de demostración. No tiene validez legal ni carácter vinculante. No reemplaza una asamblea ni sus mecanismos de votación.';
+export const CONSULTATION_NOTICE = 'Consulta del portal: registra la opinión de las unidades. No reemplaza una asamblea ni sus mecanismos de decisión.';
 export const BUILDING_UNITS = 52;
 export const fullDate = (date: string) => new Date(`${date.slice(0, 10)}T12:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
 export const lines = (value = '') => value.split('\n').map(line => line.trim()).filter(Boolean);

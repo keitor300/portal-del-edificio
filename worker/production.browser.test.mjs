@@ -281,6 +281,17 @@ test('resident registers from QR entry, administrator approves from another brow
   await admin.getByRole('button',{name:'Guardar encuesta',exact:true}).click();
   await expect(admin.getByRole('dialog')).toHaveCount(0);
   assert.equal((await (await owner.request.get(`${base}/api/state`)).json()).data.polls[0].title,'Consulta de prueba');
+  await owner.goto(`${base}/demo/propietario/edificio/encuestas`);
+  await expect(owner.getByText('Datos demo.',{exact:false})).toHaveCount(0);
+  await owner.getByRole('radio',{name:'Por la mañana',exact:true}).check();
+  await owner.getByRole('button',{name:'Votar',exact:true}).click();
+  await expect(owner.getByText('Tu voto: Por la mañana',{exact:true})).toBeVisible();
+  await expect(owner.getByRole('button',{name:'Votar',exact:true})).toHaveCount(0);
+  await owner.reload();
+  await expect(owner.getByText('Tu voto: Por la mañana',{exact:true})).toBeVisible();
+  const recordedPoll=(await (await owner.request.get(`${base}/api/state`)).json()).data.polls[0];
+  assert.equal(recordedPoll.voted,0);
+  assert.deepEqual(recordedPoll.votes,[1,0]);
   await owner.goto(`${base}/demo/propietario/edificio/reuniones?tab=temas`);
   await owner.getByRole('button',{name:'Proponer tema',exact:true}).click();
   await owner.getByLabel('Título del tema').fill('Propuesta de prueba');
