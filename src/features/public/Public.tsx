@@ -1,9 +1,11 @@
 import { AlertTriangle, ArrowUpRight, Bell, Building2, CalendarDays, ChevronRight, FileText, Home, LockKeyhole, Mail, MessageCircle, ReceiptText, ShieldCheck, Users, Wrench } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { formatDate, today } from '../../lib/utils';
+
+import { productionPortal } from '../../lib/api';
 
 const gallery = [
   { src: '/images/fachada.jpg', alt: 'Fachada del Edificio 13 y 34', label: 'La fachada' },
@@ -49,7 +51,7 @@ function PublicNoticeCard({ notice }: { notice: Entity }) {
 }
 
 function PublicNotificationRow({ notice }: { notice: Entity }) {
-  const label = notice.urgent ? 'Hoy' : formatDate(notice.date, { day: 'numeric', month: 'short' });
+  const label = notice.date.slice(0, 10) === today() ? 'Hoy' : formatDate(notice.date, { day: 'numeric', month: 'short' });
   return <Link className={`public-notification-row public-news-tone-${noticeTone(notice)}`} to={`/novedades/${notice.id}`}>
     <span className="public-notification-icon">{notice.urgent ? <AlertTriangle size={21} /> : notice.category === 'Reunión' ? <CalendarDays size={21} /> : <Bell size={21} />}</span>
     <span className="public-notification-copy"><strong>{notice.title}</strong><small>{notice.description}</small></span>
@@ -92,17 +94,17 @@ export function PublicHomePage() {
         <span className="public-kicker">Bienvenido al portal</span>
         <h1>Edificio 13 y 34</h1>
         <p>Información, espacios y vida en comunidad, reunidos en un mismo lugar.</p>
-        <div className="public-hero-actions"><Link className="public-primary-link" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fsum" {...ownerAccessWindowProps()}><CalendarDays size={18} />Reservar el SUM</Link><Link className="public-secondary-link" to="/demo/administracion"><Wrench size={17} />Ver demo Administración <ArrowUpRight size={17} /></Link></div>
+        <div className="public-hero-actions"><Link className="public-primary-link" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fsum" {...ownerAccessWindowProps()}><CalendarDays size={18} />Reservar el SUM</Link><Link className="public-secondary-link" to={productionPortal ? "/admin" : "/demo/administracion"}><Wrench size={17} />{productionPortal ? "Administración" : "Ver demo Administración"} <ArrowUpRight size={17} /></Link></div>
       </div>
     </section>
 
     <section className="public-notification-panel" aria-labelledby="news-title">
       <div className="public-notification-heading"><div><span className="public-notification-title"><Bell size={24} /> <strong id="news-title">Notificaciones</strong><em>{notices.length}</em></span><small>Lo importante del edificio, reunido para vos.</small></div><Link to="/novedades" className="public-text-link">Ver todas <ArrowUpRight size={17} /></Link></div>
-      <div className="public-notification-list">{notices.slice(0, 3).map(notice => <PublicNotificationRow notice={notice} key={notice.id} />)}</div>
+      <div className="public-notification-list">{notices.slice(0, 3).map(notice => <PublicNotificationRow notice={notice} key={notice.id} />)}{notices.length === 0 && <p className="muted">No hay avisos públicos publicados.</p>}</div>
     </section>
 
     <section className="public-actions" aria-labelledby="actions-title">
-      <div className="public-section-heading"><div><span className="public-kicker">Todo a mano</span><h2 id="actions-title">Elegí lo que necesitás</h2></div><span className="public-demo-badge">Recorrido demo</span></div>
+      <div className="public-section-heading"><div><span className="public-kicker">Todo a mano</span><h2 id="actions-title">Elegí lo que necesitás</h2></div>{!productionPortal && <span className="public-demo-badge">Recorrido demo</span>}</div>
       <div className="public-action-grid">
         <Link className="public-action public-action-expenses" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Fexpensas" {...ownerAccessWindowProps()}><ReceiptText size={31} /><span><strong>Expensas</strong><small>Consultá y descargá tus expensas</small></span><ChevronRight size={19} /></Link>
         <Link className="public-action public-action-documents" to="/login?next=%2Fdemo%2Fpropietario%2Fedificio%2Fdocumentos" {...ownerAccessWindowProps()}><FileText size={31} /><span><strong>Documentos</strong><small>Reglamentos, actas y archivos</small></span><ChevronRight size={19} /></Link>
@@ -121,7 +123,7 @@ export function PublicHomePage() {
       <div className="public-building-grid">{gallery.map(item => <figure key={item.src}><img src={item.src} alt={item.alt} /><figcaption>{item.label}</figcaption></figure>)}</div>
     </section>
 
-    <section className="public-about" aria-labelledby="about-title"><div><span className="public-kicker">Un solo lugar</span><h2 id="about-title">Lo cotidiano, más claro.</h2></div><div className="public-about-copy"><p>El portal reúne comunicaciones, documentos, espacios comunes, cuentas y el estado general del edificio para que cada vecino encuentre lo importante sin perderse.</p><Link to="/login?next=%2Fdemo%2Fpropietario" {...ownerAccessWindowProps()} className="public-text-link">Explorar la demostración <ArrowUpRight size={17} /></Link></div></section>
+    <section className="public-about" aria-labelledby="about-title"><div><span className="public-kicker">Un solo lugar</span><h2 id="about-title">Lo cotidiano, más claro.</h2></div><div className="public-about-copy"><p>El portal reúne comunicaciones, documentos, espacios comunes, cuentas y el estado general del edificio para que cada vecino encuentre lo importante sin perderse.</p><Link to="/login?next=%2Fdemo%2Fpropietario" {...ownerAccessWindowProps()} className="public-text-link">{productionPortal ? "Ingresar al portal" : "Explorar la demostración"} <ArrowUpRight size={17} /></Link></div></section>
   </PublicLayout>;
 }
 
@@ -131,17 +133,18 @@ export function PublicNewsPage() {
 }
 
 export function PublicBuildingPage() {
-  return <PublicLayout><section className="public-inner-page"><span className="public-kicker">Edificio 13 y 34</span><h1>Un lugar para vivir y compartir.</h1><p className="public-lead">Una mirada simple a los espacios comunes y a la información que hace al día a día del edificio.</p><div className="public-building-grid public-building-page-grid">{gallery.map(item => <figure key={item.src}><img src={item.src} alt={item.alt} /><figcaption>{item.label}</figcaption></figure>)}</div><div className="public-building-note"><Building2 size={23} /><p>La información de esta presentación es una muestra demo del portal del consorcio.</p></div></section></PublicLayout>;
+  return <PublicLayout><section className="public-inner-page"><span className="public-kicker">Edificio 13 y 34</span><h1>Un lugar para vivir y compartir.</h1><p className="public-lead">Una mirada simple a los espacios comunes y a la información que hace al día a día del edificio.</p><div className="public-building-grid public-building-page-grid">{gallery.map(item => <figure key={item.src}><img src={item.src} alt={item.alt} /><figcaption>{item.label}</figcaption></figure>)}</div><div className="public-building-note"><Building2 size={23} /><p>{productionPortal ? "Espacios e información del Edificio 13 y 34." : "La información de esta presentación es una muestra demo del portal del consorcio."}</p></div></section></PublicLayout>;
 }
 
 export function PublicContactPage() {
-  return <PublicLayout><section className="public-inner-page public-contact-page"><span className="public-kicker">Estamos cerca</span><h1>Contacto</h1><p className="public-lead">Para consultar información del edificio, la administración puede centralizar las respuestas dentro del portal.</p><div className="public-contact-lines"><div><Mail size={22} /><span><strong>Administración</strong><small>Canal demo de consultas del edificio</small></span></div><div><Home size={22} /><span><strong>Edificio 13 y 34</strong><small>Información institucional y novedades</small></span></div></div><Link className="public-primary-link" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fchat" {...ownerAccessWindowProps()}><MessageCircle size={18} />Abrir canal demo <ArrowUpRight size={18} /></Link></section></PublicLayout>;
+  return <PublicLayout><section className="public-inner-page public-contact-page"><span className="public-kicker">Estamos cerca</span><h1>Contacto</h1><p className="public-lead">Para consultar información del edificio, la administración puede centralizar las respuestas dentro del portal.</p><div className="public-contact-lines"><div><Mail size={22} /><span><strong>Administración</strong><small>{productionPortal ? "Consultas de propietarios" : "Canal demo de consultas del edificio"}</small></span></div><div><Home size={22} /><span><strong>Edificio 13 y 34</strong><small>Información institucional y novedades</small></span></div></div><Link className="public-primary-link" to="/login?next=%2Fdemo%2Fpropietario%2Fservicios%2Fchat" {...ownerAccessWindowProps()}><MessageCircle size={18} />{productionPortal ? "Hablar con Administración" : "Abrir canal demo"} <ArrowUpRight size={18} /></Link></section></PublicLayout>;
 }
 
 export function DemoEntryPage() {
+  if (productionPortal) return <Navigate to="/login" replace />;
   return <PublicLayout><section className="public-inner-page demo-entry"><span className="public-kicker">Recorrido interactivo</span><h1>Explorar la demo</h1><p className="public-lead">Elegí una vista para recorrer el portal con datos de ejemplo. En la vista propietario podés ingresar directamente como Unidad 7B o probar el registro y la aprobación.</p><div className="demo-entry-links"><Link to="/login?next=%2Fdemo%2Fpropietario" {...ownerAccessWindowProps()}><Home size={21} /><span><strong>Vista propietario</strong><small>Novedades, edificio, servicios y comunidad</small></span><ArrowUpRight size={19} /></Link><Link to="/demo/administracion"><Wrench size={21} /><span><strong>Vista administración demo</strong><small>Recorrido abierto con datos de ejemplo</small></span><ArrowUpRight size={19} /></Link><Link to="/admin"><LockKeyhole size={21} /><span><strong>Acceso administración</strong><small>Panel protegido para la demostración</small></span><ArrowUpRight size={19} /></Link></div></section></PublicLayout>;
 }
 
 function PublicFooter() {
-  return <footer className="public-footer"><span><strong>Edificio 13 y 34</strong> · Portal demo</span><span><Link to="/novedades">Novedades</Link><Link to="/contacto">Contacto</Link><Link to="/demo">Explorar demo</Link></span></footer>;
+  return <footer className="public-footer"><span><strong>Edificio 13 y 34</strong> · {productionPortal ? "Portal de propietarios" : "Portal demo"}</span><span><Link to="/novedades">Novedades</Link><Link to="/contacto">Contacto</Link>{productionPortal ? <Link to="/admin">Administración</Link> : <Link to="/demo">Explorar demo</Link>}</span></footer>;
 }

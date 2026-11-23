@@ -14,6 +14,8 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import { PageHeader } from '../../components/UI';
 
+import { productionPortal } from '../../lib/api';
+
 type AdminMenuItem = {
   label: string;
   description: string;
@@ -134,7 +136,7 @@ export function AdminMenuPage() {
           ))}
         </div>
       </section>
-      <p className="admin-menu-demo-note"><ClipboardList size={17} />Esta es una vista demo: los cambios se guardan únicamente en este navegador.</p>
+      {!productionPortal && <p className="admin-menu-demo-note"><ClipboardList size={17} />Esta es una vista demo: los cambios se guardan únicamente en este navegador.</p>}
     </>
   );
 }

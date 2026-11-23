@@ -71,6 +71,15 @@ async function pageFor() {
 
 test('resident registers from QR entry, administrator approves from another browser, SUM is shared, chat is private', async () => {
   const owner = await pageFor();
+  await owner.goto(base);
+  await expect(owner.getByText('Recorrido demo',{exact:true})).toHaveCount(0);
+  await expect(owner.getByRole('link',{name:'Ver demo Administración'})).toHaveCount(0);
+  await expect(owner.getByRole('link',{name:'Administración',exact:true}).first()).toHaveAttribute('href','/admin');
+  await expect(owner.getByText('No hay avisos públicos publicados.',{exact:true})).toBeVisible();
+  await owner.goto(`${base}/contacto`);
+  await expect(owner.getByRole('link',{name:'Hablar con Administración'})).toBeVisible();
+  await owner.goto(`${base}/demo`);
+  await expect(owner).toHaveURL(/\/login$/);
   const entry = await owner.goto(`${base}/login?mode=register`);
   const securityHeaders = await entry.allHeaders();
   assert.equal(securityHeaders['x-frame-options'],'DENY');
