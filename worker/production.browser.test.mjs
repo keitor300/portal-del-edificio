@@ -58,12 +58,26 @@ async function pageFor() {
   const page = await context.newPage();
   page.setDefaultTimeout(15000);
   page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    document.addEventListener('securitypolicyviolation', event => {
+      console.error(`CSP violation: ${event.effectiveDirective} ${event.blockedURI}`);
+    });
+  });
+  page.on('console', message => {
+    if(message.text().startsWith('CSP violation:'))errors.push(message.text());
+  });
   return page;
 }
 
 test('resident registers from QR entry, administrator approves from another browser, SUM is shared, chat is private', async () => {
   const owner = await pageFor();
-  await owner.goto(`${base}/login?mode=register`);
+  const entry = await owner.goto(`${base}/login?mode=register`);
+  const securityHeaders = await entry.allHeaders();
+  assert.equal(securityHeaders['x-frame-options'],'DENY');
+  assert.equal(securityHeaders['x-content-type-options'],'nosniff');
+  assert.match(securityHeaders['content-security-policy'],/frame-ancestors 'none'/);
+  assert.match(securityHeaders['content-security-policy'],/script-src 'self';/);
+  assert.equal(securityHeaders['referrer-policy'],'strict-origin-when-cross-origin');
   await owner.getByLabel('Nombre y apellido').fill('Propietario de prueba');
   await owner.getByLabel('DNI',{exact:true}).fill('12345678');
   await owner.getByLabel('Email',{exact:true}).fill('owner@example.invalid');
