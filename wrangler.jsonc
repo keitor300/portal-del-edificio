@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portal-del-edificio",
+  "account_id": "92bcfb4026bf4c1ceb4ccc96ad76a3b5",
+  "main": "worker/index.mjs",
+  "compatibility_date": "2026-11-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "portal-edificio-produccion",
+    "database_id": "75730a9d-c31d-4edb-a56b-2b9e874964ed",
+    "migrations_dir": "migrations"
+  }],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "portal-edificio-archivos" }],
+  "observability": { "enabled": true }
+}

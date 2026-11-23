@@ -8,5 +8,8 @@ test-results/
 playwright-report/
 *.log
 *.tsbuildinfo
+.wrangler/
+.dev.vars*
+!.dev.vars.example
 
 .vercel
