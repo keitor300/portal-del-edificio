@@ -54,6 +54,17 @@ npx.cmd wrangler d1 export portal-edificio-produccion --remote --output RUTA_PRI
 
 La exportacion puede afectar temporalmente la disponibilidad: realizarla en una ventana acordada. No subir copias, enlaces temporales, hashes de contrasenas, DNI ni tokens a Git o a carpetas publicas. Una copia D1 no contiene los objetos R2: incluir los archivos en la estrategia de recuperacion.
 
-La copia previa a las migraciones 0002-0006 se restauro en SQLite local con integridad correcta. No se ha probado una restauracion remota completa ni configurado un respaldo automatico de D1 y R2; son tareas pendientes, no capacidades garantizadas.
+Hay un comando de respaldo combinado que exporta D1, restaura el SQL en SQLite en memoria para comprobar integridad y referencias, y descarga los objetos R2 registrados en esa instantanea:
+
+```powershell
+node scripts/backup-portal.mjs --remote
+node scripts/backup-portal.mjs --verify RUTA_DE_LA_COPIA
+```
+
+Crea un directorio nuevo bajo `.wrangler/backups`, excluido de Git, sin sobrescribir copias anteriores. El manifiesto se escribe al terminar y conserva las huellas SHA-256 del SQL y los archivos; una descarga incompleta o un archivo alterado hacen fallar la verificacion. No recupera objetos huerfanos que no figuren en D1. Este procedimiento depende de que los adjuntos sean inmutables y no se borren fisicamente durante la copia; si se agrega limpieza, coordinarla con los respaldos.
+
+La copia contiene datos personales y credenciales derivadas. NO esta cifrada por el script: guardarla en un disco protegido y no compartirla ni publicarla. Las huellas detectan cambios accidentales, no autentican una copia frente a alguien que tambien pueda modificar el manifiesto. No ejecutar SQL de copias de origen desconocido.
+
+La copia remota del 23/11/2026 paso la restauracion local y la integridad; tenia cero adjuntos. Las pruebas con adjuntos son fixtures locales, no una restauracion R2 real. No se ha probado una restauracion remota completa ni configurado un respaldo automatico de D1 y R2; siguen pendientes. Si se incorpora un proveedor externo de autenticacion, este respaldo no incluira sus cuentas: documentar por separado su recuperacion y la correspondencia de identidades.
 
 Wrangler ejecuta `scripts/build-production.mjs` antes del despliegue para no publicar assets demo. Un build exitoso no habilita la apertura: verificar tambien migraciones, cuenta administradora, reglas, permisos, login y reservas en navegadores separados desde la URL publica. No debilitar el hash de contrasenas para ajustarlo a un plan de CPU insuficiente.
