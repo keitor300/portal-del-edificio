@@ -128,10 +128,8 @@ export function isValidReservation(reservation: Entity) {
 export function reservationEndsAt(reservation: Entity) {
   const range = reservationRange(reservation);
   if (!range) return null;
-  const endTime = reservation.endTime ?? SUM_SLOTS.find(slot => slot.time === reservation.time)?.endTime;
-  if (!endTime) return null;
-  const endDate = reservation.endDate ?? reservation.date;
-  return new Date(`${endDate}T${endTime}:00`).getTime();
+  // Calendar minutes represent the building's wall clock (UTC-03), including overnight ranges.
+  return range.end * 60000 + 3 * 60 * 60000;
 }
 
 export function reservationsOverlap(first: Entity, second: Entity) {
@@ -151,7 +149,7 @@ export function rangeUnavailable(date: string, startTime: string, endTime: strin
   if (!validDate(date)) return 'Elegí una fecha válida.';
   const range = validBookingRange(date, startTime, endTime);
   if (!range) return 'Elegí un horario válido dentro del horario habilitado.';
-  if (new Date(`${date}T${startTime}:00`).getTime() <= now.getTime()) return 'La hora de inicio ya pasó.';
+  if (new Date(`${date}T${startTime}:00-03:00`).getTime() <= now.getTime()) return 'La hora de inicio ya pasó.';
   if (settings.blockedDates.includes(date) || settings.blockedDates.includes(range.endDate)) return 'Fecha bloqueada por administración.';
   const candidate = { id: 'candidate', title: '', description: '', date, time: startTime, endTime, endDate: range.endDate };
   if (reservations.some(item => activeReservation(item) && reservationsOverlap(candidate, item))) return 'Ese horario se superpone con otra reserva.';

@@ -5,7 +5,7 @@ import { build } from 'esbuild';
 const bundle = await build({ entryPoints: [new URL('./model.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1')], bundle: true, write: false, format: 'esm', platform: 'node' });
 const { BUILDING_UNITS, slotUnavailable, rangeUnavailable, bookingError, serviceSeed, validDate, sameUnit, isBuildingUnit, isValidReservation, reservationEndsAt, reservationEndDate, reservationTouchesDate, sumOperatingWindow, sumTimeOptions, validBookingRange } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 const settings = { rules: 'Reglamento demo', blockedDates: [], openingBalance: 0, seedDate: '2026-09-05' };
-const now = new Date('2026-09-05T09:00:00');
+const now = new Date('2026-09-05T09:00:00-03:00');
 const reservation = { id: 'booking', title: 'SUM', description: '', date: '2026-09-06', time: '10:00', endTime: '15:00', unit: '3A', status: 'Confirmada' };
 
 test('both roles see an overlapping range as occupied; another range stays free', () => {
@@ -21,8 +21,8 @@ test('block applies to the selected range and unblocking restores it', () => {
 });
 test('past days, already started ranges and invalid times are refused', () => {
   assert.equal(rangeUnavailable('2026-09-04', '17:00', '18:00', [], settings, now), 'La hora de inicio ya pasó.');
-  assert.equal(rangeUnavailable('2026-09-05', '10:00', '11:00', [], settings, new Date('2026-09-05T10:00:00')), 'La hora de inicio ya pasó.');
-  assert.equal(rangeUnavailable('2026-09-05', '17:00', '18:00', [], settings, new Date('2026-09-05T10:00:00')), '');
+  assert.equal(rangeUnavailable('2026-09-05', '10:00', '11:00', [], settings, new Date('2026-09-05T10:00:00-03:00')), 'La hora de inicio ya pasó.');
+  assert.equal(rangeUnavailable('2026-09-05', '17:00', '18:00', [], settings, new Date('2026-09-05T10:00:00-03:00')), '');
   assert.equal(validDate('2026-02-30'), false);
   assert.equal(validDate('not-a-date'), false);
   assert.equal(validDate('2028-02-29'), true);

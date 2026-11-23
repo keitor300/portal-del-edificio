@@ -10,7 +10,7 @@ export const isCancelled = (item: Entity) => /cancelad|anulad/i.test(item.status
 export const isPastMeeting = (item: Entity) => {
   if (/realizada|finalizada/i.test(item.status ?? '') || item.date.slice(0, 10) < today()) return true;
   const endTime = item.endTime || item.time;
-  return Boolean(endTime && item.date.slice(0, 10) === today() && new Date(`${item.date.slice(0, 10)}T${endTime}:00`).getTime() < Date.now());
+  return Boolean(endTime && item.date.slice(0, 10) === today() && new Date(`${item.date.slice(0, 10)}T${endTime}:00-03:00`).getTime() < Date.now());
 };
 
 export function pollResults(poll: Entity) {
