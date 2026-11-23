@@ -34,6 +34,34 @@ function fixture() {
 const password = 'Test-only-passphrase-2026';
 const registration = unit => ({ unit, name: `Resident ${unit}`, email: `${unit.toLowerCase()}@example.invalid`, dni: '12345678', password });
 
+test('content API rejects invalid submissions without writes and preserves valid records after invalid edits', async () => {
+  const { sqlite, request } = fixture();
+  try {
+    sqlite.prepare("INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','admin','approved',?)").run(await hashPassword(password));
+    const admin = (await request('/api/auth/login','POST',{identity:'admin@example.invalid',password})).headers.get('set-cookie');
+    for (const [collection, fields] of [
+      ['meetings',{time:'26:00',place:'SUM',agenda:'Cuentas',status:'Programada'}],
+      ['works',{provider:'Proveedor',amount:15000,progress:101,startDate:'2026-11-23',status:'Planificada'}],
+      ['budgets',{amount:15000,category:'Obras',period:'2026-13',status:'Aprobado'}],
+      ['contacts',{email:'no-es-email'}],
+      ['faqs',{description:''}],
+      ['listings',{category:'Cochera',type:'Inventado'}],
+    ]) {
+      const response = await request(`/api/entities/${collection}`,'POST',{title:'Prueba',date:'2026-11-23',...fields},admin);
+      assert.equal(response.status,400,collection);
+    }
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM entities').get().n,0);
+    const response = await request('/api/entities/meetings','POST',{title:'Reunión',date:'2026-11-23',time:'19:00',endTime:'20:00',place:'SUM',agenda:'Cuentas',status:'Programada'},admin);
+    assert.equal(response.status,201);
+    const { id } = await response.json();
+    assert.equal((await request(`/api/entities/meetings/${id}`,'PATCH',{version:1,endTime:'18:00'},admin)).status,400);
+    const row = sqlite.prepare('SELECT data,version FROM entities WHERE id=?').get(id);
+    assert.equal(row.version,1);
+    assert.equal(JSON.parse(row.data).endTime,'20:00');
+    assert.equal((await request(`/api/entities/meetings/${id}`,'PATCH',{version:1,summary:'Resumen de la reunión'},admin)).status,200);
+  } finally { sqlite.close(); }
+});
+
 test('assisted recovery requires admin reauthentication and consumes tokens while revoking existing sessions',async()=>{
   const {sqlite,request}=fixture();
   try{

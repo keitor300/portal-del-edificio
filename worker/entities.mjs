@@ -6,6 +6,15 @@ const strings = ['title','description','date','category','status','provider','pe
 const booleans = ['pinned','urgent','closed','formal','public'];
 const dateFields = ['date','dueDate','endDate','startDate'];
 const argDate = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+const statuses = {
+  meetings: ['Programada', 'Realizada', 'Cancelada'],
+  topics: ['Pendiente', 'En agenda', 'Resuelto', 'No incluido'],
+  budgets: ['Borrador', 'En evaluación', 'Aprobado', 'Rechazado', 'Finalizado'],
+  works: ['Planificada', 'En ejecución', 'Finalizada', 'Pausada'],
+  lost: ['En custodia', 'Devuelto'],
+  statuses: ['Operativo', 'Habilitado', 'En mantenimiento', 'Corte programado', 'Fuera de servicio'],
+};
+const validTime = value => typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 
 export async function validateEntity(env, data, collection, user, previous) {
   const item = {};
@@ -16,6 +25,7 @@ export async function validateEntity(env, data, collection, user, previous) {
   item.title = text(item.title, 160);
   item.description ??= '';
   item.date ??= argDate();
+  if (!item.date) throw new HttpError(400, 'Ingresá una fecha.');
   for (const field of dateFields) if (item[field]) {
     const parsed = new Date(`${item[field]}T00:00:00Z`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(item[field]) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0,10) !== item[field]) throw new HttpError(400, 'La fecha no es válida.');
@@ -57,6 +67,18 @@ export async function validateEntity(env, data, collection, user, previous) {
     delete item.summary;
   }
   if (collection === 'issues' && (!item.unit || !['Recibido','En curso','Resuelto'].includes(item.status))) throw new HttpError(400, 'Revisá la unidad y el estado del reclamo.');
+  if (statuses[collection] && !statuses[collection].includes(item.status)) throw new HttpError(400, 'Elegí un estado válido.');
+  if (collection === 'meetings') {
+    if (!validTime(item.time) || !item.place || !item.agenda) throw new HttpError(400, 'Completá horario, lugar y orden del día de la reunión.');
+    if (item.endTime && (!validTime(item.endTime) || item.endTime <= item.time)) throw new HttpError(400, 'La finalización debe ser posterior al inicio de la reunión.');
+  }
+  if (collection === 'works' && (!item.provider || !item.amount || item.progress === undefined || !item.startDate)) throw new HttpError(400, 'Completá proveedor, presupuesto, avance y fecha de inicio de la obra.');
+  if (collection === 'budgets' && (!item.amount || !item.category || !/^\d{4}-(0[1-9]|1[0-2])$/.test(item.period || ''))) throw new HttpError(400, 'Completá importe, rubro y período del presupuesto.');
+  if (collection === 'listings' && (!['Departamento','Cochera'].includes(item.category) || !['Alquiler','Venta'].includes(item.type))) throw new HttpError(400, 'Elegí el tipo de espacio y la operación.');
+  if (collection === 'lost' && !item.place) throw new HttpError(400, 'Indicá dónde se encontró el objeto.');
+  if (collection === 'faqs' && !item.description) throw new HttpError(400, 'Completá la respuesta a la pregunta.');
+  if (item.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email)) throw new HttpError(400, 'Ingresá un email válido.');
+  if (item.phone && (!/^[+\d\s().-]+$/.test(item.phone) || item.phone.replace(/\D/g, '').length < 7 || item.phone.replace(/\D/g, '').length > 20)) throw new HttpError(400, 'Ingresá un teléfono válido con código de área.');
   if (item.unit && !await env.DB.prepare('SELECT id FROM units WHERE id=?').bind(item.unit).first()) throw new HttpError(400, 'Elegí una unidad del edificio.');
   if (collection === 'expenses' && (!item.unit || !item.amount || !/^\d{4}-(0[1-9]|1[0-2])$/.test(item.period || '') || !item.dueDate || !['Borrador','Publicado'].includes(item.status))) throw new HttpError(400, 'Completá unidad, período, importe, vencimiento y estado.');
   if (data.attachment) {
@@ -65,6 +87,7 @@ export async function validateEntity(env, data, collection, user, previous) {
     if (!file || (user.role !== 'admin' && file.owner_id !== user.id)) throw new HttpError(400, 'Adjuntá un archivo válido.');
     if (['issues','expenses'].includes(collection) && (file.visibility !== 'unit' || file.unit !== item.unit)) throw new HttpError(400, 'El archivo debe corresponder a la unidad.');
     if (!['issues','expenses'].includes(collection) && file.visibility !== 'building') throw new HttpError(400, 'Este archivo es privado y no puede publicarse para todo el edificio.');
+    if (collection === 'expenses' && file.mime !== 'application/pdf') throw new HttpError(400, 'La liquidación debe ser un archivo PDF.');
     item.attachment = { name: file.name, url: `/api/files/${file.id}`, type: file.mime };
     if (file.mime.startsWith('image/')) item.image = item.attachment.url;
   }
