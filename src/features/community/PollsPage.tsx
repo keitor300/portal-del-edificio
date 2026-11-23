@@ -5,6 +5,8 @@ import { usePortal } from '../../hooks/usePortal';
 import type { Entity } from '../../lib/types';
 import { ballotPatch, BUILDING_UNITS, FORMAL_NOTICE, fullDate, pollHasEnded, pollResults } from './model';
 import './community.css';
+import { productionPortal } from '../../lib/api';
+import { currentOwnerUnit } from '../auth/ownerAccounts';
 
 export function PollResults({ poll }: { poll: Entity }) {
   const { votes, total } = pollResults(poll);
@@ -27,16 +29,17 @@ function PollCard({ poll }: { poll: Entity }) {
   const radioName = useId();
   const ended = pollHasEnded(poll);
   const hasVoted = poll.voted !== undefined;
-  function vote(event: FormEvent) {
+  async function vote(event: FormEvent) {
     event.preventDefault();
     if (submitted.current || choice === undefined) return;
     const current = data.polls.find(item => item.id === poll.id);
     const patch = current && ballotPatch(current, choice);
     if (!patch) { notify('Esta consulta ya no admite tu voto.'); return; }
     submitted.current = true;
-    update('polls', poll.id, patch);
-    notify('Tu voto demo quedó registrado para la Unidad 7B.');
-    window.setTimeout(() => { submitted.current = false; }, 0);
+    try {await update('polls', poll.id, patch);
+    notify(productionPortal ? `Tu voto quedó registrado para la unidad ${currentOwnerUnit()}.` : 'Tu voto demo quedó registrado para la Unidad 7B.');
+    }catch(cause){notify((cause as Error).message);}
+    finally{submitted.current=false;}
   }
   return <article className="section community-poll" aria-labelledby={`${radioName}-title`}>
     <div className="section-heading"><h2 id={`${radioName}-title`}>{poll.title}</h2><Status tone={ended ? 'neutral' : 'green'}>{ended ? 'Cerrada' : 'Abierta'}</Status></div>
@@ -45,7 +48,7 @@ function PollCard({ poll }: { poll: Entity }) {
     {poll.dueDate && <p className="muted">{ended ? 'Fecha de cierre' : 'Disponible hasta el'}: {fullDate(poll.dueDate)}.</p>}
     {poll.attachment && <DocumentActions attachment={poll.attachment} label="Ver documento" />}
     {!hasVoted && !ended && <form onSubmit={vote}>
-      <fieldset className="community-options"><legend>Tu elección · Unidad 7B</legend>{(poll.options ?? []).map((option, index) => <label className="community-option" key={index}><input type="radio" required name={radioName} value={index} checked={choice === index} onChange={() => setChoice(index)} /><span>{option}</span></label>)}</fieldset>
+      <fieldset className="community-options"><legend>Tu elección · Unidad {currentOwnerUnit()}</legend>{(poll.options ?? []).map((option, index) => <label className="community-option" key={index}><input type="radio" required name={radioName} value={index} checked={choice === index} onChange={() => setChoice(index)} /><span>{option}</span></label>)}</fieldset>
       <button className="button" type="submit" disabled={choice === undefined}><Vote size={20} />{poll.formal ? 'Registrar voto demo' : 'Votar'}</button>
       <p className="muted">Un voto por unidad en esta demo. Una vez registrado, no se puede cambiar.</p>
     </form>}

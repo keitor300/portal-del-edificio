@@ -2,12 +2,12 @@ import { requireUser, rateLimit } from './auth.mjs';
 import { HttpError, body, json, text } from './http.mjs';
 import { collections } from './data.mjs';
 
-const strings = ['title','description','date','category','status','provider','period','dueDate','time','endTime','endDate','place','agenda','summary','unit','startDate','contact','phone','email'];
-const booleans = ['pinned','urgent','closed','formal'];
+const strings = ['title','description','date','category','status','provider','period','dueDate','time','endTime','endDate','place','agenda','summary','unit','startDate','contact','phone','email','type'];
+const booleans = ['pinned','urgent','closed','formal','public'];
 const dateFields = ['date','dueDate','endDate','startDate'];
 const argDate = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
 
-async function validateEntity(env, data, collection, user, previous) {
+export async function validateEntity(env, data, collection, user, previous) {
   const item = {};
   for (const field of strings) if (data[field] !== undefined) {
     if (typeof data[field] !== 'string' || data[field].length > (['description','agenda','summary'].includes(field) ? 12000 : 300)) throw new HttpError(400, `Revisá el campo ${field}.`);
@@ -31,6 +31,8 @@ async function validateEntity(env, data, collection, user, previous) {
   if (collection === 'movements') {
     if (!item.amount || !['Ingreso','Egreso'].includes(data.type)) throw new HttpError(400, 'Completá el importe y elegí ingreso o egreso.');
     item.type = data.type;
+    const normalizedTitle = item.title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+    item.movementKey = JSON.stringify([item.date, normalizedTitle, item.type, Math.round(item.amount * 100)]);
   }
   if (data.progress !== undefined) {
     if (!Number.isInteger(data.progress) || data.progress < 0 || data.progress > 100) throw new HttpError(400, 'El progreso debe estar entre 0 y 100.');
@@ -54,6 +56,7 @@ async function validateEntity(env, data, collection, user, previous) {
     item.date = argDate();
     delete item.summary;
   }
+  if (collection === 'issues' && (!item.unit || !['Recibido','En curso','Resuelto'].includes(item.status))) throw new HttpError(400, 'Revisá la unidad y el estado del reclamo.');
   if (item.unit && !await env.DB.prepare('SELECT id FROM units WHERE id=?').bind(item.unit).first()) throw new HttpError(400, 'Elegí una unidad del edificio.');
   if (collection === 'expenses' && (!item.unit || !item.amount || !/^\d{4}-(0[1-9]|1[0-2])$/.test(item.period || '') || !item.dueDate || !['Borrador','Publicado'].includes(item.status))) throw new HttpError(400, 'Completá unidad, período, importe, vencimiento y estado.');
   if (data.attachment) {
@@ -93,7 +96,7 @@ export async function entityRoute(request, env, path) {
     if (id && !existing) throw new HttpError(404, 'El registro ya no existe.');
     if (existing && data.version !== existing.version) throw new HttpError(409, 'Otra persona modificó este registro. Actualizá la página antes de guardar.');
     const previous = existing ? JSON.parse(existing.data) : null;
-    const entityId = id || crypto.randomUUID();
+    const entityId = id || (typeof data.id === 'string' && /^[a-f0-9-]{36}$/.test(data.id) ? data.id : crypto.randomUUID());
     const item = await validateEntity(env, { ...previous, ...data, id: entityId }, collection, user, previous);
     if (existing) {
       // Optimistic locking also applies to the write, not only to the preceding read.

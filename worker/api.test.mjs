@@ -8,6 +8,11 @@ import { hashPassword } from './auth.mjs';
 function fixture() {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../migrations/0001_production.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0002_participation.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0003_financial_imports.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0004_settings_version.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0005_issue_history.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0006_recovery.sql', import.meta.url), 'utf8'));
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
     first: async () => sqlite.prepare(sql).get(...args) ?? null,
@@ -28,6 +33,132 @@ function fixture() {
 }
 const password = 'Test-only-passphrase-2026';
 const registration = unit => ({ unit, name: `Resident ${unit}`, email: `${unit.toLowerCase()}@example.invalid`, dni: '12345678', password });
+
+test('assisted recovery requires admin reauthentication and consumes tokens while revoking existing sessions',async()=>{
+  const {sqlite,request}=fixture();
+  try{
+    sqlite.prepare("INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','admin','approved',?)").run(await hashPassword(password));
+    await request('/api/auth/register','POST',registration('7B'));
+    sqlite.exec("UPDATE users SET status='approved'");
+    const login=async identity=>(await request('/api/auth/login','POST',{identity,password})).headers.get('set-cookie');
+    const admin=await login('admin@example.invalid'),owner=await login('7B');
+    const ownerId=sqlite.prepare("SELECT id FROM users WHERE unit='7B'").get().id;
+    const known=await(await request('/api/auth/recovery/request','POST',{unit:'7B',email:'7b@example.invalid'})).json();
+    const unknown=await(await request('/api/auth/recovery/request','POST',{unit:'8A',email:'missing@example.invalid'})).json();
+    assert.deepEqual(known,unknown);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM recovery_requests').get().n,1);
+    const endpoint=`/api/admin/access/${ownerId}/recovery`;
+    assert.equal((await request(endpoint,'POST',{verified:true,password},owner)).status,403);
+    assert.equal((await request(endpoint,'POST',{verified:false,password},admin)).status,400);
+    assert.equal((await request(endpoint,'POST',{verified:true,password:'wrong'},admin)).status,403);
+    const first=await(await request(endpoint,'POST',{verified:true,password},admin)).json();
+    const second=await(await request(endpoint,'POST',{verified:true,password},admin)).json();
+    const token=second.path.split('#reset=')[1];
+    assert.match(token,/^[a-f0-9]{64}$/);
+    assert.ok(!JSON.stringify(sqlite.prepare('SELECT * FROM password_resets').all()).includes(token));
+    assert.equal((await request('/api/auth/recovery/reset','POST',{token:first.path.split('#reset=')[1],password:'New-owner-passphrase-2026'})).status,409);
+    assert.equal((await request('/api/auth/recovery/reset','POST',{token,password:'short'})).status,400);
+    assert.equal((await request('/api/auth/recovery/reset','POST',{token,password:'New-owner-passphrase-2026'})).status,200);
+    assert.equal((await request('/api/auth/recovery/reset','POST',{token,password:'Another-owner-passphrase-2026'})).status,409);
+    assert.equal((await request('/api/reservations','GET',null,owner)).status,401);
+    assert.equal((await request('/api/auth/login','POST',{identity:'7B',password})).status,401);
+    assert.equal((await request('/api/auth/login','POST',{identity:'7B',password:'New-owner-passphrase-2026'})).status,200);
+    assert.ok(sqlite.prepare('SELECT resolved_at FROM recovery_requests').get().resolved_at);
+    const expiring=await(await request(endpoint,'POST',{verified:true,password},admin)).json();
+    sqlite.exec('UPDATE password_resets SET expires_at=0');
+    assert.equal((await request('/api/auth/recovery/reset','POST',{token:expiring.path.split('#reset=')[1],password:'Another-owner-passphrase-2026'})).status,409);
+    const suspendedLink=await(await request(endpoint,'POST',{verified:true,password},admin)).json();
+    assert.equal((await request(`/api/admin/access/${ownerId}`,'PATCH',{status:'suspended'},admin)).status,200);
+    assert.equal((await request('/api/auth/recovery/reset','POST',{token:suspendedLink.path.split('#reset=')[1],password:'Another-owner-passphrase-2026'})).status,409);
+    assert.equal((await request(endpoint,'POST',{verified:true,password},admin)).status,409);
+  }finally{sqlite.close();}
+});
+
+test('issue status history is server-authored, private, conflict-safe and preserves conversation through closing', async()=>{
+  const {sqlite,request}=fixture();
+  try{
+    sqlite.prepare("INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','admin','approved',?)").run(await hashPassword(password));
+    for(const unit of ['7B','8A'])await request('/api/auth/register','POST',registration(unit));
+    sqlite.exec("UPDATE users SET status='approved'");
+    const login=async identity=>(await request('/api/auth/login','POST',{identity,password})).headers.get('set-cookie');
+    const admin=await login('admin@example.invalid'),owner=await login('7B'),neighbor=await login('8A');
+    const issue=await(await request('/api/entities/issues','POST',{title:'Filtración',description:'Pérdida de agua'},owner)).json();
+    assert.equal((await request('/api/messages','POST',{issueId:issue.id,text:'Mensaje del propietario'},owner)).status,201);
+    assert.equal((await request(`/api/entities/issues/${issue.id}`,'PATCH',{version:1,status:'Resuelto'},owner)).status,403);
+    assert.equal((await request(`/api/entities/issues/${issue.id}`,'PATCH',{version:1,status:'Inventado'},admin)).status,400);
+    assert.equal((await request(`/api/entities/issues/${issue.id}`,'PATCH',{version:1,status:'En curso',messages:[{text:'Historia falsa'}]},admin)).status,200);
+    assert.equal((await request(`/api/entities/issues/${issue.id}`,'PATCH',{version:1,status:'Resuelto'},admin)).status,409);
+    assert.equal((await request(`/api/entities/issues/${issue.id}`,'PATCH',{version:2,status:'Resuelto'},admin)).status,200);
+    assert.equal((await request('/api/messages','POST',{issueId:issue.id,text:'No debe guardarse'},owner)).status,409);
+    assert.equal((await request(`/api/entities/issues/${issue.id}`,'PATCH',{version:3,status:'En curso'},admin)).status,200);
+    assert.equal((await request('/api/messages','POST',{issueId:issue.id,text:'Mensaje al reabrir'},owner)).status,201);
+    const state=(await(await request('/api/state','GET',null,owner)).json()).data;
+    assert.equal(state.issues[0].messages.length,5);
+    assert.ok(!JSON.stringify(state.issues).includes('Historia falsa'));
+    assert.ok(state.issues[0].messages.some(message=>message.text==='Mensaje del propietario'));
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM issue_events').get().n,3);
+    assert.equal((await(await request('/api/state','GET',null,neighbor)).json()).data.issues.length,0);
+  }finally{sqlite.close();}
+});
+
+test('settings reject stale writes and roll back the full change when a date has reservations', async()=>{
+  const {sqlite,request}=fixture();
+  try{
+    sqlite.prepare("INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','admin','approved',?)").run(await hashPassword(password));
+    const admin=(await request('/api/auth/login','POST',{identity:'admin@example.invalid',password})).headers.get('set-cookie');
+    assert.equal((await request('/api/settings','PATCH',{rules:'Reglas vigentes'},admin)).status,409);
+    assert.equal((await request('/api/settings','PATCH',{version:1,rules:'Reglas vigentes',openingBalance:100},admin)).status,200);
+    assert.equal((await request('/api/settings','PATCH',{version:1,openingBalance:999},admin)).status,409);
+    assert.equal((await request('/api/settings','PATCH',{version:2,openingBalance:-1},admin)).status,400);
+    assert.equal((await request('/api/reservations','POST',{unit:'7B',date:'2030-11-22',time:'21:00',endTime:'03:00',acceptedRules:'Reglas vigentes'},admin)).status,201);
+    assert.equal((await request('/api/settings','PATCH',{version:2,openingBalance:500,blockedDates:['2030-11-23']},admin)).status,409);
+    const current=(await (await request('/api/state','GET',null,admin)).json()).data.settings;
+    assert.equal(current.version,2);
+    assert.equal(current.openingBalance,100);
+    assert.deepEqual(current.blockedDates,[]);
+    assert.equal(sqlite.prepare("SELECT count(*) AS n FROM audit_log WHERE action='settings.update'").get().n,1);
+    const dates=Array.from({length:366},(_,i)=>new Date(Date.UTC(2032,0,1)+i*86400000).toISOString().slice(0,10));
+    assert.equal((await request('/api/settings','PATCH',{version:2,blockedDates:dates},admin)).status,200);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM blocked_dates').get().n,366);
+    assert.throws(()=>sqlite.prepare("UPDATE settings SET opening_balance_cents=123,version=2 WHERE id=1").run(),/SETTINGS_CONFLICT/);
+    assert.throws(()=>sqlite.prepare("INSERT INTO reservations(id,unit,created_by,date,end_date,start_minute,end_minute,accepted_rules) SELECT 'stale-rules',unit,created_by,date,end_date,start_minute+1440,end_minute+1440,'Reglas viejas' FROM reservations LIMIT 1").run(),/RESERVATION_RULES_CHANGED/);
+  }finally{sqlite.close();}
+});
+
+test('financial imports are atomic, idempotent, bounded and deduplicate across manual and batch writes', async () => {
+  const {sqlite,request}=fixture();
+  try {
+    sqlite.prepare("INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','admin','approved',?)").run(await hashPassword(password));
+    const admin=(await request('/api/auth/login','POST',{identity:'admin@example.invalid',password})).headers.get('set-cookie');
+    const row={title:'Reparación general',date:'2026-11-23',amount:1234.5,type:'Egreso',category:'Mantenimiento'};
+    assert.equal((await request('/api/import/movements','POST',{id:crypto.randomUUID(),items:[row]})).status,401);
+    const invalid=await request('/api/import/movements','POST',{id:crypto.randomUUID(),items:[row,{...row,amount:-1}]},admin);
+    assert.equal(invalid.status,400);
+    assert.equal(sqlite.prepare("SELECT count(*) AS n FROM entities WHERE collection='movements'").get().n,0);
+    assert.equal((await request('/api/entities/movements','POST',row,admin)).status,201);
+    const payload={id:crypto.randomUUID(),items:[{...row,title:' REPARACION   general '},{...row,title:'Otro gasto'},{...row,title:'Otro gasto'}]};
+    const initial=await request('/api/import/movements','POST',payload,admin);
+    assert.equal(initial.status,200);
+    const receipt=await initial.json();
+    assert.equal(receipt.ids.length,1);
+    assert.equal(receipt.skipped,2);
+    assert.deepEqual(await (await request('/api/import/movements','POST',payload,admin)).json(),receipt);
+    assert.equal((await request('/api/import/movements','POST',{...payload,items:[row]},admin)).status,409);
+    assert.equal(sqlite.prepare("SELECT count(*) AS n FROM audit_log WHERE action='movements.import'").get().n,1);
+    assert.equal((await request('/api/entities/movements','POST',{...row,title:'OTRO GASTO'},admin)).status,409);
+    const large=Array.from({length:500},(_,i)=>({...row,title:`Lote ${i}`}));
+    const largeResponse=await request('/api/import/movements','POST',{id:crypto.randomUUID(),items:large},admin);
+    assert.equal(largeResponse.status,200);
+    assert.equal((await largeResponse.json()).ids.length,500);
+    assert.equal((await request('/api/import/movements','POST',{id:crypto.randomUUID(),items:[...large,row]},admin)).status,400);
+    // Force a database failure after inserts to verify the whole transaction rolls back.
+    sqlite.exec("CREATE TRIGGER fail_import_audit BEFORE INSERT ON audit_log WHEN NEW.action='movements.import' BEGIN SELECT RAISE(ABORT,'test rollback'); END;");
+    const failedId=crypto.randomUUID();
+    assert.equal((await request('/api/import/movements','POST',{id:failedId,items:[{...row,title:'No debe persistir'}]},admin)).status,500);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM financial_imports WHERE id=?').get(failedId).n,0);
+    assert.equal(sqlite.prepare("SELECT count(*) AS n FROM entities WHERE json_extract(data,'$.title')='No debe persistir'").get().n,0);
+  } finally {sqlite.close();}
+});
 
 test('registration, approval, private session, suspension and origin enforcement', async () => {
   const { sqlite, request } = fixture();
@@ -67,7 +198,7 @@ test('SUM API binds owner identity, enforces current rules, prevents overlaps an
     for (const unit of ['7B', '8A']) {
       assert.equal((await request('/api/auth/register', 'POST', registration(unit))).status, 201);
     }
-    sqlite.exec("UPDATE users SET status='approved'; UPDATE settings SET rules='Reglas vigentes' WHERE id=1");
+    sqlite.exec("UPDATE users SET status='approved'; UPDATE settings SET rules='Reglas vigentes',version=version+1 WHERE id=1");
     const login = async unit => (await request('/api/auth/login', 'POST', { identity: unit, password })).headers.get('set-cookie');
     const first = await login('7B');
     const second = await login('8A');
@@ -100,6 +231,40 @@ test('logout removes server session and forged browser sessions cannot authentic
   } finally { sqlite.close(); }
 });
 
+test('participation enforces one vote per unit, locks options, rejects closed ballots and keeps reads idempotent', async () => {
+  const { sqlite, request } = fixture();
+  try {
+    sqlite.prepare("INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','admin','approved',?)").run(await hashPassword(password));
+    for (const unit of ['7B','8A']) assert.equal((await request('/api/auth/register','POST',registration(unit))).status,201);
+    sqlite.exec("UPDATE users SET status='approved'");
+    const login = async identity => (await request('/api/auth/login','POST',{identity,password})).headers.get('set-cookie');
+    const admin = await login('admin@example.invalid');
+    const owner = await login('7B');
+    const neighbor = await login('8A');
+    const poll = await (await request('/api/entities/polls','POST',{title:'Elegir horario',options:['Mañana','Tarde']},admin)).json();
+    assert.equal((await request(`/api/polls/${poll.id}/vote`,'POST',{option:0},admin)).status,403);
+    assert.equal((await request(`/api/polls/${poll.id}/vote`,'POST',{option:9},owner)).status,409);
+    assert.equal((await request(`/api/polls/${poll.id}/vote`,'POST',{option:0},owner)).status,200);
+    assert.equal((await request(`/api/polls/${poll.id}/vote`,'POST',{option:1},owner)).status,409);
+    assert.equal((await request(`/api/entities/polls/${poll.id}`,'PATCH',{version:1,options:['Otra','Tarde']},admin)).status,409);
+    assert.equal((await request(`/api/entities/polls/${poll.id}`,'PATCH',{version:1,closed:true},admin)).status,200);
+    assert.equal((await request(`/api/polls/${poll.id}/vote`,'POST',{option:1},neighbor)).status,409);
+    const state = await (await request('/api/state','GET',null,owner)).json();
+    assert.deepEqual(state.data.polls[0].votes,[1,0]);
+    assert.equal(state.data.polls[0].voted,0);
+
+    const notice = await (await request('/api/entities/notices','POST',{title:'Aviso para leer'},admin)).json();
+    for(let i=0;i<2;i++)assert.equal((await request(`/api/notices/${notice.id}/read`,'POST',{},owner)).status,200);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM notice_reads').get().n,1);
+    const topic = await (await request('/api/entities/topics','POST',{title:'Propuesta de la unidad'},owner)).json();
+    for(let i=0;i<2;i++)assert.equal((await request(`/api/topics/${topic.id}/interest`,'POST',{interested:true},neighbor)).status,200);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM interests').get().n,1);
+    assert.equal((await request(`/api/topics/${topic.id}/comments`,'POST',{text:'Podemos revisarlo en la reunión.'},admin)).status,201);
+    const topics = (await (await request('/api/state','GET',null,owner)).json()).data.topics;
+    assert.equal(topics[0].messages[0].text,'Podemos revisarlo en la reunión.');
+  } finally { sqlite.close(); }
+});
+
 test('private data stays within its unit, public visitors see no resident data, and edits detect stale versions', async () => {
   const { sqlite, request } = fixture();
   try {
@@ -110,7 +275,8 @@ test('private data stays within its unit, public visitors see no resident data, 
     const admin = await login('admin@example.invalid');
     const owner = await login('7B');
     const neighbor = await login('8A');
-    const notice = await (await request('/api/entities/notices', 'POST', { title: 'Aviso', description: 'Información del edificio', date: '2026-11-23' }, admin)).json();
+    const notice = await (await request('/api/entities/notices', 'POST', { title: 'Aviso', description: 'Información del edificio', date: '2026-11-23', public:true }, admin)).json();
+    assert.equal((await request('/api/entities/notices','POST',{title:'Aviso interno',description:'Solo propietarios'},admin)).status,201);
     const issue = await request('/api/entities/issues', 'POST', { title: 'Problema privado', description: 'Detalle privado', unit: '8A' }, owner);
     assert.equal(issue.status, 201);
     assert.equal((await request('/api/entities/movements', 'POST', { title: 'Fake', amount: 500, type: 'Ingreso' }, owner)).status, 403);
@@ -119,11 +285,13 @@ test('private data stays within its unit, public visitors see no resident data, 
     assert.equal(ownState.data.issues.length, 1);
     assert.equal(ownState.data.issues[0].unit, '7B');
     assert.equal(ownState.data.messages.length, 1);
+    assert.equal(ownState.data.notices.length, 2);
     const otherState = await (await request('/api/state', 'GET', null, neighbor)).json();
     assert.equal(otherState.data.issues.length, 0);
     assert.equal(otherState.data.messages.length, 0);
     const publicState = await (await request('/api/state')).json();
     assert.equal(publicState.data.notices.length, 1);
+    assert.equal(publicState.data.notices[0].id, notice.id);
     assert.equal(publicState.data.issues.length, 0);
     assert.equal(publicState.data.messages.length, 0);
     assert.equal((await request(`/api/entities/notices/${notice.id}`, 'PATCH', { title: 'Actualizado', version: 1 }, admin)).status, 200);

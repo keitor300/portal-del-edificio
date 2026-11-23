@@ -1,6 +1,9 @@
 export interface Attachment { name: string; url: string; type: string }
 export interface Message { id: string; author: string; text: string; date: string; attachment?: Attachment; unit?: string }
 export interface Entity {
+  version?: number;
+  acceptedRules?: string;
+  public?: boolean;
   id: string; title: string; description: string; date: string;
   category?: string; status?: string; pinned?: boolean; urgent?: boolean; read?: boolean; views?: number;
   attachment?: Attachment; image?: string; amount?: number; type?: string; provider?: string; period?: string; dueDate?: string;
@@ -10,5 +13,5 @@ export interface Entity {
   contact?: string; phone?: string; email?: string; milestones?: string[];
 }
 export type Collection = 'notices'|'movements'|'expenses'|'budgets'|'documents'|'meetings'|'topics'|'polls'|'reservations'|'issues'|'works'|'listings'|'lost'|'contacts'|'faqs'|'statuses';
-export interface Settings { rules: string; blockedDates: string[]; openingBalance: number; seedDate: string }
+export interface Settings { version?: number; rules: string; blockedDates: string[]; openingBalance: number; seedDate: string }
 export type DemoData = Record<Collection, Entity[]> & { messages: Message[]; settings: Settings };

@@ -1,0 +1,12 @@
+ALTER TABLE settings ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
+CREATE TRIGGER settings_version_check BEFORE UPDATE ON settings
+WHEN NEW.version<>OLD.version+1
+BEGIN
+  SELECT RAISE(ABORT,'SETTINGS_CONFLICT');
+END;
+
+CREATE TRIGGER reservations_current_rules BEFORE INSERT ON reservations
+WHEN NEW.accepted_rules<>(SELECT rules FROM settings WHERE id=1)
+BEGIN
+  SELECT RAISE(ABORT,'RESERVATION_RULES_CHANGED');
+END;

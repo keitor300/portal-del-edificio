@@ -101,7 +101,7 @@ export async function authRoute(request, env, path) {
   }
   if (path === '/api/admin/access' && request.method === 'GET') {
     await requireUser(request, env, 'admin');
-    const { results } = await env.DB.prepare("SELECT id,name,email,dni,unit,status,created_at FROM users WHERE role='owner' ORDER BY created_at DESC").all();
+    const { results } = await env.DB.prepare("SELECT u.id,u.name,u.email,u.dni,u.unit,u.status,u.created_at,r.requested_at AS recovery_requested_at FROM users u LEFT JOIN recovery_requests r ON r.user_id=u.id AND r.resolved_at IS NULL WHERE u.role='owner' ORDER BY r.requested_at DESC,u.created_at DESC").all();
     return json({ users: results });
   }
   if (path.startsWith('/api/admin/access/') && request.method === 'PATCH') {

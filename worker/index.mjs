@@ -4,6 +4,9 @@ import { HttpError, body, json, sameOrigin } from './http.mjs';
 import { dataRoute } from './data.mjs';
 import { fileRoute } from './files.mjs';
 import { entityRoute } from './entities.mjs';
+import { participationRoute } from './participation.mjs';
+import { importRoute } from './imports.mjs';
+import { recoveryRoute } from './recovery.mjs';
 
 async function reservations(request, env, path) {
   if (!path.startsWith('/api/reservations')) return null;
@@ -56,10 +59,18 @@ export default {
         await env.DB.prepare('SELECT id FROM settings WHERE id=1').first();
         return json({ ok: true, mode: 'production' });
       }
-      return await authRoute(request, env, path) || await reservations(request, env, path) || await dataRoute(request, env, path) || await fileRoute(request, env, path) || await entityRoute(request, env, path) || json({ error: 'No se encontró la operación.' }, 404);
+      const recovery = await recoveryRoute(request,env,path);
+      if(recovery)return recovery;
+      return await authRoute(request, env, path) || await reservations(request, env, path) || await dataRoute(request, env, path) || await fileRoute(request, env, path) || await entityRoute(request, env, path) || await participationRoute(request, env, path) || await importRoute(request, env, path) || json({ error: 'No se encontró la operación.' }, 404);
     } catch (error) {
       if (error instanceof HttpError) return json({ error: error.message }, error.status);
+      if (/SETTINGS_CONFLICT/.test(String(error))) return json({error:'Otra persona actualizó los ajustes. Recargá la página antes de guardar.'},409);
+      if (/RESERVATION_RULES_CHANGED/.test(String(error))) return json({error:'El reglamento cambió. Leé y aceptá la versión vigente antes de reservar.'},409);
+      if (/IMPORT_REQUEST_CHANGED/.test(String(error))) return json({error:'La solicitud ya fue usada para otro archivo.'},409);
       if (/RESERVATION_CONFLICT|DATE_BLOCKED|DATE_HAS_RESERVATIONS/.test(String(error))) return json({ error: 'Ese horario ya no está disponible. Consultá las reservas y elegí otro.' }, 409);
+      if (/POLL_OPTIONS_LOCKED/.test(String(error))) return json({ error: 'La encuesta ya tiene votos. No se pueden cambiar sus opciones.' }, 409);
+      if (/ISSUE_CLOSED_OR_INVALID/.test(String(error))) return json({ error: 'El reclamo está cerrado o ya no está disponible.' }, 409);
+      if (/UNIQUE constraint failed/.test(String(error))) return json({ error: path.includes('/movements') ? 'Ya existe un movimiento con esa fecha, concepto, tipo e importe.' : 'Ya existe un registro para esos datos. Revisá la unidad y el período.' }, 409);
       // Avoid logging request bodies, cookies, passwords or personal registration fields.
       console.error('API failure', request.method, path, error?.name);
       return json({ error: 'No se pudo completar la operación. Volvé a intentar.' }, 500);

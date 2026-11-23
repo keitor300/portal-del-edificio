@@ -7,6 +7,7 @@ import type { Entity } from '../../lib/types';
 import { formatDate, id, today } from '../../lib/utils';
 import { activeReservation, bookingError, BUILDING_UNITS, isValidReservation, normalizeUnit, OWNER_UNIT, rangeUnavailable, reservationEndsAt, reservationTouchesDate, sameUnit, sumOperatingWindow, sumTimeOptions, SUM_SLOTS, validBookingRange, validDate } from './model';
 import './services.css';
+import { productionPortal } from '../../lib/api';
 
 export function SumRangePicker({ date, startTime, endTime, unit, onStartChange, onEndChange }: { date: string; startTime: string; endTime: string; unit: string; onStartChange: (value: string) => void; onEndChange: (value: string) => void }) {
   const { data } = usePortal();
@@ -42,6 +43,7 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
   const [error, setError] = useState('');
   const [confirmation, setConfirmation] = useState(false);
   const saving = useRef(false);
+  const [busy, setBusy] = useState(false);
   const accepted = acceptedRules !== null && acceptedRules === data.settings.rules;
   const selectedRange = validBookingRange(date, startTime, endTime);
 
@@ -56,21 +58,25 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
     if (validate()) setConfirmation(true);
   }
 
-  function reserve() {
+  async function reserve() {
     if (saving.current) return;
     if (!validate() || !selectedRange) { setConfirmation(false); return; }
     saving.current = true;
-    save('reservations', {
+    setBusy(true);
+    try {
+    await save('reservations', {
+      acceptedRules: acceptedRules ?? '',
       id: id(), title: 'Reserva del SUM', description: admin ? 'Reserva cargada por administración. Reglamento aceptado.' : 'Reserva de propietario. Reglamento aceptado.',
       date, time: startTime, endTime, endDate: selectedRange.endDate === date ? undefined : selectedRange.endDate, unit: unit.trim().replace(/^unidad\s*/i, '').toUpperCase(), status: 'Confirmada', place: 'SUM',
     });
     setConfirmation(false); setStartTime(''); setEndTime(''); setAcceptedRules(null);
-    notify('Reserva guardada en la demo.');
-    queueMicrotask(() => { saving.current = false; });
+    notify(productionPortal ? 'Reserva confirmada. Ya está visible para el edificio.' : 'Reserva guardada en la demo.');
+    } catch (cause) { setError((cause as Error).message); setConfirmation(false); }
+    finally { saving.current = false; setBusy(false); }
   }
 
   return <>
-    <form onSubmit={review} className="services-booking-form">
+    <form onSubmit={review} className="services-booking-form" aria-busy={busy}>
       <div className={`sum-unit-field ${unit ? 'is-selected' : ''}`}>
         <span className="sum-unit-icon" aria-hidden="true"><Building2 size={22} /></span>
         <Field label="Unidad que reserva" hint={admin ? 'Elegí la unidad para la que se carga esta reserva.' : 'Confirmá la unidad antes de elegir el horario.'}>
@@ -87,11 +93,11 @@ export function BookingForm({ admin = false }: { admin?: boolean }) {
       {error && <p role="alert" className="error">{error}</p>}
       <button className="button sum-review-button" type="submit"><CalendarDays size={20} aria-hidden="true" />Continuar con la reserva</button>
     </form>
-    {confirmation && <Modal title="Confirmar reserva del SUM" onClose={() => setConfirmation(false)}>
+    {confirmation && <Modal title="Confirmar reserva del SUM" onClose={() => { if (!saving.current) setConfirmation(false); }}>
       <p><strong>Unidad {normalizeUnit(unit)}</strong></p>
       <p>{formatDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br />{startTime} a {endTime}{selectedRange?.endDate !== date && ` · continúa el ${formatDate(selectedRange?.endDate ?? date, { weekday: 'long', day: 'numeric', month: 'long' })}`}</p>
-      <p>Reglamento aceptado. La reserva se guardará en esta demo.</p>
-      <div className="form-actions"><button className="button secondary" onClick={() => setConfirmation(false)}>Volver</button><button className="button" onClick={reserve}><Check size={18} aria-hidden="true" />Confirmar reserva</button></div>
+      <p>{productionPortal ? 'Reglamento aceptado. Al confirmar, la reserva será visible para todas las unidades.' : 'Reglamento aceptado. La reserva se guardará en esta demo.'}</p>
+      <div className="form-actions"><button className="button secondary" disabled={busy} onClick={() => setConfirmation(false)}>Volver</button><button className="button" disabled={busy} onClick={reserve}><Check size={18} aria-hidden="true" />{busy ? 'Confirmando…' : 'Confirmar reserva'}</button></div>
     </Modal>}
   </>;
 }
@@ -118,7 +124,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
       <div className="row-main"><span className="reservation-unit">Unidad {normalizeUnit(item.unit)}</span><strong>{formatDate(item.date, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p>{item.time} a {item.endTime || SUM_SLOTS.find(slot => slot.time === item.time)?.endTime}</p><span className={`status ${activeReservation(item) ? 'status-green' : ''}`}>{item.status || 'Confirmada'}</span></div>
       {activeReservation(item) && (admin || sameUnit(item.unit, signedOwner()?.unit || OWNER_UNIT)) && (reservationEndsAt(item) ?? 0) > now.getTime() && <div className="row-actions"><button className="button secondary" aria-label={`Cancelar reserva del ${formatDate(item.date)} a las ${item.time}, unidad ${item.unit}`} onClick={() => setCancel(item)}><Trash2 size={18} aria-hidden="true" />Cancelar</button></div>}
     </div>) : <p className="empty">No hay reservas para este filtro.</p>}</div>
-    {cancel && <Confirm title="Cancelar reserva" description={`Se liberará el turno del ${formatDate(cancel.date)} de ${cancel.time} a ${cancel.endTime}, unidad ${cancel.unit}.`} onClose={() => setCancel(undefined)} onConfirm={() => { update('reservations', cancel.id, { status: 'Cancelada' }); notify('Reserva cancelada en la demo. El turno vuelve a estar disponible.'); }} />}
+    {cancel && <Confirm title="Cancelar reserva" description={`Se liberará el turno del ${formatDate(cancel.date)} de ${cancel.time} a ${cancel.endTime}, unidad ${cancel.unit}.`} onClose={() => setCancel(undefined)} onConfirm={async () => { await update('reservations', cancel.id, { status: 'Cancelada' }); notify(productionPortal ? 'Reserva cancelada. El horario vuelve a estar disponible.' : 'Reserva cancelada en la demo. El turno vuelve a estar disponible.'); }} />}
   </section>;
 }
 
@@ -137,32 +143,43 @@ export function AdminSum() {
   const [date, setDate] = useState(today());
   const [error, setError] = useState('');
   const [editingRules, setEditingRules] = useState(false);
+  const [rulesVersion, setRulesVersion] = useState<number>();
   const [rules, setRules] = useState('');
 
-  function block(event: FormEvent) {
+  async function block(event: FormEvent) {
     event.preventDefault();
     if (!validDate(date) || date < today()) { setError('Elegí hoy o una fecha futura.'); return; }
     if (data.settings.blockedDates.includes(date)) { setError('La fecha ya está bloqueada.'); return; }
     if (data.reservations.some(item => isValidReservation(item) && activeReservation(item) && reservationTouchesDate(item, date))) { setError('La fecha tiene reservas. Cancelalas antes de bloquear el día.'); return; }
-    setSettings({ blockedDates: [...data.settings.blockedDates, date].sort() });
-    setError(''); notify('Fecha bloqueada en la demo.');
+    try { await setSettings({ blockedDates: [...data.settings.blockedDates, date].sort(), version:data.settings.version });
+    setError(''); notify(productionPortal ? 'Fecha bloqueada.' : 'Fecha bloqueada en la demo.');
+    } catch(cause) { setError((cause as Error).message); }
   }
 
-  function saveRules(event: FormEvent) {
+  async function saveRules(event: FormEvent) {
     event.preventDefault();
     if (!rules.trim()) return;
-    setSettings({ rules: rules.trim() }); setEditingRules(false); notify('Reglamento actualizado en la demo.');
+    try { await setSettings({ rules: rules.trim(), version:rulesVersion }); setEditingRules(false); notify(productionPortal ? 'Reglamento actualizado.' : 'Reglamento actualizado en la demo.');
+    } catch(cause) { setError((cause as Error).message); }
+  }
+
+  async function unblock(blocked: string) {
+    try {
+      await setSettings({ blockedDates: data.settings.blockedDates.filter(item => item !== blocked), version:data.settings.version });
+      setError('');
+      notify(productionPortal ? 'Fecha desbloqueada.' : 'Fecha desbloqueada en la demo.');
+    } catch(cause) { setError((cause as Error).message); }
   }
 
   return <>
-    <section className="section"><div className="section-heading"><h2>Reserva manual</h2><button className="button secondary" onClick={() => { setRules(data.settings.rules); setEditingRules(true); }}><Save size={18} aria-hidden="true" />Editar reglamento</button></div><BookingForm admin /></section>
+    <section className="section"><div className="section-heading"><h2>Reserva manual</h2><button className="button secondary" onClick={() => { setRules(data.settings.rules); setRulesVersion(data.settings.version); setError(''); setEditingRules(true); }}><Save size={18} aria-hidden="true" />Editar reglamento</button></div><BookingForm admin /></section>
     <ReservationList admin />
     <section className="section"><div className="section-heading"><h2>Fechas bloqueadas</h2></div>
       <form onSubmit={block} className="services-filters"><Field label="Fecha a bloquear"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setError(''); }} /></Field><button className="button secondary" type="submit"><Plus size={18} aria-hidden="true" />Bloquear día</button></form>
       {error && <p role="alert" className="error">{error}</p>}
-      <div className="list">{[...data.settings.blockedDates].sort().map(blocked => <div className="list-row" key={blocked}><div className="row-main"><strong>{formatDate(blocked, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p className="muted">Todos los horarios bloqueados</p></div><button className="button secondary" aria-label={`Desbloquear ${formatDate(blocked)}`} onClick={() => { setSettings({ blockedDates: data.settings.blockedDates.filter(item => item !== blocked) }); notify('Fecha desbloqueada en la demo.'); }}><Unlock size={18} aria-hidden="true" />Desbloquear</button></div>)}</div>
+      <div className="list">{[...data.settings.blockedDates].sort().map(blocked => <div className="list-row" key={blocked}><div className="row-main"><strong>{formatDate(blocked, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p className="muted">Todos los horarios bloqueados</p></div><button className="button secondary" aria-label={`Desbloquear ${formatDate(blocked)}`} onClick={() => void unblock(blocked)}><Unlock size={18} aria-hidden="true" />Desbloquear</button></div>)}</div>
       {!data.settings.blockedDates.length && <p className="empty">No hay fechas bloqueadas.</p>}
     </section>
-    {editingRules && <Modal title="Editar reglamento del SUM" wide onClose={() => setEditingRules(false)}><form onSubmit={saveRules}><Field label="Reglamento"><textarea aria-label="Reglamento" rows={10} maxLength={10000} required value={rules} onChange={event => setRules(event.target.value)} /></Field><div className="form-actions"><button type="button" className="button secondary" onClick={() => setEditingRules(false)}>Volver</button><button className="button" type="submit" disabled={!rules.trim()}><Save size={18} aria-hidden="true" />Guardar reglamento</button></div></form></Modal>}
+    {editingRules && <Modal title="Editar reglamento del SUM" wide onClose={() => setEditingRules(false)}><form onSubmit={saveRules}><Field label="Reglamento"><textarea aria-label="Reglamento" rows={10} maxLength={10000} required value={rules} onChange={event => setRules(event.target.value)} /></Field>{error && <p role="alert" className="error">{error}</p>}<div className="form-actions"><button type="button" className="button secondary" onClick={() => setEditingRules(false)}>Volver</button><button className="button" type="submit" disabled={!rules.trim()}><Save size={18} aria-hidden="true" />Guardar reglamento</button></div></form></Modal>}
   </>;
 }

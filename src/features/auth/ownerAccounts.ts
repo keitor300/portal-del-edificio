@@ -1,3 +1,4 @@
+import { productionPortal, serverLogout, serverUser } from '../../lib/api';
 export const ACCOUNTS_KEY = 'portal-owner-accounts-demo-v1';
 const SESSION_KEY = 'portal-owner-session-demo-v1';
 export const ACCESS_EVENT = 'portal-owner-access-change';
@@ -20,19 +21,27 @@ export async function passwordHash(password: string, salt: string) {
   return Array.from(new Uint8Array(bytes), value => value.toString(16).padStart(2, '0')).join('');
 }
 export function signedOwner() {
+  if (productionPortal) {
+    const user = serverUser();
+    return user?.role === 'owner' && user.unit ? { ...user, unit: user.unit, dni: '', salt: '', hash: '', recoveryHash: '', status: 'Aprobado' as const, created: '' } : undefined;
+  }
   const sessionId = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
   if (sessionId === DEMO_OWNER.id) return DEMO_OWNER;
   const account = accounts().find(item => item.id === sessionId);
   return account?.status === 'Aprobado' ? account : undefined;
 }
-export function currentOwnerUnit() { return signedOwner()?.unit || '7B'; }
+export function currentOwnerUnit() { return signedOwner()?.unit || (productionPortal ? '' : '7B'); }
 export function startOwnerSession(account: OwnerAccount) {
   localStorage.setItem(SESSION_KEY, account.id);
   sessionStorage.removeItem(SESSION_KEY);
   window.dispatchEvent(new Event(ACCESS_EVENT));
 }
-export function startDemoOwnerSession() { startOwnerSession(DEMO_OWNER); }
+export function startDemoOwnerSession() { if (!productionPortal) startOwnerSession(DEMO_OWNER); }
 export function logoutOwner() {
+  if (productionPortal) {
+    void serverLogout().catch(error => window.alert(error.message));
+    return;
+  }
   localStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(SESSION_KEY);
   window.dispatchEvent(new Event(ACCESS_EVENT));

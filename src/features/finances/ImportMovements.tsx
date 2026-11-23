@@ -5,13 +5,14 @@ import { Field, Modal } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
 import { id } from '../../lib/utils';
 import { fieldLabels, formatAmount as money, importFields, suggestMapping, validateRows, type ColumnMapping } from './helpers';
+import type { Entity } from '../../lib/types';
 
 const MAX_ROWS = 500;
 type Source = { name: string; book: WorkBook; utils: typeof SheetUtils };
 const emptyMapping: ColumnMapping = { date: -1, title: -1, type: -1, category: -1, amount: -1 };
 
 export function ImportMovements() {
-  const { data, save } = usePortal();
+  const { data, save, importMovements } = usePortal();
   const [source, setSource] = useState<Source | null>(null);
   const [sheetName, setSheetName] = useState('');
   const [headerRow, setHeaderRow] = useState(1);
@@ -21,6 +22,8 @@ export function ImportMovements() {
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [submitted, setSubmitted] = useState<string[]>([]);
+  const [receipt, setReceipt] = useState<{ids:string[];skipped:number} | null>(null);
+  const [attempt, setAttempt] = useState<{id:string;items:Entity[]} | null>(null);
   const committing = useRef(false);
   const loading = useRef(false);
 
@@ -39,10 +42,12 @@ export function ImportMovements() {
   const valid = validation.filter(row => row.errors.length === 0);
   const duplicates = validation.filter(row => row.duplicate).length;
   const invalid = validation.length - valid.length - duplicates;
-  const ready = mappingValid && !sheet.tooLarge && valid.length > 0 && !submitted.length;
+  const ready = !busy && !receipt && (Boolean(attempt) || (mappingValid && !sheet.tooLarge && valid.length > 0 && !submitted.length));
   const savedCount = submitted.filter(itemId => data.movements.some(row => row.id === itemId)).length;
 
   function selectSheet(nextSource: Source, name: string, row = 1) {
+    if (committing.current) return;
+    setAttempt(null); setReceipt(null);
     setSheetName(name); setHeaderRow(row); setSubmitted([]); setConfirming(false);
     const worksheet = nextSource.book.Sheets[name];
     const range = worksheet?.['!ref'] ? nextSource.utils.decode_range(worksheet['!ref']) : null;
@@ -50,7 +55,8 @@ export function ImportMovements() {
     setMapping(suggestMapping(first));
   }
   async function loadFile(file: File) {
-    if (loading.current) return;
+    if (loading.current || committing.current) return;
+    setAttempt(null); setReceipt(null);
     loading.current = true; setBusy(true); setError(''); setSource(null); setSubmitted([]); setConfirming(false);
     try {
       if (!/\.(xlsx|xls|csv)$/i.test(file.name)) throw new Error('Elegí un archivo XLSX, XLS o CSV.');
@@ -73,37 +79,48 @@ export function ImportMovements() {
     } catch (err) { setError(`No se pudo leer el archivo. ${err instanceof Error ? err.message : 'Revisá el formato.'}`); }
     finally { loading.current = false; setBusy(false); }
   }
-  function commit() {
+  async function commit() {
     if (committing.current || !ready) return;
-    committing.current = true;
+    committing.current = true; setBusy(true); setError('');
     const rows = validateRows(sheet.rows.slice(headerRow), mapping, data.movements, headerRow + 1, Boolean(source?.book.Workbook?.WBProps?.date1904)).filter(row => !row.errors.length && row.item);
     const ids: string[] = [];
-    rows.forEach(row => { const itemId = id(); ids.push(itemId); save('movements', { ...row.item!, id: itemId }); });
-    setSubmitted(ids); setConfirming(false); committing.current = false;
+    try {
+      if (importMovements) {
+        const request = attempt || {id:crypto.randomUUID(),items:rows.map(row=>({...row.item!,id:id()}))};
+        setAttempt(request);
+        const result = await importMovements(request.id,request.items);
+        setReceipt(result); setSubmitted(result.ids); setAttempt(null);
+      } else {
+        for (const row of rows) { const itemId=id(); await save('movements',{...row.item!,id:itemId}); ids.push(itemId); }
+        setSubmitted(ids);
+      }
+      setConfirming(false);
+    } catch(cause) { setError((cause as Error).message); setConfirming(false); }
+    finally { committing.current=false; setBusy(false); }
   }
-  function reset() { setSource(null); setSubmitted([]); setMapping(emptyMapping); setError(''); }
+  function reset() { if(committing.current)return; setSource(null); setSubmitted([]); setAttempt(null); setReceipt(null); setMapping(emptyMapping); setError(''); }
 
   return <section className="section finance-surface"><div className="section-heading"><h2>Importar movimientos</h2></div>
     <p className="muted">XLSX, XLS o CSV. Hasta 5 MB y 500 movimientos por hoja. Los archivos se procesan en este dispositivo.</p>
     <div className={`finance-drop ${dragging ? 'is-dragging' : ''}`} onDragOver={event => { event.preventDefault(); if (!busy) setDragging(true); }} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }} onDrop={event => { event.preventDefault(); setDragging(false); if (busy) return; if (event.dataTransfer.files.length !== 1) { setError('Seleccioná un solo archivo por importación.'); return; } void loadFile(event.dataTransfer.files[0]); }}>
       <Upload size={26} aria-hidden="true"/><Field label={busy ? 'Leyendo archivo…' : 'Seleccionar o arrastrar archivo'}><input type="file" accept=".xlsx,.xls,.csv" disabled={busy} onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file); event.target.value = ''; }}/></Field>
     </div>
-    {busy && <p role="status">Preparando la vista previa…</p>}{error && <p className="error" role="alert">{error}</p>}
+    {busy && <p role="status">{committing.current ? 'Guardando la importación…' : 'Preparando la vista previa…'}</p>}{error && <p className="error" role="alert">{error}</p>}
     {source && <>
       <div className="finance-file-heading"><FileSpreadsheet size={22} aria-hidden="true"/><strong className="finance-filename">{source.name}</strong><button className="button secondary small" onClick={reset}><X size={18}/>Quitar archivo</button></div>
       <div className="finance-filters"><Field label="Hoja"><select value={sheetName} onChange={event => selectSheet(source, event.target.value)}>{source.book.SheetNames.map(name => <option key={name}>{name}</option>)}</select></Field><Field label="Fila de encabezados"><select value={headerRow} onChange={event => selectSheet(source, sheetName, Number(event.target.value))}>{Array.from({ length: Math.min(100, sheet.rows.length) }, (_, index) => <option key={index} value={index + 1}>Fila {index + 1}</option>)}</select></Field></div>
       {sheet.tooLarge && <p className="error" role="alert">Esta hoja supera los 500 movimientos o las 64 columnas. Dividila en archivos más pequeños antes de confirmar.</p>}
       {!sheet.rows.length && <p className="error" role="alert">La hoja está vacía.</p>}
-      <fieldset className="finance-mapping"><legend>Asignación de columnas</legend><div className="finance-filters">{importFields.map(field => <Field key={field} label={fieldLabels[field]}><select value={mapping[field]} disabled={Boolean(submitted.length)} onChange={event => setMapping(previous => ({ ...previous, [field]: Number(event.target.value) }))}><option value={-1}>Seleccionar columna</option>{headers.map((header, index) => <option key={index} value={index}>{source.utils.encode_col(index)} · {String(header || 'Sin encabezado').slice(0, 100)}</option>)}</select></Field>)}</div></fieldset>
+      <fieldset className="finance-mapping"><legend>Asignación de columnas</legend><div className="finance-filters">{importFields.map(field => <Field key={field} label={fieldLabels[field]}><select value={mapping[field]} disabled={busy || Boolean(attempt) || Boolean(submitted.length)} onChange={event => setMapping(previous => ({ ...previous, [field]: Number(event.target.value) }))}><option value={-1}>Seleccionar columna</option>{headers.map((header, index) => <option key={index} value={index}>{source.utils.encode_col(index)} · {String(header || 'Sin encabezado').slice(0, 100)}</option>)}</select></Field>)}</div></fieldset>
       {!mappingValid && <p className="muted">Asigná una columna diferente a cada campo.</p>}
       <div className="finance-table-wrap" tabIndex={0} role="region" aria-label="Vista previa del archivo"><table className="finance-table"><caption>Vista previa · primeras {Math.min(8, Math.max(0, sheet.rows.length - headerRow))} filas de datos</caption><thead><tr><th scope="col">Fila</th>{headers.map((header, index) => <th key={index} scope="col">{String(header || `Columna ${index + 1}`)}</th>)}</tr></thead><tbody>{sheet.rows.slice(headerRow, headerRow + 8).map((row, index) => <tr key={index}><th scope="row">{headerRow + index + 1}</th>{headers.map((_, column) => <td key={column}>{String(row[column] ?? '')}</td>)}</tr>)}</tbody></table></div>
       {mappingValid && <><p role="status">{valid.length} filas válidas · {invalid} con errores · {duplicates} duplicadas</p>
         <div className="finance-table-wrap" tabIndex={0} role="region" aria-label="Validación de movimientos"><table className="finance-table"><caption>Validación · {validation.length > 50 ? 'primeras 50 filas' : 'todas las filas'}</caption><thead><tr><th scope="col">Fila</th><th scope="col">Concepto</th><th scope="col">Fecha</th><th scope="col">Tipo</th><th scope="col">Categoría</th><th scope="col">Importe</th><th scope="col">Resultado</th></tr></thead><tbody>{validation.slice(0, 50).map(row => <tr key={row.row}><th scope="row">{row.row}</th><td>{row.item?.title || String(sheet.rows[row.row - 1]?.[mapping.title] || '')}</td><td>{row.item?.date || '—'}</td><td>{row.item?.type || '—'}</td><td>{row.item?.category || '—'}</td><td>{row.item ? money(row.item.amount || 0) : '—'}</td><td>{row.errors.join('; ') || 'Válida'}</td></tr>)}</tbody></table></div>
         <p className="muted">Se omiten filas vacías, inválidas y duplicadas. Los importes deben ser positivos; el tipo indica Ingreso o Egreso.</p>
-        <div className="form-actions"><button className="button" disabled={!ready} onClick={() => setConfirming(true)}><Check size={19}/>Importar {valid.length} movimientos válidos</button></div>
+        <div className="form-actions"><button className="button" disabled={!ready} onClick={() => setConfirming(true)}><Check size={19}/>{attempt ? 'Reintentar importación' : `Importar ${valid.length} movimientos válidos`}</button></div>
       </>}
-      {submitted.length > 0 && <p role="status" className={savedCount === submitted.length ? 'finance-success' : 'error'}>{savedCount === submitted.length ? `${savedCount} movimientos importados y guardados en este dispositivo.` : `Se guardaron ${savedCount} de ${submitted.length} movimientos. Revisá el espacio disponible y volvé a seleccionar el archivo; se omitirán los movimientos ya guardados.`}</p>}
+      {receipt ? <p role="status" className="finance-success">{receipt.ids.length} movimientos guardados en el consorcio. {receipt.skipped} duplicados omitidos.</p> : submitted.length > 0 && <p role="status" className={savedCount === submitted.length ? 'finance-success' : 'error'}>{savedCount === submitted.length ? `${savedCount} movimientos importados y guardados en este dispositivo.` : `Se guardaron ${savedCount} de ${submitted.length} movimientos. Revisá el espacio disponible y volvé a seleccionar el archivo; se omitirán los movimientos ya guardados.`}</p>}
     </>}
-    {confirming && <Modal title="Confirmar importación" onClose={() => setConfirming(false)}><p>Se agregarán {valid.length} movimientos de “{source?.name}”, hoja “{sheetName}”. Se omitirán {invalid} filas inválidas y {duplicates} duplicadas.</p><div className="form-actions"><button className="button secondary" onClick={() => setConfirming(false)}>Volver</button><button className="button" disabled={!ready} onClick={commit}><Check size={19}/>Confirmar importación</button></div></Modal>}
+    {confirming && <Modal title="Confirmar importación" onClose={() => { if(!committing.current)setConfirming(false); }}><p>Se procesarán {attempt?.items.length ?? valid.length} movimientos de “{source?.name}”, hoja “{sheetName}”. Los movimientos que ya existen no se duplicarán.</p><div className="form-actions"><button className="button secondary" disabled={busy} onClick={() => setConfirming(false)}>Volver</button><button className="button" disabled={!ready} onClick={commit}><Check size={19}/>{committing.current ? 'Guardando…' : 'Confirmar importación'}</button></div></Modal>}
   </section>;
 }

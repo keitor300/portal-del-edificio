@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Landmark, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Confirm, DocumentActions, Empty, Field, Modal, UploadField } from '../../components/UI';
 import { usePortal } from '../../hooks/usePortal';
@@ -11,16 +11,22 @@ function MovementForm({ item, onClose }: { item: Entity; onClose: () => void }) 
   const [draft, setDraft] = useState(item);
   const [amount, setAmount] = useState(item.amount ? String(item.amount).replace('.', ',') : '');
   const [error, setError] = useState('');
+  const saving = useRef(false);
+  const [busy, setBusy] = useState(false);
   const set = (patch: Partial<Entity>) => setDraft(previous => ({ ...previous, ...patch }));
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
+    if (saving.current) return;
     const parsed = parseAmount(amount);
     if (!parseDate(draft.date) || parsed === null || !draft.title.trim() || !draft.category?.trim()) { setError('Revisá fecha, concepto, categoría e importe positivo (hasta 2 decimales).'); return; }
     const next = { ...draft, title: draft.title.trim(), category: draft.category.trim(), amount: parsed, period: undefined };
     if (data.movements.some(row => row.id !== next.id && movementKey(row) === movementKey(next))) { setError('Ya existe un movimiento con la misma fecha, concepto, tipo e importe.'); return; }
-    save('movements', next); notify('Movimiento guardado.'); onClose();
+    saving.current = true; setBusy(true); setError('');
+    try { await save('movements', next); notify('Movimiento guardado.'); onClose(); }
+    catch (cause) { setError((cause as Error).message); }
+    finally { saving.current = false; setBusy(false); }
   }
-  return <Modal title={data.movements.some(row => row.id === item.id) ? 'Editar movimiento de caja' : 'Anotar movimiento de caja'} onClose={onClose} icon={<Landmark size={23} aria-hidden="true"/>}>
+  return <Modal title={data.movements.some(row => row.id === item.id) ? 'Editar movimiento de caja' : 'Anotar movimiento de caja'} onClose={() => { if (!saving.current) onClose(); }} icon={<Landmark size={23} aria-hidden="true"/>}>
     <form onSubmit={submit} className="finance-form">
       <Field label="Qué se anotó"><input required maxLength={240} value={draft.title} onChange={e => set({ title: e.target.value })}/></Field>
       <div className="form-grid"><Field label="Fecha del movimiento"><input type="date" required value={draft.date} onChange={e => set({ date: e.target.value })}/></Field><Field label="Ingreso o egreso"><select value={draft.type} onChange={e => set({ type: e.target.value })}><option>Ingreso</option><option>Egreso</option></select></Field></div>
@@ -28,29 +34,34 @@ function MovementForm({ item, onClose }: { item: Entity; onClose: () => void }) 
       <Field label="Detalle"><textarea rows={3} maxLength={2000} value={draft.description} onChange={e => set({ description: e.target.value })}/></Field>
       <UploadField value={draft.attachment} onChange={attachment => set({ attachment })}/>
       {error && <p className="error" role="alert">{error}</p>}
-      <div className="form-actions"><button type="button" className="button secondary" onClick={onClose}>Cancelar</button><button className="button" type="submit">Guardar movimiento</button></div>
+      <div className="form-actions"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>Cancelar</button><button className="button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar movimiento'}</button></div>
     </form>
   </Modal>;
 }
 
 function OpeningBalanceForm({ onClose }: { onClose: () => void }) {
   const { data, setSettings, notify } = usePortal();
+  const [version] = useState(data.settings.version);
   const [amount, setAmount] = useState(String(data.settings.openingBalance).replace('.', ','));
   const [error, setError] = useState('');
-  function submit(event: FormEvent) {
+  const saving = useRef(false);
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent) {
     event.preventDefault();
+    if (saving.current) return;
     const parsed = parseNonNegativeAmount(amount);
     if (parsed === null) { setError('Ingresá un saldo igual o mayor a cero, con hasta 2 decimales.'); return; }
-    setSettings({ openingBalance: parsed });
-    notify('Saldo inicial de caja actualizado.');
-    onClose();
+    saving.current = true; setBusy(true); setError('');
+    try { await setSettings({ openingBalance: parsed, version }); notify('Saldo inicial de caja actualizado.'); onClose(); }
+    catch (cause) { setError((cause as Error).message); }
+    finally { saving.current = false; setBusy(false); }
   }
-  return <Modal title="Definir saldo inicial de caja" onClose={onClose} icon={<Landmark size={23} aria-hidden="true"/>}>
+  return <Modal title="Definir saldo inicial de caja" onClose={() => { if (!saving.current) onClose(); }} icon={<Landmark size={23} aria-hidden="true"/>}>
     <form onSubmit={submit} className="finance-form">
       <p className="muted">Este importe es el dinero disponible antes de los movimientos registrados. Se usa para calcular el saldo actual que pueden consultar los propietarios.</p>
       <Field label="Saldo inicial en pesos" hint="Podés ingresar 0 si la caja comenzó sin saldo."><input inputMode="decimal" required value={amount} onChange={event => { setAmount(event.target.value); setError(''); }}/></Field>
       {error && <p className="error" role="alert">{error}</p>}
-      <div className="form-actions"><button type="button" className="button secondary" onClick={onClose}>Cancelar</button><button className="button" type="submit">Guardar saldo inicial</button></div>
+      <div className="form-actions"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>Cancelar</button><button className="button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar saldo inicial'}</button></div>
     </form>
   </Modal>;
 }
@@ -87,6 +98,6 @@ export function Movements({ admin = false, newRequested = false, onNewHandled }:
     </li>)}</ul>}
     {editing && <MovementForm item={editing} onClose={close}/>}
     {editingOpeningBalance && <OpeningBalanceForm onClose={() => setEditingOpeningBalance(false)}/>}
-    {deleting && <Confirm description={`Se eliminará “${deleting.title}” por ${money(deleting.amount || 0)} y se actualizará el saldo.`} onClose={() => setDeleting(null)} onConfirm={() => { remove('movements', deleting.id); notify('Movimiento eliminado.'); }}/>} 
+    {deleting && <Confirm description={`Se eliminará “${deleting.title}” por ${money(deleting.amount || 0)} y se actualizará el saldo.`} onClose={() => setDeleting(null)} onConfirm={async () => { await remove('movements', deleting.id); notify('Movimiento eliminado.'); }}/>}
   </section>;
 }
