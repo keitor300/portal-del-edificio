@@ -146,6 +146,31 @@ test('resident registers from QR entry, administrator approves from another brow
   assert.equal((await contenders[winner].request.delete(`${base}/api/reservations/${reservation.id}`,{headers})).status(),200);
   assert.equal((await contenders[1-winner].request.post(`${base}/api/reservations`,{headers,data:booking})).status(),201);
 
+  // Exercise duplicate submissions and interval conflicts through independent
+  // authenticated requests, then inspect persisted rows rather than just HTTP codes.
+  const bookingRaces=[
+    {name:'same-unit duplicate',pages:[owner,owner],ranges:[['15:00','18:30'],['15:00','18:30']]},
+    {name:'partial overlap',pages:[owner,neighbor],ranges:[['15:00','18:30'],['18:00','20:00']]},
+    {name:'contained interval',pages:[owner,neighbor],ranges:[['15:00','20:00'],['16:00','17:00']]},
+    {name:'overnight overlap',pages:[owner,neighbor],ranges:[['22:00','01:00'],['23:30','00:30']]},
+    {name:'adjacent intervals',pages:[owner,neighbor],ranges:[['15:00','17:00'],['17:00','18:30']],expected:2},
+  ];
+  for(const [index,scenario] of bookingRaces.entries()){
+    const date=new Date(Date.now()+(20+index)*86400000).toISOString().slice(0,10);
+    const outcomes=await Promise.all(scenario.pages.map((page,i)=>page.request.post(`${base}/api/reservations`,{headers,data:{...booking,date,time:scenario.ranges[i][0],endTime:scenario.ranges[i][1]}})));
+    assert.deepEqual(outcomes.map(response=>response.status()).sort(),scenario.expected===2?[201,201]:[201,409],scenario.name);
+    const saved=(await(await owner.request.get(`${base}/api/reservations`)).json()).reservations.filter(row=>row.date===date&&row.status==='confirmed');
+    assert.equal(saved.length,scenario.expected??1,scenario.name);
+    for(const row of saved)assert.ok(['7B','8A'].includes(row.unit));
+    if(!scenario.expected){
+      const winningIndex=outcomes.findIndex(response=>response.status()===201);
+      const retry=await scenario.pages[winningIndex].request.post(`${base}/api/reservations`,{headers,data:{...booking,date,time:scenario.ranges[winningIndex][0],endTime:scenario.ranges[winningIndex][1]}});
+      assert.equal(retry.status(),409,`${scenario.name}: retry cannot create another booking`);
+      const afterRetry=(await(await owner.request.get(`${base}/api/reservations`)).json()).reservations.filter(row=>row.date===date&&row.status==='confirmed');
+      assert.equal(afterRetry.length,1,scenario.name);
+    }
+  }
+
   await admin.goto(`${base}/admin/finanzas?new=1`);
   await admin.getByLabel('Qué se anotó').fill('Reparación de prueba');
   await admin.getByLabel(/^Importe en pesos/).fill('1250,50');
