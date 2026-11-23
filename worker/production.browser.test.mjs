@@ -178,6 +178,12 @@ test('resident registers from QR entry, administrator approves from another brow
   assert.deepEqual(neighborExpenses.map(row=>row.unit),['8A']);
   assert.equal((await owner.request.get(`${base}${ownerExpenses[0].attachment.url}`)).status(),200);
   assert.equal((await neighbor.request.get(`${base}${ownerExpenses[0].attachment.url}`)).status(),404);
+  const expenseEndpoint=`${base}/api/entities/expenses/${ownerExpenses[0].id}`;
+  assert.equal((await admin.request.patch(expenseEndpoint,{headers,data:{version:ownerExpenses[0].version,status:'Borrador'}})).status(),200);
+  assert.equal((await owner.request.get(`${base}${ownerExpenses[0].attachment.url}`)).status(),404);
+  assert.equal((await admin.request.get(`${base}${ownerExpenses[0].attachment.url}`)).status(),200);
+  assert.equal((await admin.request.patch(expenseEndpoint,{headers,data:{version:ownerExpenses[0].version+1,status:'Publicado'}})).status(),200);
+  assert.equal((await owner.request.get(`${base}${ownerExpenses[0].attachment.url}`)).status(),200);
 
   await admin.goto(`${base}/admin/finanzas?tab=importar`);
   await admin.getByLabel('Seleccionar o arrastrar archivo').setInputFiles({name:'caja.csv',mimeType:'text/csv',buffer:Buffer.from('Fecha,Concepto,Tipo,Categoria,Importe\n2026-11-23,Importacion prueba uno,Ingreso,Aportes,1000\n2026-11-23,Importacion prueba dos,Egreso,Mantenimiento,200\n')});

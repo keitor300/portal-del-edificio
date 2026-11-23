@@ -41,6 +41,16 @@ export async function fileRoute(request, env, path) {
   if (path.startsWith('/api/files/') && request.method === 'GET') {
     const file = await env.DB.prepare('SELECT * FROM files WHERE id=?').bind(path.slice('/api/files/'.length)).first();
     if (!file || (user.role !== 'admin' && file.visibility === 'unit' && file.unit !== user.unit)) throw new HttpError(404, 'Archivo no disponible.');
+    if (user.role !== 'admin' && file.owner_id !== user.id) {
+      // An unguessable URL is not permission to read an unpublished attachment.
+      const shared = await env.DB.prepare(`SELECT 1 FROM entities
+        WHERE json_extract(data,'$.attachment.url')=?
+        AND coalesce(json_extract(data,'$.status'),'')<>'Borrador'
+        AND (unit IS NULL OR unit=?)
+        UNION ALL SELECT 1 FROM messages WHERE attachment_id=? AND unit=? LIMIT 1`)
+        .bind(`/api/files/${file.id}`, user.unit, file.id, user.unit).first();
+      if (!shared) throw new HttpError(404, 'Archivo no disponible.');
+    }
     const object = await env.FILES.get(file.object_key);
     if (!object) throw new HttpError(404, 'Archivo no disponible.');
     return new Response(object.body, { headers: {

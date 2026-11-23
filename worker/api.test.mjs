@@ -29,10 +29,72 @@ function fixture() {
     if (cookie) headers.Cookie = cookie;
     return worker.fetch(new Request(`https://portal.example${path}`, { method, headers, ...(data ? { body: JSON.stringify(data) } : {}) }), env);
   };
-  return { sqlite, request };
+  return { sqlite, request, env };
 }
 const password = 'Test-only-passphrase-2026';
 const registration = unit => ({ unit, name: `Resident ${unit}`, email: `${unit.toLowerCase()}@example.invalid`, dni: '12345678', password });
+
+test('files enforce publication, unit boundaries, signatures and rollback after metadata failure', async () => {
+  const {sqlite,request,env}=fixture();
+  const objects=new Map();
+  let failPut=false;
+  env.FILES={
+    put:async(key,bytes)=>{if(failPut)throw new Error('Injected storage failure');objects.set(key,bytes);},
+    get:async key=>objects.has(key)?{body:objects.get(key)}:null,
+    delete:async key=>{objects.delete(key);},
+  };
+  try {
+    sqlite.prepare("INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','admin','approved',?)").run(await hashPassword(password));
+    for(const unit of ['7B','8A'])await request('/api/auth/register','POST',registration(unit));
+    sqlite.exec("UPDATE users SET status='approved'");
+    const login=async identity=>(await request('/api/auth/login','POST',{identity,password})).headers.get('set-cookie');
+    const admin=await login('admin@example.invalid'),owner=await login('7B'),neighbor=await login('8A');
+    const pdf={name:'Archivo.pdf',type:'application/pdf',url:`data:application/pdf;base64,${Buffer.from('%PDF-1.7\nTest fixture').toString('base64')}`};
+    const upload=async(data,cookie=admin)=>request('/api/files','POST',data,cookie);
+    assert.equal((await upload(pdf,null)).status,401);
+    for(const data of [
+      {...pdf,type:'text/html'}, {...pdf,url:'data:application/pdf;base64,!'},
+      {...pdf,url:'data:application/pdf;base64,'},
+      {...pdf,url:`data:application/pdf;base64,${Buffer.from('not a PDF').toString('base64')}`},
+      {...pdf,url:`data:application/pdf;base64,${Buffer.concat([Buffer.from('%PDF-'),Buffer.alloc(1048576)]).toString('base64')}`},
+      {...pdf,unit:'99Z'},
+    ])assert.equal((await upload(data)).status,400);
+    assert.equal(objects.size,0);
+    const privateFile=await(await upload({...pdf,unit:'8A'},owner)).json();
+    assert.equal(sqlite.prepare('SELECT unit FROM files WHERE id=?').get(privateFile.id).unit,'7B');
+    assert.equal((await request(privateFile.url,'GET',null,owner)).status,200);
+    assert.equal((await request(privateFile.url,'GET',null,neighbor)).status,404);
+    assert.equal((await request(privateFile.url)).status,401);
+    assert.equal((await request('/api/messages','POST',{text:'Archivo ajeno',attachment:privateFile},neighbor)).status,400);
+    const sharedFile=await(await upload(pdf)).json();
+    assert.equal((await request(sharedFile.url,'GET',null,owner)).status,404);
+    const document=await(await request('/api/entities/documents','POST',{title:'Borrador privado',status:'Borrador',attachment:sharedFile},admin)).json();
+    assert.equal((await request(sharedFile.url,'GET',null,owner)).status,404);
+    assert.equal((await request(`/api/entities/documents/${document.id}`,'PATCH',{version:1,status:'Publicado'},admin)).status,200);
+    const response=await request(sharedFile.url,'GET',null,neighbor);
+    assert.equal(response.status,200);
+    assert.equal(response.headers.get('cache-control'),'private, no-store');
+    assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+    assert.match(response.headers.get('content-security-policy'),/sandbox/);
+    assert.equal((await request(`/api/entities/documents/${document.id}`,'DELETE',null,admin)).status,200);
+    assert.equal((await request(sharedFile.url,'GET',null,owner)).status,404);
+    const replyFile=await(await upload({...pdf,unit:'7B'})).json();
+    assert.equal((await request(replyFile.url,'GET',null,owner)).status,404);
+    assert.equal((await request('/api/messages','POST',{unit:'7B',text:'Respuesta',attachment:replyFile},admin)).status,201);
+    assert.equal((await request(replyFile.url,'GET',null,owner)).status,200);
+    assert.equal((await request(replyFile.url,'GET',null,neighbor)).status,404);
+    const count=objects.size;
+    sqlite.exec("CREATE TRIGGER fail_file BEFORE INSERT ON files BEGIN SELECT RAISE(ABORT,'test metadata failure'); END;");
+    assert.equal((await upload(pdf)).status,500);
+    assert.equal(objects.size,count);
+    sqlite.exec('DROP TRIGGER fail_file');
+    failPut=true;
+    assert.equal((await upload(pdf)).status,500);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM files').get().n,count);
+    objects.delete(`attachments/${replyFile.id}`);
+    assert.equal((await request(replyFile.url,'GET',null,owner)).status,404);
+  } finally {sqlite.close();}
+});
 
 test('content API rejects invalid submissions without writes and preserves valid records after invalid edits', async () => {
   const { sqlite, request } = fixture();
