@@ -2,10 +2,22 @@ import { productionPortal, serverLogout, serverUser } from '../../lib/api';
 export const ACCOUNTS_KEY = 'portal-owner-accounts-demo-v1';
 const SESSION_KEY = 'portal-owner-session-demo-v1';
 export const ACCESS_EVENT = 'portal-owner-access-change';
-export type OwnerAccount = { id: string; dni: string; email?: string; name: string; unit: string; salt: string; hash: string; recoveryHash: string; status: 'Pendiente' | 'Aprobado' | 'Rechazado' | 'Suspendido'; created: string };
-export const DEMO_OWNER: OwnerAccount = { id: 'owner-demo-7b', dni: '', name: 'Propietario demo', unit: '7B', salt: '', hash: '', recoveryHash: '', status: 'Aprobado', created: '2026-01-01T00:00:00.000Z' };
+export type OwnerAccount = { id: string; email?: string; name: string; unit: string; salt: string; hash: string; recoveryHash: string; status: 'Pendiente' | 'Aprobado' | 'Rechazado' | 'Suspendido'; created: string };
+export const DEMO_OWNER: OwnerAccount = { id: 'owner-demo-7b', name: 'Propietario demo', unit: '7B', salt: '', hash: '', recoveryHash: '', status: 'Aprobado', created: '2026-01-01T00:00:00.000Z' };
 export function accounts(): OwnerAccount[] {
-  try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]'); } catch { return []; }
+  try {
+    const stored = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]');
+    if (!Array.isArray(stored)) return [];
+    const hadDni = stored.some(item => item && typeof item === 'object' && 'dni' in item);
+    const sanitized = stored.map(item => {
+      if (!item || typeof item !== 'object') return item as OwnerAccount;
+      const clean = { ...item };
+      delete clean.dni;
+      return clean as OwnerAccount;
+    });
+    if (hadDni) localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(sanitized));
+    return sanitized;
+  } catch { return []; }
 }
 export function saveAccounts(items: OwnerAccount[]) {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(items));
@@ -23,7 +35,7 @@ export async function passwordHash(password: string, salt: string) {
 export function signedOwner() {
   if (productionPortal) {
     const user = serverUser();
-    return user?.role === 'owner' && user.unit ? { ...user, unit: user.unit, dni: '', salt: '', hash: '', recoveryHash: '', status: 'Aprobado' as const, created: '' } : undefined;
+    return user?.role === 'owner' && user.unit ? { ...user, unit: user.unit, salt: '', hash: '', recoveryHash: '', status: 'Aprobado' as const, created: '' } : undefined;
   }
   const sessionId = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
   if (sessionId === DEMO_OWNER.id) return DEMO_OWNER;

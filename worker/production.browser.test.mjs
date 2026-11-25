@@ -88,7 +88,7 @@ test('resident registers from QR entry, administrator approves from another brow
   assert.match(securityHeaders['content-security-policy'],/script-src 'self';/);
   assert.equal(securityHeaders['referrer-policy'],'strict-origin-when-cross-origin');
   await owner.getByLabel('Nombre y apellido').fill('Propietario de prueba');
-  await owner.getByLabel('DNI',{exact:true}).fill('12345678');
+  await expect(owner.getByLabel('DNI',{exact:true})).toHaveCount(0);
   await owner.getByLabel('Email',{exact:true}).fill('owner@example.invalid');
   await owner.getByLabel('Unidad',{exact:true}).selectOption('7B');
   await owner.getByLabel('Contraseña',{exact:true}).fill(password);
@@ -141,7 +141,7 @@ test('resident registers from QR entry, administrator approves from another brow
 
   const neighbor = await pageFor();
   const headers = { Origin:base };
-  const registration = await neighbor.request.post(`${base}/api/auth/register`,{headers,data:{name:'Otra unidad',dni:'23456789',email:'neighbor@example.invalid',unit:'8A',password}});
+  const registration = await neighbor.request.post(`${base}/api/auth/register`,{headers,data:{name:'Otra unidad',email:'neighbor@example.invalid',unit:'8A',password}});
   assert.equal(registration.status(),201);
   const access = await (await admin.request.get(`${base}/api/admin/access`)).json();
   const neighborId = access.users.find(user=>user.unit==='8A').id;

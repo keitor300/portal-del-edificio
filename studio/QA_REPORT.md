@@ -249,6 +249,14 @@ None found.
 - Rendered checks at 390 x 844 and 1440 x 900 found no horizontal overflow or browser errors. The mobile registration screen displayed all three guidance steps and every field correctly.
 - Validation passed: `npm run typecheck`, `npm run lint`, `npm test` (21 unit, 5 community and 9 browser workflows), `npm run build`, and `git diff --check`.
 
+## Owner access privacy - 2026-11-25
+
+- Registration now asks for name, unit, email and password; DNI is absent from demo and production forms.
+- Administration reviews the unit and registered email without receiving or displaying DNI.
+- Migration 0007 clears historical DNI values. New registration ignores an obsolete client-supplied DNI and keeps the database value NULL.
+- Demo browser storage removes DNI from requests created by earlier versions when accounts are read.
+- Validation passed: typecheck, lint, build, 12 API tests, 11 demo browser workflows and the complete local HTTPS production workflow with D1, SUM races and private chat.
+
 ## Administration tools directory - 2026-11-14
 
 ### P0 - BLOCKERS

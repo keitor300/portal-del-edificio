@@ -13,6 +13,7 @@ function fixture() {
   sqlite.exec(readFileSync(new URL('../migrations/0004_settings_version.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../migrations/0005_issue_history.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../migrations/0006_recovery.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0007_remove_dni.sql', import.meta.url), 'utf8'));
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
     first: async () => sqlite.prepare(sql).get(...args) ?? null,
@@ -32,7 +33,17 @@ function fixture() {
   return { sqlite, request, env };
 }
 const password = 'Test-only-passphrase-2026';
-const registration = unit => ({ unit, name: `Resident ${unit}`, email: `${unit.toLowerCase()}@example.invalid`, dni: '12345678', password });
+const registration = unit => ({ unit, name: `Resident ${unit}`, email: `${unit.toLowerCase()}@example.invalid`, password });
+
+test('privacy migration clears national identity numbers from existing accounts', () => {
+  const sqlite = new DatabaseSync(':memory:');
+  try {
+    sqlite.exec(readFileSync(new URL('../migrations/0001_production.sql', import.meta.url), 'utf8'));
+    sqlite.prepare("INSERT INTO users(id,name,email,dni,unit,role,status,password_hash) VALUES ('legacy-owner','Legacy owner','legacy@example.invalid','12345678','7B','owner','pending','legacy-hash')").run();
+    sqlite.exec(readFileSync(new URL('../migrations/0007_remove_dni.sql', import.meta.url), 'utf8'));
+    assert.equal(sqlite.prepare("SELECT dni FROM users WHERE id='legacy-owner'").get().dni, null);
+  } finally { sqlite.close(); }
+});
 
 test('files enforce publication, unit boundaries, signatures and rollback after metadata failure', async () => {
   const {sqlite,request,env}=fixture();
@@ -257,7 +268,8 @@ test('registration, approval, private session, suspension and origin enforcement
     sqlite.prepare("INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','admin','approved',?)").run(adminHash);
     assert.equal((await request('/api/auth/register', 'POST', registration('7B'), null, 'https://attacker.example')).status, 403);
     assert.equal((await request('/api/admin/access')).status, 401);
-    assert.equal((await request('/api/auth/register', 'POST', registration('7B'))).status, 201);
+    assert.equal((await request('/api/auth/register', 'POST', { ...registration('7B'), dni: '12345678' })).status, 201);
+    assert.equal(sqlite.prepare("SELECT dni FROM users WHERE unit='7B'").get().dni, null);
     assert.equal((await request('/api/auth/login', 'POST', { identity: '7B', password })).status, 403);
     const adminLogin = await request('/api/auth/login', 'POST', { identity: 'admin@example.invalid', password });
     assert.equal(adminLogin.status, 200);
@@ -267,6 +279,7 @@ test('registration, approval, private session, suspension and origin enforcement
     assert.equal(adminBody.user.password_hash, undefined);
     const requests = await (await request('/api/admin/access', 'GET', null, adminCookie)).json();
     assert.equal(requests.users.length, 1);
+    assert.equal('dni' in requests.users[0], false);
     const id = requests.users[0].id;
     assert.equal((await request(`/api/admin/access/${id}`, 'PATCH', { status: 'approved' }, adminCookie)).status, 200);
     const ownerLogin = await request('/api/auth/login', 'POST', { identity: '7b', password });

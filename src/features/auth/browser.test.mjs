@@ -39,7 +39,7 @@ test('owner registration requires approval, preserves SUM destination and revoke
     await expect(owner.getByText('Antes de ingresar, tenés que solicitar el acceso de tu unidad.')).toBeVisible();
     await owner.getByRole('button',{name:'Solicitar acceso',exact:true}).click();
     await owner.getByLabel('Nombre y apellido').fill('Persona Demo');
-    await owner.getByLabel('DNI',{exact:true}).fill('12345678');
+    await expect(owner.getByLabel('DNI',{exact:true})).toHaveCount(0);
     await owner.getByLabel('Email',{exact:true}).fill('persona.demo@example.com');
     await owner.getByLabel('Unidad',{exact:true}).selectOption('5C');
     await owner.getByLabel('Contraseña',{exact:true}).fill('Demo123456');

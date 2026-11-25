@@ -68,13 +68,12 @@ export async function authRoute(request, env, path) {
     const name = text(data.name, 80);
     const email = text(data.email, 120).toLowerCase();
     const unit = text(data.unit, 8).toUpperCase();
-    const dni = text(data.dni, 12).replace(/[.\s]/g, '');
-    if (!/^\S+@\S+\.\S+$/.test(email) || !/^\d{7,8}$/.test(dni)) throw new HttpError(400, 'Revisá el email y el DNI.');
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, 'Ingresá un email válido.');
     if (!await env.DB.prepare('SELECT id FROM units WHERE id=? AND active=1').bind(unit).first()) throw new HttpError(400, 'Elegí una unidad del edificio.');
     const password = await hashPassword(data.password);
     try {
-      await env.DB.prepare("INSERT INTO users(id,name,email,dni,unit,role,password_hash) VALUES (?,?,?,?,?,'owner',?)")
-        .bind(crypto.randomUUID(), name, email, dni, unit, password).run();
+      await env.DB.prepare("INSERT INTO users(id,name,email,unit,role,password_hash) VALUES (?,?,?,?,'owner',?)")
+        .bind(crypto.randomUUID(), name, email, unit, password).run();
     } catch (error) {
       if (String(error).includes('UNIQUE')) throw new HttpError(409, 'Ya existe una solicitud para esos datos. Consultá con Administración.');
       throw error;
@@ -101,7 +100,7 @@ export async function authRoute(request, env, path) {
   }
   if (path === '/api/admin/access' && request.method === 'GET') {
     await requireUser(request, env, 'admin');
-    const { results } = await env.DB.prepare("SELECT u.id,u.name,u.email,u.dni,u.unit,u.status,u.created_at,r.requested_at AS recovery_requested_at FROM users u LEFT JOIN recovery_requests r ON r.user_id=u.id AND r.resolved_at IS NULL WHERE u.role='owner' ORDER BY r.requested_at DESC,u.created_at DESC").all();
+    const { results } = await env.DB.prepare("SELECT u.id,u.name,u.email,u.unit,u.status,u.created_at,r.requested_at AS recovery_requested_at FROM users u LEFT JOIN recovery_requests r ON r.user_id=u.id AND r.resolved_at IS NULL WHERE u.role='owner' ORDER BY r.requested_at DESC,u.created_at DESC").all();
     return json({ users: results });
   }
   if (path.startsWith('/api/admin/access/') && request.method === 'PATCH') {

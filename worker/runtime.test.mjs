@@ -14,7 +14,7 @@ test('Cloudflare runtime executes health, registration, password hashing and acc
   assert.deepEqual(state.data.expenses, []);
   const password = crypto.randomUUID();
   const headers = { 'Content-Type': 'application/json', Origin: base };
-  const response = await fetch(`${base}/api/auth/register`, { method: 'POST', headers, body: JSON.stringify({ unit: '9C', name: 'Prueba local', email: `${crypto.randomUUID()}@example.invalid`, dni: '12345678', password }) });
+  const response = await fetch(`${base}/api/auth/register`, { method: 'POST', headers, body: JSON.stringify({ unit: '9C', name: 'Prueba local', email: `${crypto.randomUUID()}@example.invalid`, password }) });
   assert.equal(response.status, 201, await response.text());
   const pending = await fetch(`${base}/api/auth/login`, { method: 'POST', headers, body: JSON.stringify({ identity: '9C', password }) });
   assert.equal(pending.status, 403);

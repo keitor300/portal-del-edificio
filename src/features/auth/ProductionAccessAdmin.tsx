@@ -4,7 +4,7 @@ import { Field, Modal, PageHeader } from '../../components/UI';
 import { api } from '../../lib/api';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 
-interface AccessRequest { id:string; name:string; email:string; dni:string; unit:string; status:'pending'|'approved'|'rejected'|'suspended'; created_at:string; recovery_requested_at?:number }
+interface AccessRequest { id:string; name:string; email:string; unit:string; status:'pending'|'approved'|'rejected'|'suspended'; created_at:string; recovery_requested_at?:number }
 const labels = { pending:'Pendiente', approved:'Aprobado', rejected:'Rechazado', suspended:'Suspendido' };
 export function ProductionAccessAdmin() {
   const [items,setItems]=useState<AccessRequest[]>([]);
@@ -34,7 +34,7 @@ export function ProductionAccessAdmin() {
     {error&&<p role="alert" className="error">{error} <button className="button secondary" onClick={()=>void load()}>Volver a intentar</button></p>}
     {loading?<p role="status">Cargando solicitudes…</p>:<div className="access-requests">{visible.map(account=><article className="access-request" key={account.id}>
       <span className={`status ${account.status==='approved'?'status-green':'status-amber'}`}>{labels[account.status]}</span><h2>{account.name}</h2><p className="access-request-unit">Unidad <strong>{account.unit}</strong></p>
-      <dl className="access-request-details"><div><dt>DNI</dt><dd>{account.dni}</dd></div><div><dt>Email</dt><dd>{account.email}</dd></div></dl>
+      <dl className="access-request-details"><div><dt>Email</dt><dd>{account.email}</dd></div></dl>
       <small>Solicitud del {new Date(account.created_at).toLocaleDateString('es-AR')}</small>
       {account.recovery_requested_at&&<p className="status status-amber">Solicitó recuperar el acceso el {new Date(account.recovery_requested_at).toLocaleDateString('es-AR')}</p>}
       <div className="access-request-actions">{account.status!=='approved'&&<button className="button" disabled={!!busy} onClick={()=>void change(account,'approved')}><Check size={18}/>Aprobar acceso</button>}

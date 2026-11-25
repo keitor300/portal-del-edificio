@@ -8,9 +8,9 @@ Pendiente: definir el administrador real, verificar el plan/CPU de Workers, comp
 
 ## Alta de propietarios
 
-1. El vecino solicita acceso con nombre, DNI, unidad, email y contrasena.
+1. El vecino solicita acceso con nombre, unidad, email y contrasena. El portal no solicita DNI.
 2. La solicitud queda pendiente; no permite acceder a informacion privada.
-3. Administracion comprueba identidad y vinculacion con la unidad por un medio conocido, fuera del portal. Declarar un DNI no prueba identidad por si solo.
+3. Administracion comprueba identidad y vinculacion con la unidad por un medio conocido, fuera del portal. La unidad y el email declarados no prueban identidad por si solos.
 4. Desde Accesos de propietarios, aprueba o rechaza la solicitud.
 5. El vecino ingresa con su unidad y contrasena. El sistema permite una cuenta aprobada por unidad, no cuentas independientes para cada conviviente.
 
@@ -52,7 +52,7 @@ Antes de una migracion, exportar D1 a una ubicacion privada y con nombre unico. 
 npx.cmd wrangler d1 export portal-edificio-produccion --remote --output RUTA_PRIVADA_NUEVA.sql
 ```
 
-La exportacion puede afectar temporalmente la disponibilidad: realizarla en una ventana acordada. No subir copias, enlaces temporales, hashes de contrasenas, DNI ni tokens a Git o a carpetas publicas. Una copia D1 no contiene los objetos R2: incluir los archivos en la estrategia de recuperacion.
+La exportacion puede afectar temporalmente la disponibilidad: realizarla en una ventana acordada. No subir copias, enlaces temporales, hashes de contrasenas ni tokens a Git o a carpetas publicas. Una copia D1 no contiene los objetos R2: incluir los archivos en la estrategia de recuperacion.
 
 Hay un comando de respaldo combinado que exporta D1, restaura el SQL en SQLite en memoria para comprobar integridad y referencias, y descarga los objetos R2 registrados en esa instantanea:
 
