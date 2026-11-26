@@ -90,7 +90,13 @@ export function IssuesPanel({ admin = false }: { admin?: boolean }) {
   const { data } = usePortal();
   const [params, setParams] = useSearchParams();
   const [newIssue, setNewIssue] = useState(() => !admin && params.get('new') === '1');
-  const [selected, setSelected] = useState<string>();
+  const selected = params.get('issue') || undefined;
+  function setSelected(issueId?: string) {
+    const next = new URLSearchParams(params);
+    if (issueId) next.set('issue', issueId); else next.delete('issue');
+    next.delete('new');
+    setParams(next);
+  }
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
@@ -110,7 +116,7 @@ export function IssuesPanel({ admin = false }: { admin?: boolean }) {
     <div className="list issues-list">{issues.map(issue => <article className="list-row" key={issue.id}><div className="row-main"><strong>{issue.title}</strong><p>{issue.category} · {formatDate(issue.date)}{admin ? ` · Unidad ${issue.unit}` : ''}</p><span className={`status ${issue.status === 'Resuelto' ? 'status-green' : ''}`}>{issue.status || 'Recibido'}</span>{issue.attachment && <span className="services-attachment-note"> <Camera size={16} aria-hidden="true" /> Con foto</span>}</div><div className="row-actions"><button className="button secondary" onClick={() => setSelected(issue.id)} aria-label={`Abrir reclamo: ${issue.title}`}>Abrir reclamo<ArrowRight size={18} aria-hidden="true" /></button></div></article>)}</div>
     {!issues.length && <p className="empty">No hay reclamos para estos filtros.</p>}
     {newIssue && <IssueForm onClose={closeIssueForm} onCreated={issueId => { closeIssueForm(); setSelected(issueId); }} />}
-    {selected && <IssueDetail issueId={selected} admin={admin} onClose={() => setSelected(undefined)} />}
+    {selected && <IssueDetail key={selected} issueId={selected} admin={admin} onClose={() => setSelected(undefined)} />}
   </>;
 }
 

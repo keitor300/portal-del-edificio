@@ -83,6 +83,12 @@ test('administrator alias, persistent sessions and per-account notification priv
     assert.ok((await inbox(owner)).every(item=>item.read));assert.equal((await inbox(neighbor))[0].read,false);
     await request(`/api/entities/notices/${notice.id}`,'PATCH',{version:1,title:'Aviso corregido'},admin);
     items=await inbox(owner);assert.equal(items.find(item=>item.title==='Aviso corregido').read,false,'Updates become unread again');
+    const neighborMessage=await(await request('/api/messages','POST',{text:'Consulta de 8A'},neighbor)).json();
+    assert.equal((await inbox(admin)).find(item=>item.id===`message:${neighborMessage.id}`).href,'/admin/servicios?tab=chat&unit=8A');
+    const issue=await(await request('/api/entities/issues','POST',{title:'Consulta de reparacion',description:'Detalle de prueba',category:'Otro',date:'2026-11-26'},owner)).json();
+    const issueMessage=await(await request('/api/messages','POST',{unit:'7B',issueId:issue.id,text:'Respuesta del reclamo'},admin)).json();
+    assert.equal((await inbox(owner)).find(item=>item.id===`message:${issueMessage.id}`).href,`/demo/propietario/servicios/reclamos?issue=${issue.id}`);
+    assert.equal((await inbox(admin)).find(item=>item.id===`entity:${issue.id}:1`).href,`/admin/servicios?tab=reclamos&issue=${issue.id}`);
     await request('/api/auth/logout','POST',{},owner);
     assert.equal((await request('/api/notifications','GET',null,owner)).status,401);
     assert.throws(()=>sqlite.exec("UPDATE users SET status='suspended' WHERE id='admin'"),/LAST_ADMIN/);

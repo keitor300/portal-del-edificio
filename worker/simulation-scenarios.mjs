@@ -193,6 +193,11 @@ async function runMessagingScenario({ admin, owner, neighbor, base }) {
   await neighbor.getByLabel('Mensaje', { exact: true }).fill('SIMULACRO - Consulta independiente de 8A');
   await neighbor.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
   await expect(neighbor.getByLabel('Mensaje', { exact: true })).toHaveValue('');
+  await admin.goto(`${base}/admin/notificaciones`);
+  await admin.getByRole('button').filter({has:admin.getByText('Consulta de Unidad 8A',{exact:true})}).click();
+  await expect(admin).toHaveURL(/tab=chat&unit=8A/);
+  await expect(admin.getByRole('heading',{name:'Conversación con Unidad 8A',exact:true})).toBeVisible();
+  await expect(admin.getByText('SIMULACRO - Consulta independiente de 8A',{exact:true}).last()).toBeVisible();
   await admin.goto(`${base}/admin/servicios?tab=chat`);
   const threads = admin.getByRole('navigation', { name: 'Consultas por unidad' });
   await threads.getByRole('button', { name: /^Unidad 7B/ }).click();
@@ -204,5 +209,23 @@ async function runMessagingScenario({ admin, owner, neighbor, base }) {
   await expect(admin.getByLabel('Mensaje', { exact: true })).toHaveValue('');
   assert.ok((await state(neighbor)).messages.some(row => row.text === 'Respuesta privada para 8A'));
   assert.equal((await state(owner)).messages.some(row => row.text === 'Respuesta privada para 8A'), false);
+  const issue=(await state(owner)).issues[0];
+  assert.ok(issue);
+  for(const page of [admin,owner]){
+    await page.goto(`${base}/${page===admin?'admin':'demo/propietario'}/notificaciones`);
+    await page.getByRole('button').filter({has:page.getByText(issue.title,{exact:true})}).click();
+    await expect(page).toHaveURL(new RegExp(`issue=${issue.id}`));
+    await expect(page.getByRole('dialog')).toContainText(issue.title);
+    await page.getByRole('dialog').getByRole('button',{name:'Cerrar',exact:true}).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    assert.equal(new URL(page.url()).searchParams.has('issue'),false);
+    await page.goBack();
+    await expect(page.getByRole('dialog')).toContainText(issue.title);
+    await page.getByRole('dialog').getByRole('button',{name:'Cerrar',exact:true}).click();
+  }
+  await neighbor.goto(`${base}/demo/propietario/servicios/reclamos?issue=${issue.id}`);
+  await expect(neighbor.getByRole('dialog',{name:'Reclamo no disponible',exact:true})).toBeVisible();
+  await expect(neighbor.getByText(issue.title,{exact:true})).toHaveCount(0);
+  await neighbor.getByRole('dialog').getByRole('button',{name:'Cerrar',exact:true}).click();
   console.log('Simulation verified: lost message responses, private attachment download and independent admin drafts');
 }

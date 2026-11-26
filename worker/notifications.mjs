@@ -24,14 +24,15 @@ export async function notificationItems(env, user) {
     const destination = destinations[row.collection][admin ? 1 : 0];
     items.push({ id: `entity:${row.id}:${row.version}`, title: data.title,
       description: row.collection === 'issues' ? `Reclamo: ${data.status}` : row.version > 1 ? 'Información actualizada' : 'Nueva publicación',
-      href: base + destination + (row.collection === 'notices' ? `/${row.id}` : ''),
+      href: base + destination + (row.collection === 'notices' ? `/${row.id}` : row.collection === 'issues' ? `${admin ? '&' : '?'}issue=${encodeURIComponent(row.id)}` : ''),
       date: row.updated_at, important: !!data.urgent });
   }
   const { results: messages } = await env.DB.prepare(`SELECT m.*,u.role FROM messages m JOIN users u ON u.id=m.author_id
     WHERE m.author_id<>? AND (?='admin' OR (m.unit=? AND u.role='admin')) ORDER BY m.created_at DESC LIMIT 100`).bind(user.id, user.role, user.unit).all();
   for (const message of messages) items.push({ id: `message:${message.id}`, title: admin ? `Consulta de Unidad ${message.unit}` : 'Mensaje de Administración',
     description: message.issue_id ? 'Nueva respuesta en un reclamo' : 'Tenés un mensaje para leer', date: message.created_at,
-    href: base + (admin ? `servicios?tab=${message.issue_id ? 'reclamos' : 'chat'}` : `servicios/${message.issue_id ? 'reclamos' : 'chat'}`), important: false });
+    href: base + (admin ? `servicios?tab=${message.issue_id ? 'reclamos' : 'chat'}` : `servicios/${message.issue_id ? 'reclamos' : 'chat'}`)
+      + (message.issue_id ? `${admin ? '&' : '?'}issue=${encodeURIComponent(message.issue_id)}` : admin ? `&unit=${encodeURIComponent(message.unit)}` : ''), important: false });
   const { results: bookings } = await env.DB.prepare("SELECT * FROM reservations WHERE (?='admin' OR unit=?) ORDER BY created_at DESC LIMIT 100").bind(user.role, user.unit).all();
   for (const booking of bookings) items.push({ id: `reservation:${booking.id}:${booking.status}`,
     title: booking.status === 'confirmed' ? 'Reserva del SUM confirmada' : 'Reserva del SUM cancelada',
