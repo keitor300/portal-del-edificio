@@ -483,6 +483,31 @@ test('resident registers from QR entry, administrator approves from another brow
   assert.deepEqual(errors,[]);
 });
 
+test('SUM rules errors disappear after a successful retry or closing the editor', async () => {
+  const admin = await pageFor();
+  await admin.goto(`${base}/admin`);
+  await admin.getByLabel('Usuario o email', { exact: true }).fill('admin@example.invalid');
+  await admin.getByLabel('Contraseña', { exact: true }).fill(password);
+  await admin.getByRole('button', { name: 'Ingresar', exact: true }).click();
+  await expect.poll(async () => (await (await admin.request.get(`${base}/api/auth/session`)).json()).user?.role).toBe('admin');
+  await admin.goto(`${base}/admin/servicios?tab=sum`);
+  for (const finish of ['retry', 'close']) {
+    await admin.getByRole('button', { name: 'Editar reglamento', exact: true }).click();
+    const value = await admin.getByLabel('Reglamento', { exact: true }).inputValue();
+    await admin.route('**/api/settings', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'SIMULACRO: fallo temporal del reglamento' }) }), { times: 1 });
+    await admin.getByRole('button', { name: 'Guardar reglamento', exact: true }).click();
+    await expect(admin.getByRole('dialog').getByRole('alert')).toContainText('fallo temporal');
+    await expect(admin.getByLabel('Reglamento', { exact: true })).toHaveValue(value);
+    await admin.getByRole('dialog').getByRole('button', { name: finish === 'retry' ? 'Guardar reglamento' : 'Volver', exact: true }).click();
+    await expect(admin.getByRole('dialog')).toHaveCount(0);
+    await admin.getByRole('heading', { name: 'Fechas bloqueadas', exact: true }).scrollIntoViewIfNeeded();
+    await admin.screenshot({ path: join(tmpdir(), `portal-sum-rules-${finish}-${await admin.getByRole('alert').count() ? 'error' : 'clean'}.png`) });
+    await expect(admin.getByRole('alert')).toHaveCount(0);
+    const state = (await (await admin.request.get(`${base}/api/state`)).json()).data;
+    assert.equal(state.settings.rules, value);
+  }
+});
+
 test('administrator invitation and resident access controls work through the interface', { skip: !firebase }, async () => {
   assert.equal(new URL(base).hostname,'127.0.0.1');
   const admin=await pageFor(), invited=await pageFor(), resident=await pageFor();

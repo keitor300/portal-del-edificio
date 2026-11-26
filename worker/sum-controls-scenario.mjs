@@ -125,5 +125,99 @@ export async function runSumControls({ owner, admin, neighbor, base }) {
   await owner.getByRole('dialog').getByRole('button', { name: 'Volver', exact: true }).click();
   assert.equal((await reservations()).filter(row => row.date === friday).length, 0);
   await owner.screenshot({ path: join(tmpdir(), 'portal-simulacro-sum-controls.png'), fullPage: true });
+  await reviewAdminSum({ admin, owner, neighbor, base, date: friday, nextDate: dateAt(offset + 1), ownerDate: dateAt(offset + 5) });
   console.log('Simulation verified: SUM time controls, photo, filters, cancellation, calendar and blocked dates');
+}
+
+async function reviewAdminSum({ admin, owner, neighbor, base, date, nextDate, ownerDate }) {
+  const state = async () => (await (await owner.request.get(`${base}/api/state`)).json()).data;
+  const originalRules = (await state()).settings.rules;
+  await admin.goto(`${base}/admin/servicios?tab=sum`);
+  await expect(admin.getByLabel('Unidad que reserva')).toBeEnabled();
+  await expect(admin.getByLabel('Unidad que reserva')).toHaveValue('');
+  await admin.getByLabel('Unidad que reserva').selectOption('8A');
+  await admin.getByLabel('Fecha de reserva').fill(date);
+  await admin.getByLabel('Hora de inicio', { exact: true }).selectOption('22:00');
+  await admin.getByLabel('Hora de finalización', { exact: true }).selectOption('03:00');
+  await admin.getByRole('checkbox', { name: 'Confirmo la aceptación del reglamento por esta unidad.', exact: true }).check();
+  await admin.getByRole('button', { name: 'Continuar con la reserva', exact: true }).click();
+  await expect(admin.getByRole('dialog')).toContainText('Unidad 8A');
+  await admin.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
+  await expect(admin.getByRole('dialog')).toHaveCount(0);
+  const booking = (await state()).reservations.find(row => row.date === date);
+  assert.equal(booking.unit, '8A');
+  assert.equal(booking.endDate, nextDate);
+  await neighbor.goto(`${base}/demo/propietario/servicios/sum`);
+  await expect(neighbor.locator('.reservation-row').filter({ hasText: '22:00 a 03:00' }).getByRole('button')).toBeVisible();
+  await owner.reload();
+  await expect(owner.locator('.reservation-row').filter({ hasText: '22:00 a 03:00' }).getByRole('button')).toHaveCount(0);
+  for (const occupied of [date, nextDate]) {
+    await admin.getByLabel('Fecha a bloquear').fill(occupied);
+    await admin.getByRole('button', { name: 'Bloquear día', exact: true }).click();
+    await expect(admin.getByRole('alert')).toContainText('La fecha tiene reservas');
+    assert.ok(!(await state()).settings.blockedDates.includes(occupied));
+  }
+  await admin.locator('.reservation-row').filter({ hasText: '22:00 a 03:00' }).getByRole('button').click();
+  await admin.getByRole('dialog').getByRole('button', { name: 'Confirmar', exact: true }).click();
+  await expect(admin.getByRole('dialog')).toHaveCount(0);
+  assert.equal((await state()).reservations.find(row => row.id === booking.id).status, 'Cancelada');
+
+  await admin.getByRole('button', { name: 'Editar reglamento', exact: true }).click();
+  await admin.getByLabel('Reglamento', { exact: true }).fill('   ');
+  await expect(admin.getByRole('button', { name: 'Guardar reglamento', exact: true })).toBeDisabled();
+  await admin.getByRole('dialog').getByRole('button', { name: 'Volver', exact: true }).click();
+  assert.equal((await state()).settings.rules, originalRules);
+
+  await owner.reload();
+  await owner.getByLabel('Fecha de reserva').fill(ownerDate);
+  await owner.getByLabel('Hora de inicio', { exact: true }).selectOption('19:00');
+  await owner.getByLabel('Hora de finalización', { exact: true }).selectOption('21:00');
+  await owner.getByRole('checkbox').check();
+  const snapshot = { data: await state() };
+  // Keep this browser on the old snapshot to exercise a real server-side race.
+  await owner.route('**/api/state', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(snapshot) }));
+  await admin.getByRole('button', { name: 'Editar reglamento', exact: true }).click();
+  const revisedRules = 'Reglamento ficticio actualizado exclusivamente para el simulacro local.';
+  await admin.getByLabel('Reglamento', { exact: true }).fill(revisedRules);
+  await admin.route('**/api/settings', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'SIMULACRO: reglamento no guardado' }) }), { times: 1 });
+  await admin.getByRole('button', { name: 'Guardar reglamento', exact: true }).click();
+  await expect(admin.getByRole('dialog').getByRole('alert')).toContainText('reglamento no guardado');
+  await expect(admin.getByLabel('Reglamento', { exact: true })).toHaveValue(revisedRules);
+  assert.equal((await state()).settings.rules, originalRules);
+  await admin.getByRole('button', { name: 'Guardar reglamento', exact: true }).click();
+  await expect(admin.getByRole('dialog')).toHaveCount(0);
+  assert.equal((await state()).settings.rules, revisedRules);
+  await owner.getByRole('button', { name: 'Continuar con la reserva', exact: true }).click();
+  await owner.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
+  await expect(owner.getByRole('alert')).toContainText('reglamento vigente');
+  assert.equal((await state()).reservations.filter(row => row.date === ownerDate).length, 0);
+  await owner.unroute('**/api/state');
+  await owner.evaluate(() => globalThis.dispatchEvent(new Event('focus')));
+  await expect(owner.getByRole('region', { name: 'Reglamento del SUM', exact: true })).toHaveText(revisedRules);
+  await expect(owner.getByRole('checkbox')).not.toBeChecked();
+  await expect(owner.getByLabel('Hora de inicio', { exact: true })).toHaveValue('19:00');
+  await owner.getByRole('checkbox').check();
+  await owner.getByRole('button', { name: 'Continuar con la reserva', exact: true }).click();
+  await owner.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
+  await expect(owner.getByRole('dialog')).toHaveCount(0);
+  assert.equal((await state()).reservations.filter(row => row.date === ownerDate).length, 1);
+
+  await admin.getByRole('button', { name: 'Editar reglamento', exact: true }).click();
+  await admin.getByLabel('Reglamento', { exact: true }).fill('Edicion local desactualizada que no debe guardarse');
+  const settings = (await state()).settings;
+  const currentRules = 'Otro administrador guardo esta version ficticia local.';
+  const concurrent = await admin.request.patch(`${base}/api/settings`, { headers: { Origin: base }, data: { version: settings.version, rules: currentRules } });
+  assert.equal(concurrent.status(), 200);
+  await admin.getByRole('button', { name: 'Guardar reglamento', exact: true }).click();
+  await expect(admin.getByRole('dialog').getByRole('alert')).toContainText('Otra persona actualizó los ajustes');
+  assert.equal((await state()).settings.rules, currentRules);
+  await admin.getByRole('dialog').getByRole('button', { name: 'Volver', exact: true }).click();
+  await admin.reload();
+  await admin.getByRole('button', { name: 'Editar reglamento', exact: true }).click();
+  await expect(admin.getByLabel('Reglamento', { exact: true })).toHaveValue(currentRules);
+  await admin.getByLabel('Reglamento', { exact: true }).fill(originalRules);
+  await admin.getByRole('button', { name: 'Guardar reglamento', exact: true }).click();
+  await expect(admin.getByRole('dialog')).toHaveCount(0);
+  assert.equal((await state()).settings.rules, originalRules);
+  console.log('Simulation verified: admin manual SUM reservation, occupied days, rules retry and stale versions');
 }

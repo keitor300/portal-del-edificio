@@ -143,6 +143,7 @@ export function AdminSum() {
   const [date, setDate] = useState(today());
   const [error, setError] = useState('');
   const [editingRules, setEditingRules] = useState(false);
+  const [rulesError, setRulesError] = useState('');
   const [rulesVersion, setRulesVersion] = useState<number>();
   const [rules, setRules] = useState('');
 
@@ -159,8 +160,8 @@ export function AdminSum() {
   async function saveRules(event: FormEvent) {
     event.preventDefault();
     if (!rules.trim()) return;
-    try { await setSettings({ rules: rules.trim(), version:rulesVersion }); setEditingRules(false); notify(productionPortal ? 'Reglamento actualizado.' : 'Reglamento actualizado en la demo.');
-    } catch(cause) { setError((cause as Error).message); }
+    try { await setSettings({ rules: rules.trim(), version:rulesVersion }); setRulesError(''); setEditingRules(false); notify(productionPortal ? 'Reglamento actualizado.' : 'Reglamento actualizado en la demo.');
+    } catch(cause) { setRulesError((cause as Error).message); }
   }
 
   async function unblock(blocked: string) {
@@ -172,7 +173,7 @@ export function AdminSum() {
   }
 
   return <>
-    <section className="section"><div className="section-heading"><h2>Reserva manual</h2><button className="button secondary" onClick={() => { setRules(data.settings.rules); setRulesVersion(data.settings.version); setError(''); setEditingRules(true); }}><Save size={18} aria-hidden="true" />Editar reglamento</button></div><BookingForm admin /></section>
+    <section className="section"><div className="section-heading"><h2>Reserva manual</h2><button className="button secondary" onClick={() => { setRules(data.settings.rules); setRulesVersion(data.settings.version); setError(''); setRulesError(''); setEditingRules(true); }}><Save size={18} aria-hidden="true" />Editar reglamento</button></div><BookingForm admin /></section>
     <ReservationList admin />
     <section className="section"><div className="section-heading"><h2>Fechas bloqueadas</h2></div>
       <form onSubmit={block} className="services-filters"><Field label="Fecha a bloquear"><input type="date" required min={today()} value={date} onChange={event => { setDate(event.target.value); setError(''); }} /></Field><button className="button secondary" type="submit"><Plus size={18} aria-hidden="true" />Bloquear día</button></form>
@@ -180,6 +181,6 @@ export function AdminSum() {
       <div className="list">{[...data.settings.blockedDates].sort().map(blocked => <div className="list-row" key={blocked}><div className="row-main"><strong>{formatDate(blocked, { day: 'numeric', month: 'long', year: 'numeric' })}</strong><p className="muted">Todos los horarios bloqueados</p></div><button className="button secondary" aria-label={`Desbloquear ${formatDate(blocked)}`} onClick={() => void unblock(blocked)}><Unlock size={18} aria-hidden="true" />Desbloquear</button></div>)}</div>
       {!data.settings.blockedDates.length && <p className="empty">No hay fechas bloqueadas.</p>}
     </section>
-    {editingRules && <Modal title="Editar reglamento del SUM" wide onClose={() => setEditingRules(false)}><form onSubmit={saveRules}><Field label="Reglamento"><textarea aria-label="Reglamento" rows={10} maxLength={10000} required value={rules} onChange={event => setRules(event.target.value)} /></Field>{error && <p role="alert" className="error">{error}</p>}<div className="form-actions"><button type="button" className="button secondary" onClick={() => setEditingRules(false)}>Volver</button><button className="button" type="submit" disabled={!rules.trim()}><Save size={18} aria-hidden="true" />Guardar reglamento</button></div></form></Modal>}
+    {editingRules && <Modal title="Editar reglamento del SUM" wide onClose={() => setEditingRules(false)}><form onSubmit={saveRules}><Field label="Reglamento"><textarea aria-label="Reglamento" rows={10} maxLength={10000} required value={rules} onChange={event => setRules(event.target.value)} /></Field>{rulesError && <p role="alert" className="error">{rulesError}</p>}<div className="form-actions"><button type="button" className="button secondary" onClick={() => setEditingRules(false)}>Volver</button><button className="button" type="submit" disabled={!rules.trim()}><Save size={18} aria-hidden="true" />Guardar reglamento</button></div></form></Modal>}
   </>;
 }
