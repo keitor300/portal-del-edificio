@@ -48,6 +48,8 @@ export function OwnerLoginPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [remember, setRemember] = useState(true);
+  useEffect(()=>{if(productionPortal && signedOwner() && !resetToken && mode==='login')navigate(next,{replace:true});},[navigate,next,resetToken,mode]);
   function switchMode(value: typeof mode) { setMode(value); setError(''); setMessage(''); setPassword(''); setConfirmation(''); }
   function enterDemo() { startDemoOwnerSession(); navigate(next, {replace:true}); }
   async function submit(event: FormEvent) {
@@ -60,7 +62,7 @@ export function OwnerLoginPage() {
           const response = await api<{ message: string }>('/api/auth/register', 'POST', { name, email, unit, password });
           setMessage(response.message); setMode('login'); setPassword(''); setConfirmation('');
         } else if (mode === 'login') {
-          await serverLogin(unit, password); navigate(next, { replace: true });
+          await serverLogin(unit, password, remember); navigate(next, { replace: true });
         } else {
           const response=await api<{message:string}>('/api/auth/recovery/request','POST',{unit,email});
           setMessage(response.message);setMode('login');
@@ -101,11 +103,13 @@ export function OwnerLoginPage() {
     <div className="admin-login-heading"><ShieldCheck size={28}/><div><h1>{mode === 'register' ? 'Solicitá tu acceso' : mode === 'recover' ? 'Recuperar contraseña' : 'Ingresá a tu cuenta'}</h1><p>{mode === 'register' ? 'Completá tus datos para que Administración verifique la solicitud.' : mode === 'recover' ? productionPortal ? 'Indicá tu unidad y el email registrado. Administración verificará tu identidad para ayudarte a recuperar el acceso.' : 'Elegí tu unidad y usá la clave de recuperación.' : 'Elegí tu unidad y escribí tu contraseña.'}</p></div></div>
     {!productionPortal && mode === 'login' && <section className="access-demo-entry" aria-labelledby="demo-entry-title"><span className="access-demo-entry-icon"><DoorOpen size={25}/></span><div><strong id="demo-entry-title">Entrar a la demostración</strong><p>Accedé ahora como propietario de la Unidad 7B.</p></div><button type="button" className="button" onClick={enterDemo}>Entrar como Unidad 7B</button></section>}
     {!productionPortal && mode === 'login' && <div className="access-login-divider"><span>o ingresá con tu cuenta</span></div>}
+    {productionPortal && mode === 'login' && <p><a className="button secondary" href="/prueba/login">Entrar como Unidad 7B</a><small className="muted"> Prueba separada: no crea reservas reales.</small></p>}
     {mode === 'login' && <section className="access-first-time" aria-labelledby="first-time-title"><span className="access-first-time-icon"><UserPlus size={25}/></span><div><strong id="first-time-title">¿Primera vez en el portal?</strong><p>Antes de ingresar, tenés que solicitar el acceso de tu unidad.</p></div><button type="button" className="button secondary" onClick={() => switchMode('register')}>Solicitar acceso</button></section>}
     {mode === 'register' && <ol className="access-register-steps"><li><span>1</span><strong>Completás tus datos</strong></li><li><span>2</span><strong>Administración los revisa</strong></li><li><span>3</span><strong>Ingresás con tu unidad</strong></li></ol>}
     {message && <div className="access-feedback" role="status"><Clock3 size={22}/><p>{message}</p></div>}
     {issuedRecovery && <div className="access-recovery"><strong>Tu clave de recuperación</strong><code>{issuedRecovery}</code><p>Guardala para recuperar tu contraseña en esta demostración.</p></div>}
     <form className="admin-login-form" onSubmit={submit}>
+      {productionPortal && mode==='login' && <label className="checkbox"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)}/>Mantener sesión en este dispositivo</label>}
       {mode === 'register' && <Field label="Nombre y apellido"><input required autoComplete="name" maxLength={80} value={name} onChange={event => setName(event.target.value)}/></Field>}
       <Field label="Unidad"><select aria-label="Unidad" autoComplete="username" required value={unit} onChange={event => setUnit(event.target.value)}><option value="">Elegí tu unidad</option>{BUILDING_UNITS.map(value => <option key={value} value={value}>Unidad {value}</option>)}</select></Field>
       {mode === 'register' && <Field label="Email"><input required type="email" autoComplete="email" maxLength={120} value={email} onChange={event => setEmail(event.target.value)}/></Field>}

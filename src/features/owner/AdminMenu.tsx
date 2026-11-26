@@ -46,6 +46,7 @@ const groups: AdminMenuGroup[] = [
     Icon: MessageCircle,
     tone: 'green',
     items: [
+      { label: 'Administradores', description: 'Invitá al equipo por correo y gestioná sus accesos.', path: '/administradores', Icon: Users, tone: 'blue' },
       { label: 'Accesos de propietarios', description: 'Aprobá el ingreso de cada unidad.', path: '/accesos', Icon: Users, tone: 'green' },
       { label: 'Panel de atención', description: 'Mirá juntos reservas, reclamos y consultas.', path: '/servicios', Icon: Wrench, tone: 'green' },
       { label: 'Reservas del SUM', description: 'Revisá y coordiná el uso del salón.', path: '/servicios?tab=sum', Icon: CalendarDays, tone: 'amber' },

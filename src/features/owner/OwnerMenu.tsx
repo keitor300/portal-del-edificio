@@ -17,6 +17,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { productionPortal } from '../../lib/api';
 import { PageHeader } from '../../components/UI';
 
 type MenuTone = 'green' | 'blue' | 'amber' | 'sand';
@@ -113,7 +114,7 @@ export function OwnerMenuPage() {
         </div>
       </section>
 
-      <p className="owner-menu-demo-note"><ArrowUpRight size={17} />Esta es una demostración. Las acciones se guardan solo en este navegador.</p>
+      {!productionPortal && <p className="owner-menu-demo-note"><ArrowUpRight size={17} />Esta es una demostración. Las acciones se guardan solo en este navegador.</p>}
     </>
   );
 }

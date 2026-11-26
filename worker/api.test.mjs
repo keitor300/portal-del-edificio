@@ -15,6 +15,7 @@ function fixture() {
   sqlite.exec(readFileSync(new URL('../migrations/0006_recovery.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../migrations/0007_remove_dni.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../migrations/0008_firebase_auth.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0009_admins_notifications.sql', import.meta.url), 'utf8'));
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
     first: async () => sqlite.prepare(sql).get(...args) ?? null,
@@ -35,6 +36,37 @@ function fixture() {
 }
 const password = 'Test-only-passphrase-2026';
 const registration = unit => ({ unit, name: `Resident ${unit}`, email: `${unit.toLowerCase()}@example.invalid`, password });
+
+test('administrator alias, persistent sessions and per-account notification privacy', async () => {
+  const {sqlite,request}=fixture();
+  try {
+    sqlite.prepare("INSERT INTO users(id,name,email,username,role,status,password_hash) VALUES ('admin','Admin','admin@example.invalid','13y34.2026','admin','approved',?)").run(await hashPassword(password));
+    for(const unit of ['7B','8A'])await request('/api/auth/register','POST',registration(unit));
+    sqlite.exec("UPDATE users SET status='approved' WHERE role='owner'");
+    const adminLogin=await request('/api/auth/login','POST',{identity:'13y34.2026',password});
+    assert.equal(adminLogin.status,200);const admin=adminLogin.headers.get('set-cookie');
+    assert.match(admin,/Max-Age=604800/);
+    const ownerLogin=await request('/api/auth/login','POST',{identity:'7B',password});
+    const owner=ownerLogin.headers.get('set-cookie');assert.match(owner,/Max-Age=2592000/);
+    const neighbor=(await request('/api/auth/login','POST',{identity:'8A',password,remember:false})).headers.get('set-cookie');
+    assert.doesNotMatch(neighbor,/Max-Age=/);
+    assert.equal((await request('/api/notifications')).status,401);
+    assert.equal((await request('/api/admin/administrators','GET',null,owner)).status,403);
+    assert.equal((await request('/api/admin/administrators/admin','PATCH',{status:'suspended',password},admin)).status,400);
+    const notice=await(await request('/api/entities/notices','POST',{title:'Aviso real',description:'Mensaje publicado',date:'2026-11-26',category:'Información'},admin)).json();
+    await request('/api/messages','POST',{unit:'7B',text:'Mensaje privado para 7B'},admin);
+    const inbox=async cookie=>(await(await request('/api/notifications','GET',null,cookie)).json()).items;
+    let items=await inbox(owner);assert.equal(items.length,2);assert.ok(items.every(item=>!item.read));
+    assert.equal((await inbox(neighbor)).length,1,'Other units cannot see private messages');
+    await request('/api/notifications/read','POST',{ids:items.map(item=>item.id)},owner);
+    assert.ok((await inbox(owner)).every(item=>item.read));assert.equal((await inbox(neighbor))[0].read,false);
+    await request(`/api/entities/notices/${notice.id}`,'PATCH',{version:1,title:'Aviso corregido'},admin);
+    items=await inbox(owner);assert.equal(items.find(item=>item.title==='Aviso corregido').read,false,'Updates become unread again');
+    await request('/api/auth/logout','POST',{},owner);
+    assert.equal((await request('/api/notifications','GET',null,owner)).status,401);
+    assert.throws(()=>sqlite.exec("UPDATE users SET status='suspended' WHERE id='admin'"),/LAST_ADMIN/);
+  }finally{sqlite.close();}
+});
 
 test('privacy migration clears national identity numbers from existing accounts', () => {
   const sqlite = new DatabaseSync(':memory:');

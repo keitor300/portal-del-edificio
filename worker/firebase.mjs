@@ -106,6 +106,19 @@ export async function firebaseRegister(env, email, password) {
   return result.localId;
 }
 
+export async function firebaseInviteIdentity(env, email) {
+  // A random, undisclosed password forces the invited person to use their email.
+  const password = Array.from(crypto.getRandomValues(new Uint8Array(32)), n => n.toString(16).padStart(2, '0')).join('');
+  const result = await client(env, 'signUp', { email, password, returnSecureToken: true });
+  if (!result.localId || result.email?.toLowerCase() !== email) throw unavailable();
+  return firebaseAccount(env, result.localId);
+}
+
+export async function firebaseSendPasswordEmail(env, email) {
+  const { base, key } = config(env);
+  await post(`${base}/accounts:sendOobCode?key=${encodeURIComponent(key)}`, { requestType: 'PASSWORD_RESET', email, ...(env.PORTAL_ORIGIN ? { continueUrl: `${env.PORTAL_ORIGIN}/admin` } : {}) }, { 'X-Firebase-Locale': 'es' });
+}
+
 export async function firebaseAuthenticate(env, user, password) {
   if (typeof password !== 'string' || !password || password.length > 128) throw new HttpError(401, credentialsMessage);
   // Make a provider call even for unknown portal identities; never return a

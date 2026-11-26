@@ -98,21 +98,31 @@ export async function authRoute(request, env, path) {
     const identity = text(data.identity, 120).toLowerCase();
     await rateLimit(env, `login-id:${await digest(identity)}`, 10);
     const user = await env.DB.prepare(`SELECT * FROM users WHERE status<>'rejected' AND
-      ((role='owner' AND lower(unit)=?) OR (role='admin' AND email=?))`).bind(identity, identity).first();
+      ((role='owner' AND lower(unit)=?) OR (role='admin' AND (email=? OR username=?)))`).bind(identity, identity, identity).first();
     // Run the same expensive hash for unknown identities to avoid a fast account-existence signal.
     const dummyHash = 'scrypt-v1:00000000000000000000000000000000:0000000000000000000000000000000000000000000000000000000000000000';
     const firebase = authProvider(env) === 'firebase';
     const firebaseVersion = firebase ? await firebaseAuthenticate(env, user, data.password) : null;
     const valid = firebase || await verifyPassword(data.password, user?.password_hash ?? dummyHash);
     if (!user || !valid) throw new HttpError(401, 'La unidad, email o contraseña no son correctos.');
+    if (firebase && user.role === 'admin' && user.status === 'pending') {
+      const invitation = await env.DB.prepare('SELECT * FROM admin_invitations WHERE user_id=? AND accepted_at IS NULL AND expires_at>?').bind(user.id, Date.now()).first();
+      if (invitation && invitation.initial_version !== firebaseVersion) {
+        await env.DB.batch([
+          env.DB.prepare("UPDATE users SET status='approved' WHERE id=? AND status='pending' AND EXISTS (SELECT 1 FROM admin_invitations WHERE user_id=? AND accepted_at IS NULL AND expires_at>?)").bind(user.id, user.id, Date.now()),
+          env.DB.prepare("UPDATE admin_invitations SET accepted_at=? WHERE user_id=? AND EXISTS (SELECT 1 FROM users WHERE id=? AND status='approved')").bind(Date.now(), user.id, user.id),
+        ]);
+        Object.assign(user, await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(user.id).first());
+      }
+    }
     if (user.status !== 'approved') throw new HttpError(403, user.status === 'pending' ? 'Tu solicitud está pendiente de aprobación.' : 'Tu acceso está suspendido. Consultá con Administración.');
     const token = randomToken();
-    const maxAge = user.role === 'admin' ? 43200 : 604800;
+    const maxAge = data.remember === false ? 43200 : user.role === 'admin' ? 604800 : 2592000;
     const session = await env.DB.prepare(`INSERT INTO sessions(token_hash,user_id,expires_at,created_at,auth_version,firebase_version)
       SELECT ?,id,?,?,auth_version,? FROM users WHERE id=? AND status='approved' AND auth_version=? AND password_hash=?`)
       .bind(await digest(token), Date.now() + maxAge * 1000, Date.now(), firebaseVersion, user.id, user.auth_version, user.password_hash).run();
     if (session.meta.changes !== 1) throw new HttpError(409, 'El acceso cambió durante el ingreso. Volvé a ingresar.');
-    return json({ user: publicUser(user) }, 200, { 'Set-Cookie': `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}` });
+    return json({ user: publicUser(user) }, 200, { 'Set-Cookie': `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax${data.remember === false ? '' : `; Max-Age=${maxAge}`}` });
   }
   if (path === '/api/admin/access' && request.method === 'GET') {
     await requireUser(request, env, 'admin');

@@ -2,6 +2,8 @@
 
 ## State
 
+Update 2026-11-26: Cloudflare is now deployed; migrations 0007-0009 are applied and the first administrator exists. See the release checkpoint in PRODUCTION_MIGRATION.md for live verification evidence. The checklist below is historical setup context, not an assertion that deployment is still pending. Administrators now sign in by username or email; invites use Firebase password-setup email and return to /admin. Owner login remains unit/password.
+
 Firebase project: `portal-del-edificio-13-y-34`, Spark plan. Only email/password authentication is enabled. Cloudflare remains Free. The existing Vercel demo is not changed by this integration.
 
 Firebase and portal both require passwords of 12-128 characters. The Firebase policy is in enforce mode, not notify mode. No paid identity features were enabled.

@@ -17,3 +17,8 @@ for (const [entry, ...args] of [
   if (result.status !== 0) process.exit(result.status || 1);
 }
 console.log('Production assets built with server authentication and shared data.');
+const practice = spawnSync(process.execPath, [resolve(root, 'node_modules/vite/bin/vite.js'), 'build', '--base=/prueba/', '--outDir=dist/prueba'], {
+  cwd: root, env: { ...process.env, VITE_PORTAL_MODE: 'practice' }, stdio: 'inherit', windowsHide: true,
+});
+if (practice.error) throw practice.error;
+if (practice.status !== 0) process.exit(practice.status || 1);

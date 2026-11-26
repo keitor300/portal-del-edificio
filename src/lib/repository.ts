@@ -1,7 +1,7 @@
 import type { DemoData, Entity, Message, Settings } from './types';
 import { makeSeed } from '../data/seed';
 
-export const DEMO_STORAGE_KEY = 'portal-edificio-demo-v1';
+export const DEMO_STORAGE_KEY = import.meta.env?.VITE_PORTAL_MODE === 'practice' ? 'portal-edificio-practice-clean-v1' : 'portal-edificio-demo-v1';
 export interface DemoRepository { load():DemoData|null; save(data:DemoData):void }
 
 const COLLECTIONS = ['notices', 'movements', 'expenses', 'budgets', 'documents', 'meetings', 'topics', 'polls', 'reservations', 'issues', 'works', 'listings', 'lost', 'contacts', 'faqs', 'statuses'] as const;

@@ -1,6 +1,32 @@
 # Cloudflare production migration
 
-Status: in progress. The public Vercel portal is still the browser-local demo. Do not tell residents to use it as the shared production system yet.
+Status: Cloudflare release deployed and verified. The old Vercel URL still serves the previous demo until the owner approves its redirect. Use the Cloudflare URL for shared-data testing.
+
+## Release checkpoint: 2026-11-26
+
+This checkpoint supersedes all older setup/deployment statements below.
+
+- Live URL: https://portal-del-edificio.meme-scanner-nicolas.workers.dev/ . Admin entry: /admin. Version: 73cb0d01-0ca0-4357-b8a5-65b531ce6222.
+- Cloudflare Free and Firebase Spark remain unchanged. No billing upgrade. Production requests use Firebase authentication, D1 persistence and private R2 files.
+- First real administrator created with the owner's authorized username/email and password. Do not record the password in docs, Git, reports or screenshots. Credentials were used from ignored temporary local input.
+- Migrations 0007, 0008 and 0009 applied after a verified D1/R2 backup. Original SUM rules copied byte-for-byte from SUM_RULES into the previously empty database; no contacts or sample content imported.
+- Final remote counts: 1 administrator, 0 owner accounts, 0 entities, 0 reservations, 0 messages, 0 contacts. Opening balance 0. Test identities deleted from Firebase and D1. Audit traces of verification retained.
+- Administradores supports email invitation, resend, activation after setting a password, and suspension/reactivation. Reauthentication required; cannot suspend self or the last active admin. Firebase sends the password-setup email; verified Cloudflare domain is authorized for returning to /admin. Delivery to the actual building administrator's inbox remains to be checked when invited.
+- Persistent HttpOnly/Secure sessions: owners 30 days, admins 7 days, or nonpersistent browser session with 12-hour server expiry when remember is unchecked. QR entry reuses a session in the SAME browser. Different browser/webview cookie stores cannot share it.
+- In-portal notifications include published/updated content, private replies, own reservations and pending owner requests for admins. Read state persists per account, updated versions become unread, polling every 30 seconds while visible and on focus. No device push notifications.
+- Main UI has no demo copy/sample data. Entrar como Unidad 7B opens /prueba/login: isolated local storage and empty practice data, explicit warning, no real API authentication. The initial static-assets redirect loop was fixed by serving the directory index path.
+- Verification: lint, production/practice TypeScript + Vite builds, 25 unit tests, 13 API tests, 6 booking tests, 3 Firebase emulator tests, full local multi-context Worker/browser scenario.
+- Live D1 simultaneous booking tests passed exact, partial, enclosing and overnight overlap rejection, adjacent slots, cancellation release and unit privacy. Initial test supplied an invalid 00:00 start; corrected the test to a valid 23:30 start without changing reservation rules.
+- Live browser QA passed all 22 owner routes (390px), 9 admin routes (390px/1440px), login, saved-cookie QR re-entry, notification read navigation and isolated 7B entry. No page errors/overflow/demo copy on real internal routes. Screenshots: studio/.qa/cloudflare-release (ignored). Browser plugin not available; used the repository Playwright/Edge workflow. Not a physical iPhone test.
+- Old /demo/administracion routes redirect to protected /admin routes in the real build. Existing owner routes are preserved for compatibility.
+- Remaining operational steps: invite actual building administrator, verify email receipt, onboard/approve residents, load verified content and finances, validate with physical phones, decide permanent domain/old Vercel redirect before printing new QR codes.
+
+### Verification tools
+
+- `scripts/bootstrap-admin.mjs --confirm-remote`: one-time bootstrap, refuses if an admin already exists. Requires ignored local Firebase configuration/credential and explicit bootstrap-admin.json input; never commit those files.
+- `scripts/authorize-firebase-domain.mjs DOMAIN`: preserves other Firebase settings and adds only the verified portal domain.
+- `scripts/verify-release.mjs URL --confirm-test-data`: creates exact temporary identities, tests live concurrency/privacy/UI, removes only its own data in finally. `--ui-only` uses one temporary owner and skips concurrency already verified. Respects signup/login rate limits; wait for the window before rerunning repeatedly.
+- Test scripts intentionally do not claim receipt of a real invitation email or physical device QA. Never reuse temporary test passwords for real accounts.
 
 ## Current checkpoint: Firebase configured (2026-11-26)
 

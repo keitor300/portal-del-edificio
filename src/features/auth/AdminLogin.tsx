@@ -34,6 +34,7 @@ function AdminLoginPage({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,7 +42,7 @@ function AdminLoginPage({ onAuthenticated }: { onAuthenticated: () => void }) {
     if (productionPortal) {
       setBusy(true); setError('');
       try {
-        const user = await serverLogin(username.trim(), password);
+        const user = await serverLogin(username.trim(), password, remember);
         if (user.role !== 'admin') throw new Error('Esta cuenta no tiene permisos de Administración.');
         onAuthenticated();
       } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo ingresar.'); }
@@ -62,8 +63,9 @@ function AdminLoginPage({ onAuthenticated }: { onAuthenticated: () => void }) {
       <div className="admin-login-brand"><span className="brand-mark"><Building2 size={25} /></span><span><strong>Edificio 13 y 34</strong><small>Panel de administración</small></span></div>
       <div className="admin-login-heading"><LockKeyhole size={23} /><div><h1 id="admin-login-title">Ingresar a administración</h1><p>Accedé al panel de gestión del edificio.</p></div></div>
       <form className="admin-login-form" onSubmit={submit}>
-        <label className="field"><span>{productionPortal ? 'Email' : 'Usuario'}</span><input aria-label={productionPortal ? 'Email' : 'Usuario'} type={productionPortal ? 'email' : 'text'} autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} required /></label>
+        <label className="field"><span>{productionPortal ? 'Usuario o email' : 'Usuario'}</span><input aria-label={productionPortal ? 'Usuario o email' : 'Usuario'} type="text" autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} required /></label>
         <label className="field"><span>Contraseña</span><input aria-label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required /></label>
+        {productionPortal && <label className="checkbox"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)}/>Mantener sesión en este dispositivo</label>}
         {error && <p className="admin-login-error" role="alert">{error}</p>}
         <button className="button" type="submit" disabled={busy}><LogIn size={18} />{busy ? 'Ingresando…' : 'Ingresar'}</button>
       </form>

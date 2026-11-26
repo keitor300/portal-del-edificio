@@ -44,6 +44,34 @@ test('test-only authentication cannot be enabled on a public hostname', () => {
   assert.throws(() => assertAuthEnvironment(new Request('https://localhost/api/auth/login'), { AUTH_PROVIDER: 'local' }), /verificar/);
 });
 
+test('administrator invitation requires email password setup and supports suspension', {timeout:60000}, async()=>{
+  const {sqlite,env,request,login}=fixture();
+  const suffix=crypto.randomUUID().slice(0,8);
+  try{
+    const email=`inviter-${suffix}@example.invalid`, invited=`invited-${suffix}@example.invalid`;
+    const uid=await firebaseRegister(env,email,password);
+    sqlite.prepare("INSERT INTO users(id,name,email,username,role,status,password_hash,firebase_uid) VALUES ('inviter','Admin',?,'13y34.2026','admin','approved','firebase',?)").run(email,uid);
+    const cookie=(await login('13y34.2026')).headers.get('set-cookie');
+    const path='/api/admin/administrators';
+    assert.equal((await request(path,'POST',{name:'Invitado',email:invited,password:'wrong'},cookie)).status,403);
+    const response=await request(path,'POST',{name:'Invitado',email:invited,password},cookie);
+    assert.equal(response.status,201,await response.clone().text());
+    assert.equal((await response.json()).emailSent,true);
+    const target=sqlite.prepare('SELECT * FROM users WHERE email=?').get(invited);
+    assert.equal(target.status,'pending');
+    const codes=await(await fetch(`http://${host}/emulator/v1/projects/${project}/oobCodes`)).json();
+    const code=codes.oobCodes.filter(item=>item.email===invited).at(-1).oobCode;
+    const reset=await fetch(`${base}/accounts:resetPassword?key=local-test-key`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({oobCode:code,newPassword:nextPassword})});
+    assert.equal(reset.status,200);
+    const accepted=await login(invited,nextPassword);assert.equal(accepted.status,200,await accepted.clone().text());
+    assert.equal(sqlite.prepare('SELECT status FROM users WHERE id=?').get(target.id).status,'approved');
+    const secondCookie=accepted.headers.get('set-cookie');
+    assert.equal((await request(`${path}/${target.id}`,'PATCH',{status:'suspended',password},cookie)).status,200);
+    assert.equal((await request(path,'GET',null,secondCookie)).status,401);
+    assert.equal((await request(`${path}/${target.id}/resend`,'POST',{password},cookie)).status,409);
+  }finally{sqlite.close();}
+});
+
 test('Firebase emulator: approval, UID binding, session revocation and one-use recovery', { timeout: 60000 }, async () => {
   // Only the named demo project in the local emulator is cleared.
   const cleared = await fetch(`http://${host}/emulator/v1/projects/${project}/accounts`, { method: 'DELETE' });

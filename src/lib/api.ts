@@ -44,8 +44,8 @@ export async function refreshSession() {
   if (JSON.stringify(user) !== JSON.stringify(sessionUser)) setServerUser(user);
   return user;
 }
-export async function serverLogin(identity: string, password: string) {
-  const { user } = await api<{ user: ServerUser }>('/api/auth/login', 'POST', { identity, password });
+export async function serverLogin(identity: string, password: string, remember = true) {
+  const { user } = await api<{ user: ServerUser }>('/api/auth/login', 'POST', { identity, password, remember });
   setServerUser(user);
   return user;
 }

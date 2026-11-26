@@ -8,6 +8,8 @@ import { participationRoute } from './participation.mjs';
 import { importRoute } from './imports.mjs';
 import { recoveryRoute } from './recovery.mjs';
 import { assertAuthEnvironment } from './firebase.mjs';
+import { administratorsRoute } from './admins.mjs';
+import { notificationsRoute } from './notifications.mjs';
 
 async function reservations(request, env, path) {
   if (!path.startsWith('/api/reservations')) return null;
@@ -53,6 +55,10 @@ async function reservations(request, env, path) {
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
+    if ((path === '/prueba' || path.startsWith('/prueba/')) && !path.split('/').at(-1).includes('.')) {
+      const url = new URL(request.url); url.pathname = '/prueba/';
+      return env.ASSETS.fetch(new Request(url, request));
+    }
     if (!path.startsWith('/api/')) return env.ASSETS.fetch(request);
     try {
       assertAuthEnvironment(request, env);
@@ -63,9 +69,14 @@ export default {
       }
       const recovery = await recoveryRoute(request,env,path);
       if(recovery)return recovery;
+      const administrators = await administratorsRoute(request, env, path);
+      if (administrators) return administrators;
+      const notifications = await notificationsRoute(request, env, path);
+      if (notifications) return notifications;
       return await authRoute(request, env, path) || await reservations(request, env, path) || await dataRoute(request, env, path) || await fileRoute(request, env, path) || await entityRoute(request, env, path) || await participationRoute(request, env, path) || await importRoute(request, env, path) || json({ error: 'No se encontró la operación.' }, 404);
     } catch (error) {
       if (error instanceof HttpError) return json({ error: error.message }, error.status);
+      if (/LAST_ADMIN/.test(String(error))) return json({ error: 'Debe quedar al menos un administrador activo.' }, 409);
       if (/SETTINGS_CONFLICT/.test(String(error))) return json({error:'Otra persona actualizó los ajustes. Recargá la página antes de guardar.'},409);
       if (/RESERVATION_RULES_CHANGED/.test(String(error))) return json({error:'El reglamento cambió. Leé y aceptá la versión vigente antes de reservar.'},409);
       if (/IMPORT_REQUEST_CHANGED/.test(String(error))) return json({error:'La solicitud ya fue usada para otro archivo.'},409);

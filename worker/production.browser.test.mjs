@@ -112,7 +112,7 @@ test('resident registers from QR entry, administrator approves from another brow
 
   const admin = await pageFor();
   await admin.goto(`${base}/admin`);
-  await admin.getByLabel('Email',{exact:true}).fill('admin@example.invalid');
+  await admin.getByLabel('Usuario o email',{exact:true}).fill('admin@example.invalid');
   await admin.getByLabel('Contraseña',{exact:true}).fill(password);
   await admin.getByRole('button',{name:'Ingresar',exact:true}).click();
   await expect(admin.getByRole('heading',{name:'Ingresar a administración'})).toHaveCount(0);

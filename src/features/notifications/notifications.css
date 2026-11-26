@@ -1,0 +1,15 @@
+.notification-bell{position:relative}
+.administrators-page .admin-login-form{max-width:680px}
+.administrators-page h2{display:flex;align-items:center;gap:10px}
+.administrators-page .access-request p{overflow-wrap:anywhere}
+.practice-banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 18px;padding:14px 20px;background:#fff0d1;color:#604313;border-bottom:1px solid #d1b576;font-size:15px}.practice-banner a{font-weight:700;text-decoration:underline;padding:10px}
+.notification-count{position:absolute;right:-5px;top:-5px;min-width:22px;min-height:22px;padding:2px 5px;background:#a72f2a;color:white;border:2px solid white;border-radius:50%;font-size:12px;font-weight:700;text-align:center}
+.notification-list{display:grid;gap:12px;margin-top:24px}
+.notification-row{width:100%;display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:14px;align-items:center;text-align:left;padding:20px;background:#f0f7f3;border:1px solid #b7d4c3;border-radius:8px;color:#174535;min-height:80px;cursor:pointer}
+.notification-row.is-read{background:#fff;border-color:#d5ded8;color:#44544c}
+.notification-row.is-important{border-left:4px solid #b34739}
+.notification-row>span:nth-child(2){display:grid;gap:5px;overflow-wrap:anywhere}
+.notification-row strong{font-size:18px}.notification-row small{font-size:14px}
+.notification-symbol{display:grid;place-items:center;width:44px;height:44px;background:#e1eee5;border-radius:8px}
+.notification-row:focus-visible{outline:3px solid #215e4b;outline-offset:3px}
+@media(max-width:480px){.notification-row{padding:14px;gap:10px;grid-template-columns:36px minmax(0,1fr) 18px}.notification-symbol{width:36px;height:40px}}
