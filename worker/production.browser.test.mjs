@@ -485,6 +485,78 @@ test('resident registers from QR entry, administrator approves from another brow
   assert.deepEqual(errors,[]);
 });
 
+test('remembered owner and administrator sessions survive a browser restart and logout revokes them', { timeout: 90000 }, async () => {
+  const setup = await pageFor();
+  const headers = { Origin: base };
+  assert.equal((await setup.request.post(`${base}/api/auth/login`, { headers, data: { identity: 'admin@example.invalid', password } })).status(), 200);
+  assert.equal((await setup.request.post(`${base}/api/auth/register`, { headers, data: { name: 'Sesion temporal', unit: '4D', email: 'session-ui@example.invalid', password } })).status(), 201);
+  const { users } = await (await setup.request.get(`${base}/api/admin/access`)).json();
+  const account = users.find(user => user.email === 'session-ui@example.invalid');
+  assert.ok(account);
+  assert.equal((await setup.request.patch(`${base}/api/admin/access/${account.id}`, { headers, data: { status: 'approved' } })).status(), 200);
+  await setup.request.post(`${base}/api/auth/logout`, { headers, data: {} });
+  await setup.context().close();
+
+  for (const role of ['owner', 'admin']) {
+    const destination = role === 'owner' ? '/demo/propietario/servicios/sum' : '/admin/finanzas';
+    const entry = role === 'owner' ? `/login?next=${encodeURIComponent(destination)}` : destination;
+    const profile = join(temp, `remember-${role}`);
+    let context;
+    const open = async () => {
+      context = await chromium.launchPersistentContext(profile, { channel: 'msedge', headless: true, ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale: 'es-AR' });
+      const page = await context.newPage();
+      page.setDefaultTimeout(15000);
+      page.on('pageerror', error => errors.push(error.message));
+      await page.goto(base + entry);
+      return page;
+    };
+    const enter = async (page, remember) => {
+      await page.getByLabel('Mantener sesión en este dispositivo', { exact: true }).setChecked(remember);
+      if (role === 'owner') await page.getByLabel('Unidad', { exact: true }).selectOption('4D');
+      else await page.getByLabel('Usuario o email', { exact: true }).fill('admin@example.invalid');
+      await page.getByLabel('Contraseña', { exact: true }).fill(password);
+      await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
+      await expect.poll(async () => (await (await page.request.get(`${base}/api/auth/session`)).json()).user?.role).toBe(role);
+      await expect(page).toHaveURL(base + destination);
+      await expect(page.getByRole('heading', { name: role === 'owner' ? 'Reservar el SUM' : 'Cuentas del consorcio', exact: true })).toBeVisible();
+    };
+    const logout = async page => {
+      if (role === 'admin') await page.getByRole('button', { name: 'Menú', exact: true }).click();
+      await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Ingresar', exact: true })).toBeVisible();
+      assert.equal((await context.cookies()).some(cookie => cookie.name === '__Host-portal_session'), false);
+    };
+    try {
+      let page = await open();
+      await expect(page.getByLabel('Mantener sesión en este dispositivo', { exact: true })).toBeChecked();
+      await enter(page, true);
+      const cookie = (await context.cookies()).find(cookie => cookie.name === '__Host-portal_session');
+      assert.ok(cookie?.httpOnly && cookie.secure);
+      assert.equal(cookie.sameSite, 'Lax');
+      const remaining = cookie.expires - Date.now() / 1000;
+      const lifetime = role === 'owner' ? 2592000 : 604800;
+      assert.ok(remaining > lifetime - 120 && remaining <= lifetime);
+      assert.equal(await page.evaluate(() => document.cookie.includes('__Host-portal_session')), false);
+      await context.close();
+      page = await open();
+      await expect(page).toHaveURL(base + destination);
+      await expect(page.getByRole('heading', { name: role === 'owner' ? 'Reservar el SUM' : 'Cuentas del consorcio', exact: true })).toBeVisible();
+      assert.equal((await (await page.request.get(`${base}/api/auth/session`)).json()).user?.role, role);
+      await logout(page);
+      assert.equal((await page.request.get(`${base}/api/reservations`, { headers: { Cookie: `${cookie.name}=${cookie.value}` } })).status(), 401, 'Logout invalidates the old session on the server');
+      await context.close();
+      page = await open();
+      await expect(page.getByRole('button', { name: 'Ingresar', exact: true })).toBeVisible();
+      await enter(page, false);
+      assert.equal((await context.cookies()).find(cookie => cookie.name === '__Host-portal_session')?.expires, -1, 'Unchecked remember option must create a session-only cookie');
+      await logout(page);
+    } finally {
+      await context?.close();
+    }
+  }
+  assert.deepEqual(errors, []);
+});
+
 test('SUM rules errors disappear after a successful retry or closing the editor', async () => {
   const admin = await pageFor();
   await admin.goto(`${base}/admin`);
