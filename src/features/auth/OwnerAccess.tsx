@@ -117,9 +117,11 @@ export function OwnerLoginPage() {
       {!(productionPortal && mode === 'recover') && <Field label={mode === 'recover' ? 'Nueva contraseña' : 'Contraseña'} hint={mode !== 'login' ? `Al menos ${productionPortal ? 12 : 8} caracteres.` : undefined}><input aria-label={mode === 'recover' ? 'Nueva contraseña' : 'Contraseña'} required type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={mode === 'login' ? 1 : productionPortal ? 12 : 8} maxLength={productionPortal ? 128 : undefined} value={password} onChange={event => setPassword(event.target.value)}/></Field>}
       {mode !== 'login' && !(productionPortal && mode === 'recover') && <Field label="Repetir contraseña"><input required type="password" autoComplete="new-password" value={confirmation} onChange={event => setConfirmation(event.target.value)}/></Field>}
       {error && <p className="admin-login-error" role="alert">{error}</p>}
+      {mode === 'register' && <p className="privacy-note">Usamos tu nombre, unidad y correo para verificar el acceso y gestionar el portal. <Link to="/privacidad" target="_blank" rel="noopener noreferrer">Cómo cuidamos tus datos (abre otra pestaña)</Link>.</p>}
       <button className="button" disabled={busy}><LogIn size={20}/>{busy ? 'Procesando…' : mode === 'register' ? 'Enviar solicitud' : mode === 'recover' ? productionPortal ? 'Solicitar ayuda para ingresar' : 'Guardar contraseña' : 'Ingresar'}</button>
     </form>
     <div className="access-secondary-actions">{mode === 'login' ? <button type="button" className="access-text-button" onClick={() => switchMode('recover')}>Olvidé mi contraseña</button> : <button type="button" className="button secondary" onClick={() => switchMode('login')}>Volver al ingreso</button>}<Link to="/">Volver al inicio</Link></div>
+    <Link className="privacy-link" to="/privacidad" target="_blank" rel="noopener noreferrer">Privacidad</Link>
     {!productionPortal && <p className="access-demo-note access-demo-note-compact">Demostración local: usá datos ficticios. Las solicitudes se guardan únicamente en este navegador.</p>}
   </main></div>;
 }

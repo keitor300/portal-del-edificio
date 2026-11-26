@@ -71,6 +71,7 @@ function AdminLoginPage({ onAuthenticated }: { onAuthenticated: () => void }) {
       </form>
       {!productionPortal && <p className="admin-login-demo"><strong>Acceso de demostración</strong><br />Usuario: <code>admin</code> · Contraseña: <code>admin</code></p>}
       <Link className="admin-login-back" to="/" state={{ from: location.pathname }}>Volver al sitio público</Link>
+      <Link className="privacy-link" to="/privacidad" target="_blank" rel="noopener noreferrer">Privacidad</Link>
     </main>
   </div>;
 }

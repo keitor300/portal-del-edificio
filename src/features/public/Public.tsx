@@ -146,5 +146,5 @@ export function DemoEntryPage() {
 }
 
 function PublicFooter() {
-  return <footer className="public-footer"><span><strong>Edificio 13 y 34</strong> · {productionPortal ? "Portal de propietarios" : "Portal demo"}</span><span><Link to="/novedades">Novedades</Link><Link to="/contacto">Contacto</Link>{productionPortal ? <Link to="/admin">Administración</Link> : <Link to="/demo">Explorar demo</Link>}</span></footer>;
+  return <footer className="public-footer"><span><strong>Edificio 13 y 34</strong> · {productionPortal ? "Portal de propietarios" : "Portal demo"}</span><span><Link to="/novedades">Novedades</Link><Link to="/contacto">Contacto</Link><Link className="privacy-link" to="/privacidad">Privacidad</Link>{productionPortal ? <Link to="/admin">Administración</Link> : <Link to="/demo">Explorar demo</Link>}</span></footer>;
 }
