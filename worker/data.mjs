@@ -93,6 +93,8 @@ export async function dataRoute(request, env, path) {
     const user = await requireUser(request, env);
     const data = await body(request);
     const unit = user.role === 'admin' ? text(data.unit, 8) : user.unit;
+    const id = data.id ?? crypto.randomUUID();
+    if (typeof id !== 'string' || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(id)) throw new HttpError(400, 'El identificador del mensaje no es válido.');
     if (!await env.DB.prepare('SELECT id FROM units WHERE id=?').bind(unit).first()) throw new HttpError(400, 'Unidad inválida.');
     const content = typeof data.text === 'string' ? data.text.trim() : '';
     if (content.length > 4000 || (!content && !data.attachment)) throw new HttpError(400, 'Escribí un mensaje o adjuntá un archivo.');
@@ -103,14 +105,22 @@ export async function dataRoute(request, env, path) {
       if (!file || file.owner_id !== user.id || file.unit !== unit || file.visibility !== 'unit') throw new HttpError(400, 'El adjunto no corresponde a esta conversación.');
     }
     const issueId = data.issueId || null;
+    const sameMessage = row => row.author_id === user.id && row.unit === unit && row.issue_id === issueId && row.text === content && row.attachment_id === attachmentId;
+    const previous = await env.DB.prepare('SELECT * FROM messages WHERE id=?').bind(id).first();
+    if (previous) {
+      if (!sameMessage(previous)) throw new HttpError(409, 'Ese envío ya corresponde a otro mensaje.');
+      return json({ id }, 200);
+    }
     if (issueId) {
       const row = await env.DB.prepare("SELECT data FROM entities WHERE id=? AND collection='issues' AND unit=?").bind(issueId, unit).first();
       if (!row) throw new HttpError(404, 'No se encontró el reclamo.');
       if (JSON.parse(row.data).status === 'Resuelto') throw new HttpError(409, 'El reclamo está cerrado.');
     }
-    const id = crypto.randomUUID();
-    await env.DB.prepare('INSERT INTO messages(id,unit,author_id,issue_id,text,attachment_id) VALUES (?,?,?,?,?,?)').bind(id, unit, user.id, issueId, content, attachmentId).run();
-    return json({ id }, 201);
+    // The primary key serializes concurrent retries without duplicating a message.
+    const inserted = await env.DB.prepare('INSERT INTO messages(id,unit,author_id,issue_id,text,attachment_id) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING').bind(id, unit, user.id, issueId, content, attachmentId).run();
+    const saved = await env.DB.prepare('SELECT * FROM messages WHERE id=?').bind(id).first();
+    if (!saved || !sameMessage(saved)) throw new HttpError(409, 'Ese envío ya corresponde a otro mensaje.');
+    return json({ id }, Number(inserted.meta.changes) === 1 ? 201 : 200);
   }
   return null;
 }

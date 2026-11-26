@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { makeSeed } from '../data/seed';
 import { DEMO_STORAGE_KEY, repository } from '../lib/repository';
-import type { Collection, DemoData, Entity, Message, Settings } from '../lib/types';
+import type { Attachment, Collection, DemoData, Entity, Message, Settings } from '../lib/types';
 import { api, emptyData, productionPortal, refreshSession, SESSION_EVENT, serverUser, uploadAttachment } from '../lib/api';
 interface Portal { data:DemoData; save:(key:Collection,item:Entity)=>void|Promise<void>; remove:(key:Collection,id:string)=>void|Promise<void>; update:(key:Collection,id:string,patch:Partial<Entity>)=>void|Promise<void>; setSettings:(patch:Partial<Settings>)=>void|Promise<void>; sendMessage:(message:Message)=>void|Promise<void>; importMovements?:(requestId:string,items:Entity[])=>Promise<{ids:string[];skipped:number}>; reset:()=>void; notify:(message:string)=>void; toast:string; }
 const Context=createContext<Portal|null>(null);
@@ -28,6 +28,7 @@ function ServerPortalProvider({children}:{children:ReactNode}) {
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const generation=useRef(0);
+ const messageUploads=useRef(new Map<string,{source:string;attachment:Attachment|undefined}>());
  const advanceGeneration=useCallback(()=>++generation.current,[]);
  const dataRef=useRef(data);
  const notify=useCallback((message:string)=>{ setToast(message); window.setTimeout(()=>setToast(''),5500); },[]);
@@ -38,6 +39,7 @@ function ServerPortalProvider({children}:{children:ReactNode}) {
  },[]);
  const initialize=useCallback(async()=>{
    const current=advanceGeneration();
+   messageUploads.current.clear();
    setLoading(true);setError('');setData(emptyData());dataRef.current=emptyData();
    try{await refreshSession();await load();if(current===generation.current)setLoading(false);}
    catch(cause){if(current===generation.current){setError((cause as Error).message);setLoading(false);}}
@@ -60,6 +62,19 @@ function ServerPortalProvider({children}:{children:ReactNode}) {
    const attachment=await uploadAttachment(item.attachment,privateUnit);
    return {...item,attachment:attachment ?? null};
  }
+ async function submitMessage(message:Message,unit:string|null|undefined,issueId?:string){
+   const cacheKey=JSON.stringify([serverUser()?.id,unit,message.id]);
+   let attachment=message.attachment;
+   if(attachment){
+     const source=attachment.url;
+     const cached=messageUploads.current.get(cacheKey);
+     attachment=cached?.source===source?cached.attachment:await uploadAttachment(attachment,unit);
+     messageUploads.current.set(cacheKey,{source,attachment});
+     if(messageUploads.current.size>32)messageUploads.current.delete(messageUploads.current.keys().next().value!);
+   }
+   await mutate('/api/messages','POST',{...message,unit,issueId,attachment});
+   messageUploads.current.delete(cacheKey);
+ }
  async function save(key:Collection,item:Entity){
    if(key==='reservations'){
      await mutate('/api/reservations','POST',item);return;
@@ -79,10 +94,11 @@ function ServerPortalProvider({children}:{children:ReactNode}) {
    if(key==='topics'&&patch.interested!==undefined){await mutate(`/api/topics/${itemId}/interest`,'POST',{interested:patch.interested});return;}
    if(patch.messages&&patch.status===undefined){
      const added=patch.messages.filter(message=>!(current.messages||[]).some(old=>old.id===message.id));
+     if(key==='issues'&&added.length===0&&current.messages?.some(message=>message.id===patch.messages?.at(-1)?.id))return;
      if(added.length!==1)throw new Error('Enviá un mensaje por vez.');
      const message=added[0];
      if(key==='topics')await mutate(`/api/topics/${itemId}/comments`,'POST',{text:message.text});
-     else if(key==='issues')await mutate('/api/messages','POST',{...message,issueId:itemId,unit:current.unit,attachment:await uploadAttachment(message.attachment,current.unit)});
+     else if(key==='issues')await submitMessage(message,current.unit,itemId);
      else throw new Error('Esta sección no admite mensajes.');
      return;
    }
@@ -90,7 +106,7 @@ function ServerPortalProvider({children}:{children:ReactNode}) {
  }
  async function sendMessage(message:Message){
    const unit=serverUser()?.role==='admin'?message.unit:serverUser()?.unit;
-   await mutate('/api/messages','POST',{...message,unit,attachment:await uploadAttachment(message.attachment,unit)});
+   await submitMessage(message,unit);
  }
  if(loading)return <main className="admin-login-page"><p role="status">Cargando tu portal…</p></main>;
  if(error)return <main className="admin-login-page"><section><h1>No pudimos cargar el portal</h1><p role="alert">{error}</p><button className="button" onClick={()=>void initialize()}>Volver a intentar</button></section></main>;

@@ -13,6 +13,7 @@ export function Conversation({ messages, author, onSend, closed = false }: {
   const [attachment, setAttachment] = useState<Attachment>();
   const [error, setError] = useState('');
   const sending = useRef(false);
+  const pendingMessage = useRef<Message | undefined>(undefined);
   const [busy,setBusy]=useState(false);
   const { notify } = usePortal();
 
@@ -20,10 +21,15 @@ export function Conversation({ messages, author, onSend, closed = false }: {
     event.preventDefault();
     if (closed || sending.current) return;
     if (!text.trim() && !attachment) { setError('Escribí un mensaje o adjuntá un archivo.'); return; }
+    const previous = pendingMessage.current;
+    const message = previous && previous.text === text.trim() && previous.attachment === attachment
+      ? previous : { id: id(), author, text: text.trim(), attachment, date: new Date().toISOString() };
+    pendingMessage.current = message;
     sending.current = true;
     setBusy(true);
     try {
-    await onSend({ id: id(), author, text: text.trim(), attachment, date: new Date().toISOString() });
+    await onSend(message);
+    pendingMessage.current = undefined;
     setText(''); setAttachment(undefined); setError('');
     notify(productionPortal ? 'Mensaje enviado.' : 'Mensaje guardado en esta demo. No se envió fuera del navegador.');
     } catch(cause) { setError((cause as Error).message); }

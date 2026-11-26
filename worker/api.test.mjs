@@ -37,6 +37,27 @@ function fixture() {
 const password = 'Test-only-passphrase-2026';
 const registration = unit => ({ unit, name: `Resident ${unit}`, email: `${unit.toLowerCase()}@example.invalid`, password });
 
+test('message retries are atomic and cannot reuse another author or payload', async () => {
+  const { sqlite, request } = fixture();
+  try {
+    for (const unit of ['7B', '8A']) await request('/api/auth/register', 'POST', registration(unit));
+    sqlite.exec("UPDATE users SET status='approved'");
+    const login = async identity => (await request('/api/auth/login', 'POST', { identity, password })).headers.get('set-cookie');
+    const owner = await login('7B'), neighbor = await login('8A');
+    const data = { id: crypto.randomUUID(), text: 'Consulta con respuesta perdida' };
+    const race = await Promise.all([0, 1].map(() => request('/api/messages', 'POST', data, owner)));
+    assert.deepEqual(race.map(response => response.status).sort(), [200, 201]);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM messages').get().n, 1);
+    for (const response of race) assert.equal((await response.json()).id, data.id);
+    assert.equal((await request('/api/messages', 'POST', data, neighbor)).status, 409);
+    assert.equal((await request('/api/messages', 'POST', { ...data, text: 'Otro contenido' }, owner)).status, 409);
+    assert.equal((await request('/api/messages', 'POST', { ...data, id: 'invalid' }, owner)).status, 400);
+    assert.equal((await request('/api/messages', 'POST', { ...data, id: crypto.randomUUID() }, owner)).status, 201);
+    assert.equal((await request('/api/messages', 'POST', { text: 'Cliente anterior sin identificador' }, owner)).status, 201);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM messages').get().n, 3);
+  } finally { sqlite.close(); }
+});
+
 test('administrator alias, persistent sessions and per-account notification privacy', async () => {
   const {sqlite,request}=fixture();
   try {

@@ -9,6 +9,7 @@ import https from 'node:https';
 import { chromium, expect } from '@playwright/test';
 import { hashPassword } from './auth.mjs';
 import { firebaseRegister } from './firebase.mjs';
+import { runExtendedScenario } from './simulation-scenarios.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const temp = mkdtempSync(join(tmpdir(), 'portal-browser-'));
@@ -387,7 +388,7 @@ test('resident registers from QR entry, administrator approves from another brow
   await expect(admin.getByLabel(/^Saldo inicial en pesos/)).toHaveValue('999');
   assert.equal((await (await admin.request.get(`${base}/api/state`)).json()).data.settings.openingBalance,savedBalance);
   await owner.goto(`${base}/demo/propietario/servicios/reclamos?new=1`);
-  await owner.getByLabel('Categoría',{exact:true}).selectOption('Agua');
+  await owner.getByRole('dialog',{name:'Nuevo reclamo',exact:true}).getByLabel('Categoría',{exact:true}).selectOption('Agua');
   await owner.getByLabel('¿Qué ocurrió?',{exact:true}).fill('Pérdida de agua de prueba');
   await owner.getByRole('button',{name:'Enviar reclamo',exact:true}).click();
   await expect(owner.getByRole('heading',{name:'Pérdida de agua de prueba',exact:true})).toBeVisible();
@@ -428,6 +429,8 @@ test('resident registers from QR entry, administrator approves from another brow
   await expect(withoutFile.getByText('Sin archivo adjunto')).toBeVisible();
   await expect(withoutFile.getByRole('button')).toHaveCount(0);
   await expect(owner.getByText(/Documento demo/)).toHaveCount(0);
+
+  await runExtendedScenario({ admin, owner, neighbor, base });
 
   const recovering=await pageFor();
   await recovering.goto(`${base}/login`);

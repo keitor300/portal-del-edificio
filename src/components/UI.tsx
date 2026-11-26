@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, X, FileText, Download, Paperclip, CheckCircle2, ChevronRight } from 'lucide-react';
 import type { Attachment } from '../lib/types';
@@ -9,7 +9,14 @@ export function PageHeader({title,description,action,back}:{title:string;descrip
 export function Section({title,action,children}:{title:string;action?:ReactNode;children:ReactNode}){return <section className="section"><div className="section-heading"><h2>{title}</h2>{action}</div>{children}</section>;}
 export function Status({children,tone='neutral'}:{children:ReactNode;tone?:'neutral'|'green'|'amber'|'red'}){return <span className={`status status-${tone}`}>{children}</span>;}
 export function Empty({children='No hay resultados para esta búsqueda.'}:{children?:ReactNode}){return <div className="empty"><CheckCircle2 size={28}/><p>{children}</p></div>;}
-export function Field({label,children,hint}:{label:string;children:ReactNode;hint?:string}){return <label className="field"><span>{label}</span>{children}{hint&&<small>{hint}</small>}</label>;}
+export function Field({label,children,hint}:{label:string;children:ReactNode;hint?:string}){
+ const labelId=useId(),hintId=useId();
+ const controls=Children.map(children,child=>{
+  if(!isValidElement<{'aria-labelledby'?:string;'aria-describedby'?:string}>(child)||!['input','select','textarea'].includes(String(child.type)))return child;
+  return cloneElement(child,{'aria-labelledby':child.props['aria-labelledby']??labelId,'aria-describedby':[child.props['aria-describedby'],hint?hintId:undefined].filter(Boolean).join(' ')||undefined});
+ });
+ return <label className="field"><span id={labelId}>{label}</span>{controls}{hint&&<small id={hintId}>{hint}</small>}</label>;
+}
 export function Tabs({items,value,onChange}:{items:{id:string;label:string}[];value:string;onChange:(id:string)=>void}){return <div className="tabs" aria-label="Secciones">{items.map(x=><button key={x.id} className={value===x.id?'active':''} aria-pressed={value===x.id} onClick={()=>onChange(x.id)}>{x.label}</button>)}</div>;}
 export function FormPanel({title,description,icon,children,tone='green'}:{title:string;description?:string;icon:ReactNode;children:ReactNode;tone?:'green'|'amber'|'blue'|'neutral'}){return <section className={`form-panel form-panel-${tone}`}><div className="form-panel-heading"><span className="form-panel-icon">{icon}</span><div><strong>{title}</strong>{description&&<p>{description}</p>}</div></div>{children}</section>;}
 export function Modal({title,onClose,children,wide=false,icon}:{title:string;onClose:()=>void;children:ReactNode;wide?:boolean;icon?:ReactNode}){const ref=useRef<HTMLDialogElement>(null);const titleId=useId();useEffect(()=>{const previous=document.activeElement as HTMLElement;const dialog=ref.current;dialog?.showModal();const old=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{dialog?.close();document.body.style.overflow=old;previous?.focus();};},[]);return <dialog className={`modal ${wide?'modal-wide':''}`} ref={ref} aria-labelledby={titleId} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}><div className="modal-inner"><div className="modal-heading">{icon&&<span className="modal-title-icon">{icon}</span>}<h2 id={titleId}>{title}</h2><button className="icon-button" title="Cerrar" aria-label="Cerrar" onClick={onClose}><X/></button></div>{children}</div></dialog>;}
