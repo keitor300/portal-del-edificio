@@ -1,0 +1,6 @@
+# Vercel only forwards old links to Cloudflare. Never upload server secrets or data.
+*
+!vercel.json
+!deployment
+!deployment/vercel
+!deployment/vercel/index.html
