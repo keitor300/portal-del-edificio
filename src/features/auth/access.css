@@ -1,6 +1,8 @@
 .owner-login-card{width:min(100%,520px)}
 .owner-login-card h1{font-size:26px;line-height:1.2}
-.owner-login-card input,.owner-login-card select{min-height:50px;font-size:16px;width:100%;min-width:0}
+.owner-login-card input:not([type=checkbox]):not([type=radio]),.owner-login-card select{min-height:50px;font-size:16px;width:100%;min-width:0}
+.admin-login-form .checkbox{display:flex;align-items:center;gap:12px;min-height:48px;font-size:16px;line-height:1.5;color:var(--text, #202923);cursor:pointer}
+.admin-login-form .checkbox input[type=checkbox]{width:22px;height:22px;min-width:22px;min-height:22px;flex:0 0 22px;margin:0;accent-color:var(--accent);cursor:pointer}
 .access-demo-note{padding:14px 16px;background:#fff4d9;color:#654b12;border:1px solid #e7d6ab;border-radius:8px;font-size:14px;line-height:1.6;margin:16px 0}
 .access-feedback{display:flex;align-items:center;gap:12px;background:#eaf3ef;color:#174f40;padding:16px;border-radius:8px;margin:16px 0;line-height:1.6}
 .access-feedback svg{flex-shrink:0}.access-feedback p{margin:0}
