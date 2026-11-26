@@ -40,7 +40,9 @@
 .finance-table-wrap:focus-visible { outline: 3px solid #245c48; outline-offset: 3px; }
 .finance-table { border-collapse: collapse; width: 100%; font-size: 0.9rem; text-align: left; }
 .finance-table caption { text-align: left; padding: 12px; color: #58635c; }
-.finance-table th, .finance-table td { padding: 12px; border-top: 1px solid #dce2dc; vertical-align: top; min-width: 90px; max-width: 280px; overflow-wrap: anywhere; }
+.finance-table th, .finance-table td { padding: 12px; border-top: 1px solid #dce2dc; vertical-align: top; min-width: 140px; max-width: 280px; overflow-wrap: break-word; }
+.finance-table th { white-space: nowrap; }
+.finance-table th:first-child { min-width: 56px; width: 56px; }
 .finance-table thead th { background: #f7f8f6; }
 .finance-success { color: #245c48; font-weight: 600; }
 .finance-cash-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px; align-items: center; padding: 20px; border: 1px solid #c9d9cc; border-left: 4px solid #245c48; border-radius: 8px; background: #f1f7f3; margin-bottom: 26px; }
