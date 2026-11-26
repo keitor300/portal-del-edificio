@@ -12,6 +12,7 @@ import { firebaseRegister } from './firebase.mjs';
 import { runExtendedScenario } from './simulation-scenarios.mjs';
 import { runFinancialReview } from './financial-review-scenario.mjs';
 import { runContrastReview } from './contrast-review-scenario.mjs';
+import { runSumControls } from './sum-controls-scenario.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const temp = mkdtempSync(join(tmpdir(), 'portal-browser-'));
@@ -435,6 +436,7 @@ test('resident registers from QR entry, administrator approves from another brow
 
   await runExtendedScenario({ admin, owner, neighbor, base });
   await runFinancialReview({ admin, owner, neighbor, base, pdf });
+  await runSumControls({ admin, owner, neighbor, base });
   await runContrastReview({ admin, owner, visitor, base });
 
   const recovering=await pageFor();
