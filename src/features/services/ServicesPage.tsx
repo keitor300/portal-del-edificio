@@ -27,6 +27,7 @@ export function ServicesPage() {
 export function ChatPanel({ admin = false }: { admin?: boolean }) {
   const { data, sendMessage } = usePortal();
   const [params, setParams] = useSearchParams();
+  const inquiry = params.get('consulta')?.trim().slice(0, 160) || '';
   const unitOf = (message: Message) => message.unit || (/unidad\s+([a-z0-9-]+)/i.exec(message.author)?.[1] ?? currentOwnerUnit()).toUpperCase();
   const units = useMemo(() => [...new Set([currentOwnerUnit(), ...data.messages.map(unitOf)].filter(Boolean))], [data.messages]);
   const [fallbackUnit, setSelectedUnit] = useState(currentOwnerUnit());
@@ -40,7 +41,7 @@ export function ChatPanel({ admin = false }: { admin?: boolean }) {
   const messages = data.messages.filter(message => unitOf(message) === (admin ? selectedUnit : currentOwnerUnit()));
   const send = (message: Message) => sendMessage({ ...message, unit: admin ? selectedUnit : currentOwnerUnit() });
   if(admin&&!units.length)return <section className="section"><h2>Consultas de propietarios</h2><p className="empty">Todavía no recibiste consultas de los propietarios.</p></section>;
-  if (!admin) return <section className="section owner-chat-section"><div className="owner-chat-contact"><span className="owner-chat-contact-icon"><MessageCircle size={24} aria-hidden="true" /></span><div><h2>Administración</h2><p>Consultas generales de tu unidad.</p></div>{!productionPortal&&<span className="owner-chat-hours">Lun. a vie. · 9 a 17 h</span>}</div><Conversation messages={messages} author={`Unidad ${currentOwnerUnit()}`} onSend={send} /></section>;
+  if (!admin) return <section className="section owner-chat-section"><div className="owner-chat-contact"><span className="owner-chat-contact-icon"><MessageCircle size={24} aria-hidden="true" /></span><div><h2>Administración</h2><p>Consultas generales de tu unidad.</p></div>{!productionPortal&&<span className="owner-chat-hours">Lun. a vie. · 9 a 17 h</span>}</div><Conversation key={inquiry} initialText={inquiry ? `Quisiera consultar por: ${inquiry}` : ''} messages={messages} author={`Unidad ${currentOwnerUnit()}`} onSend={send} /></section>;
   return <section className="section admin-chat-section"><div className="admin-chat-heading"><div><h2>Consultas de propietarios</h2><p className="muted">Todas las conversaciones, ordenadas por unidad.</p></div><span className="status status-green">{units.length} unidades</span></div><div className="admin-chat-inbox"><nav className="admin-chat-threads" aria-label="Consultas por unidad">{units.map(unit => { const thread = data.messages.filter(message => unitOf(message) === unit); const last = thread[thread.length - 1]; return <button key={unit} type="button" className={selectedUnit === unit ? 'active' : ''} aria-pressed={selectedUnit === unit} onClick={() => selectUnit(unit)}><span><strong>Unidad {unit}</strong><small>{last?.text || 'Sin mensajes todavía.'}</small></span><em>{thread.length}</em></button>; })}</nav><div className="admin-chat-conversation"><div className="admin-chat-conversation-heading"><h3>Conversación con Unidad {selectedUnit}</h3><span className="muted">{messages.length} mensajes</span></div><Conversation key={selectedUnit} messages={messages} author="Administración" onSend={send} /></div></div></section>;
 }
 

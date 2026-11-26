@@ -6,10 +6,10 @@ import type { Attachment, Message } from '../../lib/types';
 import { formatDate, id } from '../../lib/utils';
 import { productionPortal } from '../../lib/api';
 
-export function Conversation({ messages, author, onSend, closed = false }: {
-  messages: Message[]; author: string; onSend: (message: Message) => void|Promise<void>; closed?: boolean;
+export function Conversation({ messages, author, onSend, closed = false, initialText = '' }: {
+  messages: Message[]; author: string; onSend: (message: Message) => void|Promise<void>; closed?: boolean; initialText?: string;
 }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const [attachment, setAttachment] = useState<Attachment>();
   const [error, setError] = useState('');
   const sending = useRef(false);

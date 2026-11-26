@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { verifyPublicationInquiry, verifyBuildingGallery } from './content-controls-scenario.mjs';
 
 // Runs only against the disposable local database created by the browser suite.
 export async function runExtendedScenario({ admin, owner, neighbor, base }) {
@@ -48,7 +49,16 @@ export async function runExtendedScenario({ admin, owner, neighbor, base }) {
       await expect(owner.locator('summary').filter({ hasText: item.title })).toBeVisible();
       await owner.locator('summary').filter({ hasText: item.title }).click();
       await expect(owner.getByText(item.fields.Respuesta, { exact: true })).toBeVisible();
+      await owner.locator('summary').filter({ hasText: item.title }).click();
+      await expect(owner.getByText(item.fields.Respuesta, { exact: true })).not.toBeVisible();
+      await owner.getByLabel('Buscar pregunta', { exact: true }).fill('consulta frecuente');
+      await expect(owner.locator('summary').filter({ hasText: item.title })).toBeVisible();
+      await owner.getByLabel('Buscar pregunta', { exact: true }).fill('NO-EXISTE-SIMULACRO');
+      await expect(owner.getByText('No hay resultados para esta búsqueda.', { exact: true })).toBeVisible();
+      await owner.getByLabel('Buscar pregunta', { exact: true }).fill('');
+      await expect(owner.locator('summary').filter({ hasText: item.title })).toBeVisible();
     } else await expect(owner.getByText(item.title, { exact: true }).first()).toBeVisible();
+    if (['listings', 'lost'].includes(item.collection)) await verifyPublicationInquiry({ owner, admin, neighbor, base, item });
     await admin.getByLabel('Buscar contenido').fill('NO-EXISTE-SIMULACRO');
     await expect(admin.getByRole('heading', { name: item.title, exact: true })).toHaveCount(0);
     await admin.getByLabel('Buscar contenido').fill('');
@@ -62,6 +72,7 @@ export async function runExtendedScenario({ admin, owner, neighbor, base }) {
     console.log(`Simulation verified: ${item.collection} CRUD and states`);
   }
 
+  await verifyBuildingGallery({ owner, base });
   await admin.goto(`${base}/admin/comunidad?tab=reuniones`);
   for (const status of ['Cancelada', 'Programada', 'Realizada']) {
     await admin.getByRole('button', { name: 'Editar Reunión de prueba', exact: true }).click();
