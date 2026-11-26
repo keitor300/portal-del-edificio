@@ -15,6 +15,7 @@ import { runContrastReview } from './contrast-review-scenario.mjs';
 import { runSumControls } from './sum-controls-scenario.mjs';
 import { runImportControls } from './import-controls-scenario.mjs';
 import { runNoticeControls } from './notice-controls-scenario.mjs';
+import { runCommunityControls } from './community-controls-scenario.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const temp = mkdtempSync(join(tmpdir(), 'portal-browser-'));
@@ -441,6 +442,7 @@ test('resident registers from QR entry, administrator approves from another brow
   await runSumControls({ admin, owner, neighbor, base });
   await runImportControls({ admin, owner, base });
   await runNoticeControls({ admin, owner, neighbor, visitor, base, pdf });
+  await runCommunityControls({ admin, owner, neighbor, base, pdf });
   await runContrastReview({ admin, owner, visitor, base });
 
   const recovering=await pageFor();

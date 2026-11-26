@@ -25,6 +25,7 @@ function MeetingForm({ initial, onClose }: { initial?: Entity; onClose: () => vo
     event.preventDefault();
     if (!draft.title.trim() || !draft.date || !draft.time || !draft.place?.trim() || !lines(draft.agenda).length) { setError('Completá título, fecha, horario, lugar y orden del día.'); return; }
     if (draft.endTime && draft.endTime <= draft.time) { setError('El horario de finalización debe ser posterior al de inicio.'); return; }
+    setError('');
     void action.run(async () => {
       await save('meetings', { ...draft, title: draft.title.trim(), description: draft.description.trim(), place: draft.place?.trim(), agenda: lines(draft.agenda).join('\n'), summary: draft.summary?.trim(), milestones: lines(decisions) });
       notify(initial ? 'Reunión actualizada.' : 'Reunión publicada.'); onClose();
@@ -54,6 +55,7 @@ function PollForm({ initial, formal, onClose }: { initial?: Entity; formal: bool
     if (new Set(cleanOptions.map(option => option.toLocaleLowerCase('es'))).size !== cleanOptions.length) { setError('Las opciones deben ser diferentes entre sí.'); return; }
     if (cleanOptions.some(option => option.length > 180)) { setError('Cada opción puede tener hasta 180 caracteres.'); return; }
     if (!closed && dueDate && dueDate < today()) { setError('Para abrir la consulta, elegí una fecha de cierre desde hoy o dejala sin fecha.'); return; }
+    setError('');
     void action.run(async () => {
       await save('polls', { ...(current ?? {}), version:initial?.version, id: current?.id ?? newId, title: title.trim(), description: description.trim(), date: current?.date ?? today(), dueDate: dueDate || '', options: cleanOptions, votes: locked ? current!.votes : cleanOptions.map(() => 0), formal: initial?.formal ?? formal, closed, attachment });
       notify(initial ? 'Consulta actualizada.' : formal ? 'Votación publicada.' : 'Encuesta publicada.'); onClose();

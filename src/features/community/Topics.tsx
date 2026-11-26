@@ -18,6 +18,7 @@ export function TopicForm({ onClose, admin = false }: { onClose: () => void; adm
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!title.trim() || !description.trim()) { setError('Completá el título y la descripción.'); return; }
+    setError('');
     void action.run(async () => {
       await save('topics', { id: topicId, title: title.trim(), description: description.trim(), date: today(), unit: productionPortal ? admin ? undefined : currentOwnerUnit() : admin ? 'Administración' : `Unidad ${currentOwnerUnit()}`, status: 'Pendiente', interests: 0, interested: false, messages: [] });
       notify('Tema enviado para revisión.'); onClose();
@@ -36,6 +37,7 @@ export function TopicDiscussion({ topicId, onClose, admin = false }: { topicId: 
     event.preventDefault();
     if (!topic || action.isPending()) return;
     if (!text.trim()) { setError('Escribí un comentario antes de enviarlo.'); return; }
+    setError('');
     void action.run(async () => {
       await update('topics', topic.id, { messages: [...(topic.messages ?? []), { id: id(), author: admin ? 'Administración' : `Unidad ${currentOwnerUnit()}`, text: text.trim(), date: new Date().toISOString() }] });
       setText(''); setError(''); notify('Comentario publicado.');
