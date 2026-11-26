@@ -5,6 +5,10 @@
   "main": "worker/index.mjs",
   "compatibility_date": "2026-11-23",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "AUTH_PROVIDER": "firebase",
+    "FIREBASE_PROJECT_ID": "portal-del-edificio-13-y-34"
+  },
   "build": { "command": "node scripts/build-production.mjs" },
   "assets": {
     "directory": "./dist",

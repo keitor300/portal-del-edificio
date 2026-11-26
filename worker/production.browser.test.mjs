@@ -8,12 +8,15 @@ import { join, resolve } from 'node:path';
 import https from 'node:https';
 import { chromium, expect } from '@playwright/test';
 import { hashPassword } from './auth.mjs';
+import { firebaseRegister } from './firebase.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const temp = mkdtempSync(join(tmpdir(), 'portal-browser-'));
 const cli = join(root, 'node_modules/wrangler/bin/wrangler.js');
 const base = 'https://127.0.0.1:8791';
 const password = `Test-${crypto.randomUUID()}`;
+const firebase = process.env.PORTAL_TEST_FIREBASE === '1';
+const authEnv = firebase ? { AUTH_PROVIDER:'firebase', RUNTIME_ENV:'test', FIREBASE_PROJECT_ID:'demo-portal-edificio', FIREBASE_API_KEY:'local-test-key', FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099' } : { AUTH_PROVIDER:'local', RUNTIME_ENV:'test' };
 let server;
 let browser;
 let logs = '';
@@ -24,9 +27,16 @@ before(async () => {
   execFileSync(process.execPath, [join(root, 'node_modules/vite/bin/vite.js'), 'build'], { cwd: root, env: { ...process.env, VITE_PORTAL_MODE: 'production' }, stdio: 'pipe' });
   run(['d1','migrations','apply','portal-edificio-produccion','--local','--persist-to',temp]);
   const fixture = join(temp, 'fixture.sql');
-  writeFileSync(fixture, `INSERT INTO users(id,name,email,role,status,password_hash) VALUES ('test-admin','Admin de prueba','admin@example.invalid','admin','approved','${await hashPassword(password)}'); UPDATE settings SET rules='Reglamento exclusivo para pruebas locales',version=version+1 WHERE id=1;`);
+  if(firebase){
+    const cleared=await fetch('http://127.0.0.1:9099/emulator/v1/projects/demo-portal-edificio/accounts',{method:'DELETE'});
+    assert.equal(cleared.status,200);
+  }
+  const uid = firebase ? await firebaseRegister(authEnv,'admin@example.invalid',password) : null;
+  const hash = firebase ? 'firebase' : await hashPassword(password);
+  const sqlValue = value => value === null ? 'NULL' : `'${value.replaceAll("'","''")}'`;
+  writeFileSync(fixture, `INSERT INTO users(id,name,email,role,status,password_hash,firebase_uid) VALUES ('test-admin','Admin de prueba','admin@example.invalid','admin','approved',${sqlValue(hash)},${sqlValue(uid)}); UPDATE settings SET rules='Reglamento exclusivo para pruebas locales',version=version+1 WHERE id=1;`);
   run(['d1','execute','portal-edificio-produccion','--local','--persist-to',temp,'--file',fixture]);
-  server = spawn(process.execPath, [cli,'dev','--ip','127.0.0.1','--port','8791','--local-protocol','https','--persist-to',temp], { cwd: root, stdio: 'pipe' });
+  server = spawn(process.execPath, [cli,'dev','--ip','127.0.0.1','--port','8791','--local-protocol','https','--persist-to',temp,...Object.entries(authEnv).flatMap(([key,value])=>['--var',`${key}:${value}`])], { cwd: root, stdio: 'pipe' });
   server.stdout.on('data', chunk => { logs += chunk; });
   server.stderr.on('data', chunk => { logs += chunk; });
   let ready = false;
@@ -93,7 +103,10 @@ test('resident registers from QR entry, administrator approves from another brow
   await owner.getByLabel('Unidad',{exact:true}).selectOption('7B');
   await owner.getByLabel('Contraseña',{exact:true}).fill(password);
   await owner.getByLabel('Repetir contraseña').fill(password);
+  const registrationResponse=owner.waitForResponse(response=>response.url()===`${base}/api/auth/register`&&response.request().method()==='POST');
   await owner.getByRole('button',{name:'Enviar solicitud'}).click();
+  const registered=await registrationResponse;
+  assert.equal(registered.status(),201,await registered.text());
   await expect(owner.getByRole('status')).toContainText('Solicitud enviada');
   await expect(owner.getByRole('button',{name:'Entrar como Unidad 7B'})).toHaveCount(0);
 

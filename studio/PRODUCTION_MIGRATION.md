@@ -2,6 +2,23 @@
 
 Status: in progress. The public Vercel portal is still the browser-local demo. Do not tell residents to use it as the shared production system yet.
 
+## Current checkpoint: Firebase configured (2026-11-26)
+
+This section supersedes older entries saying Firebase approval is pending or that production uses scrypt.
+
+- User explicitly authorized Firebase setup, acceptance of Firebase terms, and a dedicated service account/key for Cloudflare. Workers Free and Firebase Spark are retained. No billing, Analytics, Hosting or optional paid services enabled.
+- Created Firebase project `portal-del-edificio-13-y-34` (number `933099835375`) and web app `Portal del Edificio Web`. Email/password provider enabled. Project creation initially returned an error after creating the Cloud project; completed Firebase activation on that SAME project, without a duplicate.
+- Firebase password policy is enforced at 12-128 characters, matching the portal. Final build, lint, 25 existing unit tests, 6 reservation tests and Worker deployment dry-run pass. No live release was performed.
+- Dedicated `portal-cloudflare-auth` service account has Firebase Authentication Admin, not project Editor/Owner. Its downloaded key was moved into ignored `.secrets/`. Do not print, commit, or share its contents.
+- `FIREBASE_API_KEY` and `FIREBASE_SERVICE_ACCOUNT` are stored as Cloudflare Worker secrets, verified by name-only listing. Secret setup created an empty draft Worker because none existed. This is NOT a portal deployment and is NOT a usable public release. Vercel is unchanged.
+- Server authenticates through Firebase REST; immutable Firebase UID is mapped to the local account. Unit/password owner login and email/password admin login are preserved. Approval/roles remain server-side in D1. Registration remains name, unit, email, password; no DNI.
+- Migration `0008_firebase_auth.sql` adds UID mapping and session generations. Changes to status/email/identity revoke sessions and recovery tokens. Provider disablement/deletion/password reset is checked on every authenticated request; provider failure does not fall back to demo/local auth.
+- Legacy scrypt is available only for explicit loopback test environments. Public hosts reject local/emulator/test authentication. Cloudflare production no longer computes password hashes.
+- Assisted recovery reauthenticates the administrator, issues a Firebase reset code without sending email, keeps only its hash in D1, expires it in 30 minutes and claims it atomically. Two simultaneous submissions yield one success. Automatic email delivery has NOT been configured or claimed.
+- Local API suite: 12 passed. Firebase Auth emulator tests: 2 passed (including approval, provider disablement, reset, replay/concurrency and interrupted registration). Full HTTPS Worker/Edge 390x844 multi-context scenario passes with the real Firebase emulator: registration, approval, login, SUM conflicts/privacy, chat, finance, files, participation, failure handling and recovery. Fixed unsupported Worker `redirect:error` by rejecting redirects explicitly using `manual`.
+- Real Google Firebase REST verification passed service-account OAuth, account lookup, temporary registration/login, recovery, password invalidation and account cleanup. No resident/admin accounts were created; the temporary test identity was removed and absence verified. This is not yet a public-URL or physical-iPhone test.
+- Migrations 0007/0008 have NOT been applied remotely. Actual admin onboarding, final deployment/CPU verification, final URL, building data and QR distribution remain pending. See `studio/FIREBASE_SETUP.md` for reproducible verification and key handling.
+
 ## Requested outcome
 
 Keep all existing portal functionality and the approved visual design. Deliver real resident registration, administrator approval, protected accounts, shared information, reliable SUM reservations, private conversations, finances, documents, meetings, polls and building services on Cloudflare. Deliver a permanent entry URL and printable elevator QR materials after end-to-end verification. Report the actual changes and remaining operational setup, without claiming a partial migration is complete.

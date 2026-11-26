@@ -1,6 +1,7 @@
 import { scryptAsync } from '@noble/hashes/scrypt.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { HttpError, body, json, text } from './http.mjs';
+import { authProvider, firebaseAccount, firebaseAuthenticate, firebaseRegister } from './firebase.mjs';
 
 const COOKIE = '__Host-portal_session';
 const hashOptions = { N: 16384, r: 8, p: 5, dkLen: 32 };
@@ -31,8 +32,16 @@ function cookieToken(request) {
 export async function userFor(request, env) {
   const token = cookieToken(request);
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
-  return env.DB.prepare(`SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id
-    WHERE s.token_hash=? AND s.expires_at>? AND u.status='approved'`).bind(await digest(token), Date.now()).first();
+  const user = await env.DB.prepare(`SELECT u.*,s.firebase_version FROM sessions s JOIN users u ON u.id=s.user_id
+    WHERE s.token_hash=? AND s.expires_at>? AND s.auth_version=u.auth_version AND u.status='approved'`).bind(await digest(token), Date.now()).first();
+  if (user && authProvider(env) === 'firebase') {
+    const account = user.firebase_uid ? await firebaseAccount(env, user.firebase_uid) : null;
+    if (!account || account.disabled || account.email !== user.email.toLowerCase() || account.version !== user.firebase_version) {
+      await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await digest(token)).run();
+      return null;
+    }
+  }
+  return user;
 }
 export async function requireUser(request, env, role) {
   const user = await userFor(request, env);
@@ -70,10 +79,13 @@ export async function authRoute(request, env, path) {
     const unit = text(data.unit, 8).toUpperCase();
     if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, 'Ingresá un email válido.');
     if (!await env.DB.prepare('SELECT id FROM units WHERE id=? AND active=1').bind(unit).first()) throw new HttpError(400, 'Elegí una unidad del edificio.');
-    const password = await hashPassword(data.password);
+    if (await env.DB.prepare("SELECT id FROM users WHERE email=? OR (unit=? AND status<>'rejected')").bind(email, unit).first()) throw new HttpError(409, 'Ya existe una solicitud para esos datos. Consultá con Administración.');
+    const firebase = authProvider(env) === 'firebase';
+    const uid = firebase ? await firebaseRegister(env, email, data.password) : null;
+    const password = firebase ? 'firebase' : await hashPassword(data.password);
     try {
-      await env.DB.prepare("INSERT INTO users(id,name,email,unit,role,password_hash) VALUES (?,?,?,?,'owner',?)")
-        .bind(crypto.randomUUID(), name, email, unit, password).run();
+      await env.DB.prepare("INSERT INTO users(id,name,email,unit,role,password_hash,firebase_uid) VALUES (?,?,?,?,'owner',?,?)")
+        .bind(crypto.randomUUID(), name, email, unit, password, uid).run();
     } catch (error) {
       if (String(error).includes('UNIQUE')) throw new HttpError(409, 'Ya existe una solicitud para esos datos. Consultá con Administración.');
       throw error;
@@ -89,13 +101,17 @@ export async function authRoute(request, env, path) {
       ((role='owner' AND lower(unit)=?) OR (role='admin' AND email=?))`).bind(identity, identity).first();
     // Run the same expensive hash for unknown identities to avoid a fast account-existence signal.
     const dummyHash = 'scrypt-v1:00000000000000000000000000000000:0000000000000000000000000000000000000000000000000000000000000000';
-    const valid = await verifyPassword(data.password, user?.password_hash ?? dummyHash);
+    const firebase = authProvider(env) === 'firebase';
+    const firebaseVersion = firebase ? await firebaseAuthenticate(env, user, data.password) : null;
+    const valid = firebase || await verifyPassword(data.password, user?.password_hash ?? dummyHash);
     if (!user || !valid) throw new HttpError(401, 'La unidad, email o contraseña no son correctos.');
     if (user.status !== 'approved') throw new HttpError(403, user.status === 'pending' ? 'Tu solicitud está pendiente de aprobación.' : 'Tu acceso está suspendido. Consultá con Administración.');
     const token = randomToken();
     const maxAge = user.role === 'admin' ? 43200 : 604800;
-    await env.DB.prepare('INSERT INTO sessions(token_hash,user_id,expires_at,created_at) VALUES (?,?,?,?)')
-      .bind(await digest(token), user.id, Date.now() + maxAge * 1000, Date.now()).run();
+    const session = await env.DB.prepare(`INSERT INTO sessions(token_hash,user_id,expires_at,created_at,auth_version,firebase_version)
+      SELECT ?,id,?,?,auth_version,? FROM users WHERE id=? AND status='approved' AND auth_version=? AND password_hash=?`)
+      .bind(await digest(token), Date.now() + maxAge * 1000, Date.now(), firebaseVersion, user.id, user.auth_version, user.password_hash).run();
+    if (session.meta.changes !== 1) throw new HttpError(409, 'El acceso cambió durante el ingreso. Volvé a ingresar.');
     return json({ user: publicUser(user) }, 200, { 'Set-Cookie': `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}` });
   }
   if (path === '/api/admin/access' && request.method === 'GET') {

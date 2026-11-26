@@ -14,21 +14,22 @@ function fixture() {
   sqlite.exec(readFileSync(new URL('../migrations/0005_issue_history.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../migrations/0006_recovery.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../migrations/0007_remove_dni.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0008_firebase_auth.sql', import.meta.url), 'utf8'));
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
     first: async () => sqlite.prepare(sql).get(...args) ?? null,
     all: async () => ({ results: sqlite.prepare(sql).all(...args) }),
     run: async () => ({ meta: sqlite.prepare(sql).run(...args) }),
   });
-  const env = { DB: { prepare: statement, batch: async statements => {
+  const env = { AUTH_PROVIDER: 'local', RUNTIME_ENV: 'test', DB: { prepare: statement, batch: async statements => {
     sqlite.exec('BEGIN');
     try { const results = []; for (const stmt of statements) results.push(await stmt.run()); sqlite.exec('COMMIT'); return results; }
     catch (error) { sqlite.exec('ROLLBACK'); throw error; }
   } } };
-  const request = async (path, method = 'GET', data, cookie, origin = 'https://portal.example') => {
+  const request = async (path, method = 'GET', data, cookie, origin = 'https://localhost') => {
     const headers = { Origin: origin, 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1' };
     if (cookie) headers.Cookie = cookie;
-    return worker.fetch(new Request(`https://portal.example${path}`, { method, headers, ...(data ? { body: JSON.stringify(data) } : {}) }), env);
+    return worker.fetch(new Request(`https://localhost${path}`, { method, headers, ...(data ? { body: JSON.stringify(data) } : {}) }), env);
   };
   return { sqlite, request, env };
 }

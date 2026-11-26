@@ -7,6 +7,7 @@ import { entityRoute } from './entities.mjs';
 import { participationRoute } from './participation.mjs';
 import { importRoute } from './imports.mjs';
 import { recoveryRoute } from './recovery.mjs';
+import { assertAuthEnvironment } from './firebase.mjs';
 
 async function reservations(request, env, path) {
   if (!path.startsWith('/api/reservations')) return null;
@@ -54,6 +55,7 @@ export default {
     const path = new URL(request.url).pathname;
     if (!path.startsWith('/api/')) return env.ASSETS.fetch(request);
     try {
+      assertAuthEnvironment(request, env);
       sameOrigin(request);
       if (path === '/api/health' && request.method === 'GET') {
         await env.DB.prepare('SELECT id FROM settings WHERE id=1').first();
