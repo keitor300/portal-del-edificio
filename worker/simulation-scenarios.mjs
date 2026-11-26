@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { verifyPublicationInquiry, verifyBuildingGallery } from './content-controls-scenario.mjs';
+import { verifyPublicationInquiry, verifyBuildingGallery, verifyImageAttachments } from './content-controls-scenario.mjs';
 
 // Runs only against the disposable local database created by the browser suite.
 export async function runExtendedScenario({ admin, owner, neighbor, base }) {
   assert.equal(new URL(base).hostname, '127.0.0.1');
   await runMessagingScenario({ admin, owner, neighbor, base });
+  await verifyImageAttachments({ admin, owner, neighbor, base });
   const state = async page => (await (await page.request.get(`${base}/api/state`)).json()).data;
   const save = async () => {
     await admin.getByRole('dialog').getByRole('button', { name: 'Guardar', exact: true }).click();

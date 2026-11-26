@@ -1,12 +1,22 @@
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import sharp from 'sharp';
 import { expect } from '@playwright/test';
 
 export async function verifyPublicationInquiry({ owner, admin, neighbor, base, item }) {
   assert.equal(new URL(base).hostname, '127.0.0.1');
   const state = async page => (await (await page.request.get(`${base}/api/state`)).json()).data;
   const before = (await state(admin)).messages.length;
+  if (item.collection === 'listings') {
+    await owner.getByRole('button', { name: 'Cocheras', exact: true }).click();
+    await expect(owner.getByRole('heading', { name: item.title, exact: true })).toBeVisible();
+    await owner.getByRole('button', { name: 'Departamentos', exact: true }).click();
+    await expect(owner.getByRole('heading', { name: item.title, exact: true })).toHaveCount(0);
+    await owner.getByRole('button', { name: 'Todas', exact: true }).click();
+    await expect(owner.getByRole('heading', { name: item.title, exact: true })).toBeVisible();
+  }
   const row = owner.locator(item.collection === 'listings' ? '.list-row' : '.lost-row').filter({ has: owner.getByRole('heading', { name: item.title, exact: true }) });
   await row.getByRole('link', { name: item.collection === 'listings' ? 'Consultar' : 'Es mío', exact: true }).click();
   await expect(owner).toHaveURL(base + '/demo/propietario/servicios/chat?consulta=' + encodeURIComponent(item.title));
@@ -29,6 +39,54 @@ export async function verifyPublicationInquiry({ owner, admin, neighbor, base, i
   assert.equal((await state(admin)).messages.filter(message => message.text === edited).length, 1, 'Reloading the consultation link must not resend a message');
   await owner.goto(base + '/demo/propietario/servicios/chat');
   await expect(owner.getByLabel('Mensaje', { exact: true })).toHaveValue('');
+}
+
+export async function verifyImageAttachments({ owner, admin, neighbor, base }) {
+  assert.equal(new URL(base).hostname, '127.0.0.1');
+  const state = async page => (await (await page.request.get(`${base}/api/state`)).json()).data;
+  await owner.goto(base + '/demo/propietario/servicios/chat');
+  const input = owner.getByLabel(/^Adjuntar archivo/);
+  const before = (await state(admin)).messages.length;
+  await input.setInputFiles({ name: 'rechazado.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });
+  await expect(owner.getByRole('alert')).toContainText('Elegí una imagen JPG, PNG, WebP');
+  await input.setInputFiles({ name: 'grande.png', mimeType: 'image/png', buffer: Buffer.alloc(1048577) });
+  await expect(owner.getByRole('alert')).toContainText('menos de 1 MB');
+  await input.setInputFiles({ name: 'firma-invalida.png', mimeType: 'image/png', buffer: Buffer.from('No es una imagen') });
+  await owner.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+  await expect(owner.getByRole('alert')).toContainText('Revisá el formato');
+  assert.equal((await state(admin)).messages.length, before);
+  await owner.getByRole('button', { name: 'Quitar archivo', exact: true }).click();
+  await owner.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+  await expect(owner.getByRole('alert')).toContainText('Escribí un mensaje o adjuntá un archivo');
+  for (const format of ['jpeg', 'png', 'webp']) {
+    const name = `simulacro-imagen.${format === 'jpeg' ? 'jpg' : format}`;
+    const mimeType = `image/${format}`;
+    const buffer = await sharp({ create: { width: 24, height: 24, channels: 3, background: '#486b5a' } }).toFormat(format).toBuffer();
+    await input.setInputFiles({ name, mimeType, buffer });
+    await expect(owner.getByText(name, { exact: true })).toBeVisible();
+    await owner.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+    await expect(owner.getByRole('button', { name: 'Quitar archivo', exact: true })).toHaveCount(0);
+    const messages = (await state(admin)).messages.filter(message => message.attachment?.name === name);
+    assert.equal(messages.length, 1);
+    const attachment = messages[0].attachment;
+    assert.equal(attachment.type, mimeType);
+    assert.equal((await neighbor.request.get(base + attachment.url)).status(), 404);
+    await owner.getByRole('button', { name: `Ver ${name}`, exact: true }).click();
+    const dialog = owner.getByRole('dialog', { name, exact: true });
+    await expect.poll(() => dialog.locator('img').evaluate(image => image.complete && image.naturalWidth === 24)).toBe(true);
+    const downloading = owner.waitForEvent('download');
+    await dialog.getByRole('button', { name: 'Descargar archivo', exact: true }).click();
+    const download = await downloading;
+    assert.equal(await download.failure(), null);
+    assert.equal(download.suggestedFilename(), name);
+    assert.deepEqual(readFileSync(await download.path()), buffer);
+    await owner.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    const invalid = await owner.request.post(base + '/api/files', { headers: { Origin: base }, data: { name, type: mimeType, url: `data:${mimeType};base64,${Buffer.from('Firma incorrecta').toString('base64')}` } });
+    assert.equal(invalid.status(), 400);
+  }
+  assert.equal((await state(admin)).messages.length, before + 3);
+  console.log('Simulation verified: JPG, PNG and WebP upload, render, exact download, privacy and invalid-file rejection');
 }
 
 export async function verifyBuildingGallery({ owner, base }) {
