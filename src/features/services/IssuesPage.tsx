@@ -37,7 +37,7 @@ function IssueForm({ onClose, onCreated }: { onClose: () => void; onCreated: (id
   }
 
   return <Modal title="Nuevo reclamo" onClose={() => { if(!saving.current)onClose(); }} wide><form onSubmit={submit} className="services-composer" aria-busy={busy}>
-    <p className="muted">Unidad {currentOwnerUnit()}{!productionPortal && ' · Registro local de demostración.'} Para una situación de riesgo, consultá <Link to="/servicios/urgencias" onClick={onClose}>Urgencias</Link>.</p>
+    <p className="muted">Unidad {currentOwnerUnit()}{!productionPortal && ' · Registro local de demostración.'} Para una situación de riesgo, consultá <Link to="/demo/propietario/servicios/urgencias" onClick={onClose}>Urgencias</Link>.</p>
     <Field label="Categoría"><select aria-label="Categoría" required value={category} onChange={event => setCategory(event.target.value)}><option value="">Elegir categoría</option>{ISSUE_CATEGORIES.map(value => <option key={value}>{value}</option>)}</select></Field>
     <Field label="¿Qué ocurrió?" hint="Indicá el lugar y una descripción breve."><textarea aria-label="¿Qué ocurrió?" required rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} /></Field>
     <Field label="Foto (opcional)" hint="JPG, PNG o WebP. Hasta 1 MB."><input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={async event => {
@@ -121,5 +121,5 @@ export function IssuesPanel({ admin = false }: { admin?: boolean }) {
 }
 
 export function IssuesPage() {
-  return <div className="services-page"><PageHeader title="Reclamos" description="Consultá el estado y la conversación de cada reclamo de tu unidad." back="/servicios" /><IssuesPanel /></div>;
+  return <div className="services-page"><PageHeader title="Reclamos" description="Consultá el estado y la conversación de cada reclamo de tu unidad." back="/demo/propietario/servicios" /><IssuesPanel /></div>;
 }

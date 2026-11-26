@@ -16,6 +16,7 @@ import { runSumControls } from './sum-controls-scenario.mjs';
 import { runImportControls } from './import-controls-scenario.mjs';
 import { runNoticeControls } from './notice-controls-scenario.mjs';
 import { runCommunityControls } from './community-controls-scenario.mjs';
+import { runNavigationReview } from './navigation-scenario.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const temp = mkdtempSync(join(tmpdir(), 'portal-browser-'));
@@ -483,6 +484,22 @@ test('resident registers from QR entry, administrator approves from another brow
   assert.equal(await owner.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.equal(await neighbor.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.deepEqual(errors,[]);
+});
+
+test('navigation links keep owners in their workspace and select the intended administrative tool', { timeout: 120000 }, async () => {
+  const admin = await pageFor();
+  const owner = await pageFor();
+  const headers = { Origin: base };
+  assert.equal((await admin.request.post(`${base}/api/auth/login`, { headers, data: { identity: 'admin@example.invalid', password } })).status(), 200);
+  assert.equal((await owner.request.post(`${base}/api/auth/register`, { headers, data: { name: 'Navegacion temporal', unit: '5A', email: 'navigation-ui@example.invalid', password } })).status(), 201);
+  const { users } = await (await admin.request.get(`${base}/api/admin/access`)).json();
+  const account = users.find(user => user.email === 'navigation-ui@example.invalid');
+  assert.ok(account);
+  assert.equal((await admin.request.patch(`${base}/api/admin/access/${account.id}`, { headers, data: { status: 'approved' } })).status(), 200);
+  assert.equal((await owner.request.post(`${base}/api/auth/login`, { headers, data: { identity: '5A', password } })).status(), 200);
+  await runNavigationReview({ owner, admin, base });
+  await owner.context().close();
+  await admin.context().close();
 });
 
 test('remembered owner and administrator sessions survive a browser restart and logout revokes them', { timeout: 90000 }, async () => {

@@ -67,5 +67,5 @@ export function PollList() {
 }
 
 export function PollsPage() {
-  return <div className="community-page"><PageHeader title="Encuestas y votaciones" description="Consultá las propuestas, participá y seguí los resultados del edificio." back="/edificio" /><PollList /></div>;
+  return <div className="community-page"><PageHeader title="Encuestas y votaciones" description="Consultá las propuestas, participá y seguí los resultados del edificio." back="/demo/propietario/edificio" /><PollList /></div>;
 }

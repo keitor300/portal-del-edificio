@@ -15,12 +15,12 @@ import './services.css';
 export function ServicesPage() {
   return <div className="services-page"><PageHeader title="Servicios" description="Elegí lo que necesitás hacer en el edificio." />
     <div className="services-gateways">
-      <Gateway className="service-gateway service-sum" to="/servicios/sum" title="Reservar el SUM" description="Disponibilidad, reglas y mis reservas" icon={<CalendarDays aria-hidden="true" />} />
-      <Gateway className="service-gateway service-issues" to="/servicios/reclamos" title="Informar un problema" description="Crear un reclamo y seguirlo" icon={<ClipboardList aria-hidden="true" />} />
-      <Gateway className="service-gateway service-chat" to="/servicios/chat" title="Hablar con administración" description="Enviar una consulta de tu unidad" icon={<MessageCircle aria-hidden="true" />} />
-      <Gateway className="service-gateway service-contacts" to="/servicios/contactos" title="Contactos y ayuda" description="Administración, mantenimiento y urgencias" icon={<ContactRound aria-hidden="true" />} />
+      <Gateway className="service-gateway service-sum" to="/demo/propietario/servicios/sum" title="Reservar el SUM" description="Disponibilidad, reglas y mis reservas" icon={<CalendarDays aria-hidden="true" />} />
+      <Gateway className="service-gateway service-issues" to="/demo/propietario/servicios/reclamos" title="Informar un problema" description="Crear un reclamo y seguirlo" icon={<ClipboardList aria-hidden="true" />} />
+      <Gateway className="service-gateway service-chat" to="/demo/propietario/servicios/chat" title="Hablar con administración" description="Enviar una consulta de tu unidad" icon={<MessageCircle aria-hidden="true" />} />
+      <Gateway className="service-gateway service-contacts" to="/demo/propietario/servicios/contactos" title="Contactos y ayuda" description="Administración, mantenimiento y urgencias" icon={<ContactRound aria-hidden="true" />} />
     </div>
-    <div className="services-urgent"><AlertTriangle aria-hidden="true" /><div><p><strong>¿Hay una urgencia?</strong></p><p>Encontrá una orientación segura y los contactos del edificio.</p><Link className="button secondary" to="/servicios/urgencias">Ver ayuda urgente<ChevronRight size={18} aria-hidden="true" /></Link></div></div>
+    <div className="services-urgent"><AlertTriangle aria-hidden="true" /><div><p><strong>¿Hay una urgencia?</strong></p><p>Encontrá una orientación segura y los contactos del edificio.</p><Link className="button secondary" to="/demo/propietario/servicios/urgencias">Ver ayuda urgente<ChevronRight size={18} aria-hidden="true" /></Link></div></div>
   </div>;
 }
 
@@ -45,7 +45,7 @@ export function ChatPanel({ admin = false }: { admin?: boolean }) {
 }
 
 export function ChatPage() {
-  return <div className="services-page"><PageHeader title="Chat con administración" description={`Consulta de la unidad ${currentOwnerUnit()}.`} back="/servicios" /><ChatPanel /></div>;
+  return <div className="services-page"><PageHeader title="Chat con administración" description={`Consulta de la unidad ${currentOwnerUnit()}.`} back="/demo/propietario/servicios" /><ChatPanel /></div>;
 }
 
 function ContactList({ contacts }: { contacts: Entity[] }) {
@@ -56,8 +56,8 @@ export function ContactsPage() {
   const { data } = usePortal();
   const [category, setCategory] = useState('');
   const categories = [...new Set(data.contacts.map(contact => contact.category).filter((value): value is string => !!value))];
-  return <div className="services-page"><PageHeader title="Contactos y ayuda" description={productionPortal?'Contactos publicados por la administración del edificio.':'Directorio de ejemplo. Los proveedores, horarios y teléfonos deben confirmarse con administración.'} back="/servicios" />
-    <div className="services-contact-actions"><Link className="button" to="/servicios/chat"><MessageCircle size={18} aria-hidden="true" />Hablar con administración</Link><Link className="button secondary" to="/servicios/urgencias"><AlertTriangle size={18} aria-hidden="true" />Ver ayuda urgente</Link></div>
+  return <div className="services-page"><PageHeader title="Contactos y ayuda" description={productionPortal?'Contactos publicados por la administración del edificio.':'Directorio de ejemplo. Los proveedores, horarios y teléfonos deben confirmarse con administración.'} back="/demo/propietario/servicios" />
+    <div className="services-contact-actions"><Link className="button" to="/demo/propietario/servicios/chat"><MessageCircle size={18} aria-hidden="true" />Hablar con administración</Link><Link className="button secondary" to="/demo/propietario/servicios/urgencias"><AlertTriangle size={18} aria-hidden="true" />Ver ayuda urgente</Link></div>
     <Field label="Categoría de contacto"><select value={category} onChange={event => setCategory(event.target.value)}><option value="">Todos los contactos</option>{categories.map(value => <option key={value}>{value}</option>)}</select></Field>
     <ContactList contacts={data.contacts.filter(contact => !category || contact.category === category)} />
   </div>;
@@ -75,12 +75,12 @@ export function UrgenciesPage() {
   const { data } = usePortal();
   const [category, setCategory] = useState('Agua');
   const info = URGENCY_INFO[category];
-  return <div className="services-page"><PageHeader title="Urgencias" description="Orientación básica y contactos del edificio." back="/servicios" />
+  return <div className="services-page"><PageHeader title="Urgencias" description="Orientación básica y contactos del edificio." back="/demo/propietario/servicios" />
     <div className="services-urgent"><AlertTriangle aria-hidden="true" /><p><strong>Ante un peligro inmediato, buscá un lugar seguro y contactá al servicio local de emergencias.</strong><br />{productionPortal?'El chat del portal no atiende emergencias.':'Esta demo no atiende emergencias.'} Usá contactos verificados en la cartelería del edificio, la cabina o la factura del servicio.</p></div>
     <Field label="Tipo de urgencia"><select value={category} onChange={event => setCategory(event.target.value)}>{Object.keys(URGENCY_INFO).map(value => <option key={value}>{value}</option>)}</select></Field>
     <section className="section" aria-live="polite"><h2>{info.title}</h2><ul className="services-instructions">{info.instructions.map(instruction => <li key={instruction}>{instruction}</li>)}</ul></section>
     <section className="section"><h2>Contactos de {category.toLocaleLowerCase('es')}</h2><ContactList contacts={data.contacts.filter(contact => contact.category === category || (productionPortal && (contact.category === 'Emergencias' || contact.category === ({Agua:'Plomero',Ascensor:'Ascensores',Electricidad:'Electricista'} as Record<string,string>)[category])))} /></section>
-    <Link className="button secondary" to="/servicios/contactos"><ContactRound size={18} aria-hidden="true" />Ver todos los contactos</Link>
+    <Link className="button secondary" to="/demo/propietario/servicios/contactos"><ContactRound size={18} aria-hidden="true" />Ver todos los contactos</Link>
   </div>;
 }
 

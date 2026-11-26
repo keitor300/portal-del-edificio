@@ -131,7 +131,7 @@ export function ReservationList({ admin = false }: { admin?: boolean }) {
 export function SumPage() {
   const [fullPhoto, setFullPhoto] = useState(false);
   return <div className="services-page">
-    <PageHeader title="Reservar el SUM" description="Seleccioná la unidad, la fecha y un horario disponible." back="/servicios" />
+    <PageHeader title="Reservar el SUM" description="Seleccioná la unidad, la fecha y un horario disponible." back="/demo/propietario/servicios" />
     <div className="services-sum-layout"><div><img className="services-photo" src="/images/sum.jpg" alt="Salón de usos múltiples del edificio, con mesas, sillas y ventanales" width={1200} height={675} fetchPriority="high" /><div className="services-photo-caption"><p className="muted">Salón de usos múltiples</p><button className="button secondary small" onClick={() => setFullPhoto(true)}><Expand size={18} aria-hidden="true" />Foto completa</button></div></div><BookingForm /></div>
     <ReservationList />
     {fullPhoto && <Modal title="Salón de usos múltiples" wide onClose={() => setFullPhoto(false)}><img className="services-photo-full" src="/images/sum.jpg" alt="Fotografía completa del salón de usos múltiples del edificio" width={1200} height={675} /></Modal>}
