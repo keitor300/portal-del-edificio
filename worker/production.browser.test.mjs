@@ -10,6 +10,7 @@ import { chromium, expect } from '@playwright/test';
 import { hashPassword } from './auth.mjs';
 import { firebaseRegister } from './firebase.mjs';
 import { runExtendedScenario } from './simulation-scenarios.mjs';
+import { runFinancialReview } from './financial-review-scenario.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const temp = mkdtempSync(join(tmpdir(), 'portal-browser-'));
@@ -41,7 +42,7 @@ before(async () => {
   server.stdout.on('data', chunk => { logs += chunk; });
   server.stderr.on('data', chunk => { logs += chunk; });
   let ready = false;
-  for (let i=0;i<60;i++) {
+  for (let i=0;i<240;i++) {
     try {
       const status = await new Promise((resolve,reject)=>{
         https.get(`${base}/api/health`,{rejectUnauthorized:false},response=>{response.resume();resolve(response.statusCode);}).on('error',reject);
@@ -431,6 +432,7 @@ test('resident registers from QR entry, administrator approves from another brow
   await expect(owner.getByText(/Documento demo/)).toHaveCount(0);
 
   await runExtendedScenario({ admin, owner, neighbor, base });
+  await runFinancialReview({ admin, owner, neighbor, base, pdf });
 
   const recovering=await pageFor();
   await recovering.goto(`${base}/login`);
@@ -469,5 +471,136 @@ test('resident registers from QR entry, administrator approves from another brow
   assert.equal((await recovering.request.get(`${base}/api/reservations`)).status(),401);
   assert.equal(await owner.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.equal(await neighbor.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.deepEqual(errors,[]);
+});
+
+test('administrator invitation and resident access controls work through the interface', { skip: !firebase }, async () => {
+  assert.equal(new URL(base).hostname,'127.0.0.1');
+  const admin=await pageFor(), invited=await pageFor(), resident=await pageFor();
+  const invitedEmail=`invited-ui-${crypto.randomUUID()}@example.invalid`;
+  const login=async(page,identity,secret)=>{
+    await page.goto(`${base}/admin`);
+    await page.getByLabel('Usuario o email',{exact:true}).fill(identity);
+    await page.getByLabel('Contraseña',{exact:true}).fill(secret);
+    await page.getByRole('button',{name:'Ingresar',exact:true}).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByRole('heading',{name:'Ingresar a administración'})).toHaveCount(0);
+  };
+  await login(admin,'admin@example.invalid',password);
+  await admin.goto(`${base}/admin/administradores`);
+  await expect(admin.getByRole('heading',{name:'Administradores',exact:true})).toBeVisible();
+  const accountCard=()=>admin.locator('article.access-request').filter({has:admin.getByRole('heading',{name:'Administrador invitado de prueba',exact:true})});
+  const self=admin.locator('article.access-request').filter({hasText:'(tu cuenta)'});
+  await expect(self.getByRole('button',{name:'Suspender acceso',exact:true})).toHaveCount(0);
+  await admin.getByLabel('Nombre',{exact:true}).fill('Administrador invitado de prueba');
+  await admin.getByLabel('Correo del administrador',{exact:true}).fill(invitedEmail);
+  await admin.getByLabel('Tu contraseña para autorizar',{exact:true}).fill('Wrong-test-password');
+  await admin.getByRole('button',{name:'Enviar invitación',exact:true}).click();
+  await expect(admin.getByRole('alert')).toContainText('Revisá tu contraseña');
+  await expect(accountCard()).toHaveCount(0);
+  await expect(admin.getByLabel('Nombre',{exact:true})).toHaveValue('Administrador invitado de prueba');
+  await admin.getByLabel('Tu contraseña para autorizar',{exact:true}).fill(password);
+  await admin.getByRole('button',{name:'Enviar invitación',exact:true}).click();
+  await expect(admin.getByRole('status')).toContainText('Correo enviado');
+  await expect(accountCard()).toContainText('Invitación pendiente');
+  await admin.getByLabel('Tu contraseña para autorizar',{exact:true}).fill(password);
+  await admin.getByRole('button',{name:'Enviar invitación',exact:true}).click();
+  await expect(admin.getByRole('alert')).toContainText('Ese correo ya tiene una cuenta');
+  await expect(accountCard()).toHaveCount(1);
+
+  const codes=async()=>{
+    const response=await fetch('http://127.0.0.1:9099/emulator/v1/projects/demo-portal-edificio/oobCodes');
+    assert.equal(response.status,200);
+    return (await response.json()).oobCodes.filter(row=>row.email===invitedEmail);
+  };
+  const initialCodes=await codes();
+  assert.equal(initialCodes.length,1);
+  await accountCard().getByRole('button',{name:'Reenviar invitación',exact:true}).click();
+  await admin.getByRole('dialog').getByRole('button',{name:'Cancelar',exact:true}).click();
+  await expect(admin.getByRole('dialog')).toHaveCount(0);
+  assert.equal((await codes()).length,1);
+  await accountCard().getByRole('button',{name:'Reenviar invitación',exact:true}).click();
+  const resend=admin.getByRole('dialog',{name:'Reenviar invitación',exact:true});
+  await resend.getByLabel('Tu contraseña para confirmar').fill('Wrong-test-password');
+  await resend.getByRole('button',{name:'Confirmar',exact:true}).click();
+  await expect(resend.getByRole('alert')).toContainText('Revisá tu contraseña');
+  await expect(resend).toBeVisible();
+  assert.equal((await codes()).length,1);
+  await resend.getByLabel('Tu contraseña para confirmar').fill(password);
+  await resend.getByRole('button',{name:'Confirmar',exact:true}).click();
+  await expect(resend).toHaveCount(0);
+  await expect(admin.getByRole('status')).toContainText('Correo reenviado');
+  const delivered=await codes();
+  assert.equal(delivered.length,2);
+  const invitedPassword=`Invited-${crypto.randomUUID()}`;
+  const setup=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=local-test-key',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({oobCode:delivered.at(-1).oobCode,newPassword:invitedPassword}),
+  });
+  assert.equal(setup.status,200);
+  await login(invited,invitedEmail,invitedPassword);
+  await admin.reload();
+  await expect(accountCard()).toContainText('Activo');
+  await expect(accountCard().getByRole('button',{name:'Reenviar invitación'})).toHaveCount(0);
+  await accountCard().getByRole('button',{name:'Suspender acceso',exact:true}).click();
+  await admin.getByRole('dialog').getByRole('button',{name:'Cancelar',exact:true}).click();
+  assert.equal((await(await invited.request.get(`${base}/api/auth/session`)).json()).user.role,'admin');
+  for(const action of ['Suspender acceso','Habilitar acceso']){
+    await accountCard().getByRole('button',{name:action,exact:true}).click();
+    const dialog=admin.getByRole('dialog',{name:action,exact:true});
+    await dialog.getByLabel('Tu contraseña para confirmar').fill(password);
+    await dialog.getByRole('button',{name:'Confirmar',exact:true}).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(accountCard()).toContainText(action==='Suspender acceso'?'Suspendido':'Activo');
+    assert.equal((await(await invited.request.get(`${base}/api/auth/session`)).json()).user,null,'Old administrator session must stay revoked');
+  }
+  await invited.reload();
+  await login(invited,invitedEmail,invitedPassword);
+  await admin.screenshot({path:join(tmpdir(),'portal-simulacro-administrators-mobile.png'),fullPage:true});
+  assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+
+  const headers={Origin:base};
+  const registration=await resident.request.post(`${base}/api/auth/register`,{headers,data:{name:'Acceso para revisar',unit:'4C',email:'access-ui@example.invalid',password}});
+  assert.equal(registration.status(),201);
+  await resident.goto(`${base}/login`);
+  const residentLogin=async()=>{
+    await resident.getByLabel('Unidad',{exact:true}).selectOption('4C');
+    await resident.getByLabel('Contraseña',{exact:true}).fill(password);
+    await resident.getByRole('button',{name:'Ingresar',exact:true}).click();
+  };
+  await residentLogin();
+  await expect(resident.getByRole('alert')).toContainText('pendiente de aprobación');
+  await admin.goto(`${base}/admin/accesos`);
+  const residentCard=()=>admin.locator('article.access-request').filter({has:admin.getByRole('heading',{name:'Acceso para revisar',exact:true})});
+  await expect(residentCard()).toContainText('Pendiente');
+  admin.once('dialog',dialog=>dialog.dismiss());
+  await residentCard().getByRole('button',{name:'Rechazar',exact:true}).click();
+  await expect(residentCard()).toContainText('Pendiente');
+  admin.once('dialog',dialog=>dialog.accept());
+  await residentCard().getByRole('button',{name:'Rechazar',exact:true}).click();
+  await expect(residentCard()).toHaveCount(0);
+  await admin.getByLabel('Ver solicitudes').selectOption('rejected');
+  await expect(residentCard()).toContainText('Rechazado');
+  await residentLogin();
+  await expect(resident.getByRole('alert')).toContainText('no son correctos');
+  admin.once('dialog',dialog=>dialog.accept());
+  await residentCard().getByRole('button',{name:'Aprobar acceso',exact:true}).click();
+  await admin.getByLabel('Ver solicitudes').selectOption('approved');
+  await expect(residentCard()).toContainText('Aprobado');
+  await residentLogin();
+  await expect(resident).toHaveURL(/\/demo\/propietario$/);
+  admin.once('dialog',dialog=>dialog.accept());
+  await residentCard().getByRole('button',{name:'Suspender acceso',exact:true}).click();
+  await admin.getByLabel('Ver solicitudes').selectOption('suspended');
+  await expect(residentCard()).toContainText('Suspendido');
+  assert.equal((await resident.request.get(`${base}/api/reservations`)).status(),401);
+  admin.once('dialog',dialog=>dialog.accept());
+  await residentCard().getByRole('button',{name:'Aprobar acceso',exact:true}).click();
+  await expect(residentCard()).toHaveCount(0);
+  assert.equal((await resident.request.get(`${base}/api/reservations`)).status(),401,'Reapproval must not restore the old session');
+  await resident.goto(`${base}/login`);
+  await residentLogin();
+  await expect(resident).toHaveURL(/\/demo\/propietario$/);
+  await admin.getByLabel('Ver solicitudes').selectOption('pending');
+  await expect(admin.getByText('No hay solicitudes en esta lista.',{exact:true})).toBeVisible();
   assert.deepEqual(errors,[]);
 });
